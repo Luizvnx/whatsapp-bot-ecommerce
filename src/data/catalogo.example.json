@@ -1,0 +1,31 @@
+{
+    "categorias": {
+        "1": {
+            "nome": "🍯 Méis, Própolis",
+            "produtos": {
+                "1": { "nome": "Mel de Jataí (70ml)", "preco": 100.00 }
+            }
+        },
+        "2": {
+            "nome": "🍯 Própolis e Geleia Real",
+            "produtos": {
+                "1": { "nome": "Geleia Real (in natura)", "preco": 53.00 },
+                "2": { "nome": "Geleia Real (em cápsula)", "preco": 51.00 }
+            }
+        },
+        "3": {
+            "nome": "🛡️ Deliciais Artesanais",
+            "produtos": {
+                "1": { "nome": "Molho de Maracujá com Mel", "preco": 18.00 },
+                "2": { "nome": "Molho de Mel com Pimenta", "preco": 17.00 }
+            }
+        },
+        "4": {
+            "nome": "🍷 Bebidas Artesanais",
+            "produtos": {
+                "1": { "nome": "Hidromel Tradicional (500ml)", "preco": 57.00 },
+                "2": { "nome": "Hidromel Tradicional (250ml)", "preco": 28.00 }
+            }
+        }
+    }
+}
