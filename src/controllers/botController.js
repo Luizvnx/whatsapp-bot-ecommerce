@@ -1,73 +1,78 @@
-const SessaoService = require('../services/sessaoService');
-const InicioStage = require('../stages/InicioStage');
+const SessaoService = require('../services/SessaoService');
+const EvolutionService = require('../services/EvolutionService');
+const mensagens = require('../data/mensagens.json');
 
 const estagios = {
-    'inicio': InicioStage,
+    'inicio': require('../stages/InicioStage'),
     'aguardando_categoria': require('../stages/CategoriaStage'),
     'aguardando_produto': require('../stages/ProdutoStage'),
-    'aguardando_pagamento': require('../stages/PagamentoStage'),
-    'em_atendimento_humano': require('../stages/HumanoStage')
+    'conversando_com_ia': require('../stages/IaStage')
 };
 
-const tempoInicioServidor = Math.floor(Date.now() / 1000);
 let botPausadoGlobalmente = false; 
 
 class BotController {
-    static async processarMensagem(msg) {
-        if (msg.timestamp < tempoInicioServidor) return;
-        if (msg.type === 'e2e_notification' || msg.type === 'call_log' || msg.type === 'protocol' || !msg.body) return; 
-        if (msg.from.endsWith('@g.us') || msg.from === 'status@broadcast') return;
+    static async processarMensagem(data) {
+        let sessao; // Definida aqui fora para ser acessada no catch
+        try {
+            if (!data?.key || !data?.message) return;
 
-        const texto = msg.body.toLowerCase();
+            const { remoteJid, fromMe } = data.key;
+            const numeroCliente = remoteJid.replace('@s.whatsapp.net', '');
+            const textoBruto = data.message.conversation || data.message.extendedTextMessage?.text || '';
+            if (!textoBruto) return; 
+            const texto = textoBruto.toLowerCase().trim();
 
+            const msg = {
+                from: numeroCliente,
+                body: textoBruto,
+                fromMe,
+                reply: async (t) => await EvolutionService.enviarMensagemText(numeroCliente, t)
+            };
 
-        if (msg.fromMe) {
-            if (texto === '/pausarbot') { botPausadoGlobalmente = true; return; }
-            if (texto === '/ligarbot') { botPausadoGlobalmente = false; return; }
+            // 1. Pegar a sessão IMEDIATAMENTE
+            sessao = SessaoService.obterSessao(numeroCliente);
 
-
-            const mensagemDoBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖','🟠','🍷','🛡️'].some(emoji => texto.includes(emoji));
-            if (mensagemDoBot) return; 
-
-            const numeroClienteAAtender = msg.to; 
-
-            if (SessaoService.existeSessao(numeroClienteAAtender)) {
-                const sessaoCliente = SessaoService.obterSessao(numeroClienteAAtender);
+            // 2. Comando Global /BOT (Funciona para todos)
+            if (texto === '/bot') {
+                sessao.etapa = 'inicio';
+                sessao.processando = false; 
+                sessao.errosConsecutivos = 0;
+                await msg.reply(mensagens.geral.botReativado);
                 
-                // /bot no WhatsApp para reativar
-                if (texto === '/bot') {
-                    sessaoCliente.etapa = 'inicio';
-                    await msg.reply("🤖 Atendimento automático reativado!");
-                    await InicioStage.executar(msg, texto, sessaoCliente);
-                    return;
-                }
+                // Tenta limpar etiquetas sem travar se falhar
+                await EvolutionService.marcarComoNaoLida(numeroCliente, '7', 'remove').catch(() => {});
+                await EvolutionService.marcarComoNaoLida(numeroCliente, '8', 'add').catch(() => {});
 
-                // Se você digitou texto normal (assumiu a conversa), o bot pausa
-                if (sessaoCliente.etapa !== 'em_atendimento_humano') {
-                    sessaoCliente.etapa = 'em_atendimento_humano';
-                    console.log(`[WhatsApp] Você assumiu a conversa com ${numeroClienteAAtender}. Bot silenciado.`);
-                }
+                // 👉 MÁGICA: Executa o menu NA HORA
+                return await estagios['inicio'].executar(msg, texto, sessao);
             }
-            return; 
-        }
 
-        // FLUXO NORMAL DOS CLIENTES
+            // 3. Admin Global
+            if (fromMe) {
+                if (texto === '/pausarbot') { botPausadoGlobalmente = true; return; }
+                if (texto === '/ligarbot') { botPausadoGlobalmente = false; return; }
+                
+                const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖'].some(e => texto.includes(e));
+                if (!isMsgBot && sessao.etapa !== 'em_atendimento_humano') {
+                    sessao.etapa = 'em_atendimento_humano';
+                    await EvolutionService.gerenciarEtiqueta(numeroCliente, '8', 'remove').catch(() => {});
+                }
+                return; 
+            }
 
-        if (botPausadoGlobalmente) return;
+            if (botPausadoGlobalmente || sessao.etapa === 'em_atendimento_humano') return;
+            if (sessao.processando) return;
 
-        const sessao = SessaoService.obterSessao(msg.from);
-        
-        if (SessaoService.verificarExpiracao(sessao, msg.from)) {
-            await msg.reply("⏳ Sua sessão expirou devido à inatividade. Vamos começar de novo! 🐝\n\nDigite qualquer coisa para ver o menu.");
-            return; 
-        }
-
-        const estagioAtual = estagios[sessao.etapa];
-
-        if (estagioAtual) {
+            // 4. Execução de estágios para o cliente
+            sessao.processando = true;
+            const estagioAtual = estagios[sessao.etapa] || estagios['inicio'];
             await estagioAtual.executar(msg, texto, sessao);
-        } else {
-            sessao.etapa = 'inicio'; 
+            sessao.processando = false;
+
+        } catch (error) {
+            console.error('❌ Erro no BotController:', error);
+            if (sessao) sessao.processando = false;
         }
     }
 }

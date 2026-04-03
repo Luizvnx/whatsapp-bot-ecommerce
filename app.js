@@ -1,26 +1,28 @@
-const express = require('express');
 require('dotenv').config();
+const express = require('express');
+const BotController = require('./src/controllers/botController');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const webhookRoutes = require('./src/routes/webhookRoutes');
-const whatsappClient = require('./src/config/whatsapp');
-const botController = require('./src/controllers/botController');
 
 app.use(express.json()); 
-app.use('/webhook', webhookRoutes);
+app.post('/webhook/evolution', async (req, res) => {
+    res.status(200).send('OK'); 
 
-whatsappClient.initialize();
-
-whatsappClient.on('message_create', async (msg) => {
     try {
-        await botController.processarMensagem(msg);
-    } catch (error) {
-        console.error('Erro ao processar mensagem:', error);
+        const payload = req.body;
+
+        if (payload.event === 'messages.upsert') {
+            await BotController.processarMensagem(payload.data);
+        }
+    } catch (erro) {
+        console.error('❌ Erro interno ao processar a mensagem:', erro);
     }
 });
 
+//whatsappClient.initialize();
 
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor de Webhooks rodando na porta ${PORT}`);
+    console.log(`🤖 Cérebro do Bot rodando na porta ${PORT}`);
+    console.log(`🔗 URL do Webhook: http://localhost:${PORT}/webhook/evolution`);
 });

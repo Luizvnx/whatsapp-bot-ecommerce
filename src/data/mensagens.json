@@ -1,0 +1,22 @@
+{
+    "geral": {
+        "voltarMenu": "\n*#️⃣ - Voltar ao menu principal*",
+        "atendente": "\n*0️⃣ - Falar com atendente*"
+    },
+    "inicio": {
+        "boasVindas": "> Olá! 🐝 Bem-vindo(a) à *Favo De Mel*! 🍯\n\nSou seu assistente virtual. Para um atendimento rápido e sem filas, escolha uma categoria abaixo:\n\n"
+    },
+    "categoria": {
+        "escolhaProduto": "Selecione o produto desejado:\n\n"
+    },
+    "ia": {
+        "saudacao": "Olá! Sou a IA da Favo De Mel 🐝. O que gostaria de saber? (Para voltar ao menu, digite *#*)",
+        "carregando": "⏳ _Consultando os pergaminhos da colmeia..._",
+        "erro": "Desculpe, tive um pequeno problema aqui na colmeia! 🐝 Tente perguntar de novo ou digite *#* para voltar ao menu."
+    },
+    "erros": {
+        "opcaoInvalida": "⚠️ Opção inválida. Digite o número correspondente, 6 para a IA ou 0 para falar com um atendente.",
+        "transferenciaHumano": "🔇 Pausando o robô para atendimento humano. (Digite */bot* para reativar).",
+        "sessaoExpirada": "⏳ Sua sessão expirou devido à inatividade. Vamos começar de novo! 🐝\n\nDigite qualquer coisa para ver o menu."
+    }
+}

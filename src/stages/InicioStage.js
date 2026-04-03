@@ -1,18 +1,23 @@
 const catalogo = require('../data/catalogo.json');
+const mensagens = require('../data/mensagens.json'); 
+const EvolutionService = require('../services/EvolutionService');
 
 class InicioStage {
     static async executar(msg, texto, sessao) {
         sessao.errosConsecutivos = 0;
-        let menu = `Olá! 🐝 Bem-vindo à nossa loja!\n\nEscolha uma categoria para ver nossos produtos:\n\n`;
+
+        await EvolutionService.marcarComoNaoLida(msg.from).catch(() => {});
+        
+        // Puxa o texto direto do JSON
+        let menu = mensagens.inicio.boasVindas; 
         
         for (const [chave, categoria] of Object.entries(catalogo.categorias)) {
             menu += `*${chave}️⃣ - ${categoria.nome}*\n`;
         }
         
-        menu += `\n*0️⃣ - Falar com atendente*`;
-        
         await msg.reply(menu);
         sessao.etapa = 'aguardando_categoria';
     }
 }
+
 module.exports = InicioStage;

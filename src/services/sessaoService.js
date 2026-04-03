@@ -1,4 +1,3 @@
-// Arquivo: src/services/SessaoService.js
 
 const sessoes = new Map();
 const TEMPO_EXPIRACAO = 30 * 60 * 1000; // 30 minutos
@@ -29,7 +28,7 @@ class SessaoService {
         }
         
         sessao.ultimaInteracao = Date.now();
-        return false;
+        return false; // Não expirou
     }
 
     // Para uso na verificação de atendimento humano
