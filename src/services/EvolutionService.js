@@ -16,7 +16,7 @@ class EvolutionService {
         }
     }
     
-    static async marcarComoNaoLida(numero, labelId, acao = 'add') {
+    static async gerenciarEtiqueta(numero, labelId, acao = 'add') {
         const url = 'http://localhost:8081/label/handleLabel/FavoDeMel'; 
         try {
             await axios.post(url, { number: numero, labelId: String(labelId), action: acao }, {

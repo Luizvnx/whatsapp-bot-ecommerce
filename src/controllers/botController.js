@@ -6,6 +6,8 @@ const estagios = {
     'inicio': require('../stages/InicioStage'),
     'aguardando_categoria': require('../stages/CategoriaStage'),
     'aguardando_produto': require('../stages/ProdutoStage'),
+    'aguardando_quantidade': require('../stages/QuantidadeStage'),
+    'carrinho_opcoes': require('../stages/CarrinhoStage'),
     'conversando_com_ia': require('../stages/IaStage')
 };
 
@@ -13,12 +15,14 @@ let botPausadoGlobalmente = false;
 
 class BotController {
     static async processarMensagem(data) {
-        let sessao; // Definida aqui fora para ser acessada no catch
+        let sessao;
         try {
             if (!data?.key || !data?.message) return;
 
             const { remoteJid, fromMe } = data.key;
-            const numeroCliente = remoteJid.replace('@s.whatsapp.net', '');
+            
+            const numeroCliente = remoteJid.split('@')[0];
+            
             const textoBruto = data.message.conversation || data.message.extendedTextMessage?.text || '';
             if (!textoBruto) return; 
             const texto = textoBruto.toLowerCase().trim();
@@ -30,30 +34,28 @@ class BotController {
                 reply: async (t) => await EvolutionService.enviarMensagemText(numeroCliente, t)
             };
 
-            // 1. Pegar a sessão IMEDIATAMENTE
             sessao = SessaoService.obterSessao(numeroCliente);
 
-            // 2. Comando Global /BOT (Funciona para todos)
+            // 1. Comando Global /BOT
             if (texto === '/bot') {
                 sessao.etapa = 'inicio';
                 sessao.processando = false; 
                 sessao.errosConsecutivos = 0;
+                sessao.carrinho = []; // Limpa o carrinho ao reiniciar o bot
                 await msg.reply(mensagens.geral.botReativado);
                 
-                // Tenta limpar etiquetas sem travar se falhar
-                await EvolutionService.marcarComoNaoLida(numeroCliente, '7', 'remove').catch(() => {});
-                await EvolutionService.marcarComoNaoLida(numeroCliente, '8', 'add').catch(() => {});
+                await EvolutionService.gerenciarEtiqueta(numeroCliente, '7', 'remove').catch(() => {});
+                await EvolutionService.gerenciarEtiqueta(numeroCliente, '8', 'add').catch(() => {});
 
-                // 👉 MÁGICA: Executa o menu NA HORA
                 return await estagios['inicio'].executar(msg, texto, sessao);
             }
 
-            // 3. Admin Global
+            //Admin Global (Ações do Vendedor)
             if (fromMe) {
                 if (texto === '/pausarbot') { botPausadoGlobalmente = true; return; }
                 if (texto === '/ligarbot') { botPausadoGlobalmente = false; return; }
                 
-                const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖'].some(e => texto.includes(e));
+                const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖', '🛒'].some(e => texto.includes(e));
                 if (!isMsgBot && sessao.etapa !== 'em_atendimento_humano') {
                     sessao.etapa = 'em_atendimento_humano';
                     await EvolutionService.gerenciarEtiqueta(numeroCliente, '8', 'remove').catch(() => {});
@@ -64,11 +66,45 @@ class BotController {
             if (botPausadoGlobalmente || sessao.etapa === 'em_atendimento_humano') return;
             if (sessao.processando) return;
 
-            // 4. Execução de estágios para o cliente
-            sessao.processando = true;
-            const estagioAtual = estagios[sessao.etapa] || estagios['inicio'];
-            await estagioAtual.executar(msg, texto, sessao);
-            sessao.processando = false;
+            try {
+                sessao.processando = true;
+
+                // Verifica se a sessão expirou por inatividade
+                if (SessaoService.verificarExpiracao(sessao, msg.from)) {
+                    await msg.reply(mensagens.erros.sessaoExpirada);
+                    return;
+                }
+
+                // 👉 MÁGICA DO CARRINHO: Comando global para visualizar os itens
+                if (texto === 'carrinho' || texto === '/carrinho') {
+                    if (!sessao.carrinho || sessao.carrinho.length === 0) {
+                        await msg.reply("🛒 *Seu carrinho está vazio no momento!*\n\nDigite *#* para ver o nosso menu de produtos e começar a comprar. 🍯");
+                        return;
+                    }
+
+                    let subtotal = 0;
+                    let resumo = `🛒 *Aqui está o seu carrinho:*\n\n`;
+                    
+                    sessao.carrinho.forEach((item) => {
+                        const totalItem = item.preco * item.quantidade;
+                        subtotal += totalItem;
+                        resumo += `- ${item.quantidade}x ${item.nome} (R$ ${totalItem.toFixed(2).replace('.', ',')})\n`;
+                    });
+
+                    resumo += `\n💰 *Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}*`;
+                    resumo += mensagens.carrinho.opcoes;
+
+                    await msg.reply(resumo);
+                    sessao.etapa = 'carrinho_opcoes'; // Joga o cliente para a etapa de opções do carrinho
+                    return; 
+                }
+
+                const estagioAtual = estagios[sessao.etapa] || estagios['inicio'];
+                await estagioAtual.executar(msg, texto, sessao);
+
+            } finally {
+                sessao.processando = false; 
+            }
 
         } catch (error) {
             console.error('❌ Erro no BotController:', error);

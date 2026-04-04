@@ -7,10 +7,12 @@ class SessaoService {
         if (!sessoes.has(numeroCliente)) {
             sessoes.set(numeroCliente, { 
                 etapa: 'inicio', 
-                pedido_temp: null,
+                processando: false,
                 categoriaSelecionada: null,
                 ultimaInteracao: Date.now(),
-                errosConsecutivos: 0
+                errosConsecutivos: 0,
+                carrinho: [],
+                produtoTemporario: null
             });
         }
         return sessoes.get(numeroCliente);

@@ -6,6 +6,11 @@
     "inicio": {
         "boasVindas": "> Olá! 🐝 Bem-vindo(a) à *Favo De Mel*! 🍯\n\nSou seu assistente virtual. Para um atendimento rápido e sem filas, escolha uma categoria abaixo:\n\n"
     },
+    "carrinho": {
+        "pedeQuantidade": "Quantas unidades desse produto você deseja? (Digite apenas o número, ex: 1, 2, 3...)",
+        "quantidadeInvalida": "⚠️ Por favor, digite apenas um número válido maior que zero.",
+        "opcoes": "\nO que deseja fazer agora?\n\n*1️⃣ - Adicionar mais produtos*\n*2️⃣ - Finalizar pedido*\n\n*0️⃣ - Falar com atendente*"
+    },
     "categoria": {
         "escolhaProduto": "Selecione o produto desejado:\n\n"
     },

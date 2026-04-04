@@ -6,7 +6,7 @@ class InicioStage {
     static async executar(msg, texto, sessao) {
         sessao.errosConsecutivos = 0;
 
-        await EvolutionService.marcarComoNaoLida(msg.from).catch(() => {});
+        await EvolutionService.gerenciarEtiqueta(msg.from).catch(() => {});
         
         // Puxa o texto direto do JSON
         let menu = mensagens.inicio.boasVindas; 

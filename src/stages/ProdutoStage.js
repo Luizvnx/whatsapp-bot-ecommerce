@@ -17,7 +17,6 @@ class ProdutoStage {
             return;
         }
 
-        // 2. O SEGURANÇA: Voltar ao Menu Principal (Opção #)
         if (texto === '#') {
             sessao.etapa = 'inicio';
             const InicioStage = require('./InicioStage');
@@ -31,27 +30,26 @@ class ProdutoStage {
 
         if (!produtoEscolhido) {
             sessao.errosConsecutivos = (sessao.errosConsecutivos || 0) + 1;
-            
             if (sessao.errosConsecutivos >= 2) {
                 await msg.reply(mensagens.erros.transferenciaHumano);
                 sessao.etapa = 'em_atendimento_humano';
-                
-                await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\n\nO bot foi pausado porque o cliente está com dificuldades para escolher um produto!\n👉 Link direto: https://wa.me/${msg.from}`);
+                await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO*\nO bot foi pausado (erro na escolha do produto).\n👉 https://wa.me/${msg.from}`);
                 sessao.errosConsecutivos = 0; 
             } else {
-                await msg.reply("⚠️ Produto não encontrado. Digite o número correspondente ao produto, 0 para atendente ou # para voltar.");
+                await msg.reply("⚠️ Produto não encontrado. Digite o número do produto, 0 para atendente ou # para voltar.");
             }
             return;
         }
 
         // 4. O CAMINHO FELIZ (Início do Carrinho de Compras)
         sessao.errosConsecutivos = 0;
+        sessao.produtoTemporario = produtoEscolhido;
         
         // Formata o preço para mostrar bonito
         const precoFormatado = produtoEscolhido.preco.toFixed(2).replace('.', ',');
-
-        // (Aqui vamos colocar a lógica real de adicionar no carrinho no futuro)
+        await msg.reply(`Você selecionou: *${produtoEscolhido.nome}* (R$ ${precoFormatado}).\n\n${mensagens.carrinho.pedeQuantidade}`);
         await msg.reply(`✅ Você selecionou: *${produtoEscolhido.nome}* por R$ ${precoFormatado}.`);
+        sessao.etapa = 'aguardando_quantidade';
     }
 }
 
