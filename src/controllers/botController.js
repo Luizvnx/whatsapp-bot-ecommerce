@@ -21,8 +21,26 @@ class BotController {
 
             const { remoteJid, fromMe } = data.key;
             
-            const numeroCliente = remoteJid.split('@')[0];
+            //Bypass do @lid)
+            let numeroReal = remoteJid;
+            if (remoteJid.includes('@lid')) {
+                if (data.sender && data.sender.includes('@s.whatsapp.net')) {
+                    numeroReal = data.sender;
+                } else if (data.key.participant && data.key.participant.includes('@s.whatsapp.net')) {
+                    numeroReal = data.key.participant;
+                }
+            }
             
+            const numeroCliente = remoteJid.split('@')[0];
+            const numeroParaLink = numeroReal.split('@')[0]; 
+            const isLid = numeroParaLink.length > 13;
+            
+            const nomeCliente = data.pushName || 'um Cliente';
+            
+            const linkAlerta = isLid 
+                ? `\n👉 *Aviso:* Número oculto pelo WhatsApp. Procure pela conversa de *${nomeCliente}* no seu aplicativo.`
+                : `\n👉 Link: https://wa.me/${numeroParaLink}`;
+
             const textoBruto = data.message.conversation || data.message.extendedTextMessage?.text || '';
             if (!textoBruto) return; 
             const texto = textoBruto.toLowerCase().trim();
@@ -31,6 +49,8 @@ class BotController {
                 from: numeroCliente,
                 body: textoBruto,
                 fromMe,
+                nome: nomeCliente,
+                linkAlerta: linkAlerta,
                 reply: async (t) => await EvolutionService.enviarMensagemText(numeroCliente, t)
             };
 
@@ -75,7 +95,6 @@ class BotController {
                     return;
                 }
 
-                // 👉 MÁGICA DO CARRINHO: Comando global para visualizar os itens
                 if (texto === 'carrinho' || texto === '/carrinho') {
                     if (!sessao.carrinho || sessao.carrinho.length === 0) {
                         await msg.reply("🛒 *Seu carrinho está vazio no momento!*\n\nDigite *#* para ver o nosso menu de produtos e começar a comprar. 🍯");
@@ -95,7 +114,7 @@ class BotController {
                     resumo += mensagens.carrinho.opcoes;
 
                     await msg.reply(resumo);
-                    sessao.etapa = 'carrinho_opcoes'; // Joga o cliente para a etapa de opções do carrinho
+                    sessao.etapa = 'carrinho_opcoes';
                     return; 
                 }
 

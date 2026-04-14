@@ -11,7 +11,7 @@ class IaStage {
             sessao.etapa = 'em_atendimento_humano';
             
             const numeroLoja = process.env.NUMERO_DA_LOJA; 
-            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ALERTA IA*\nO cliente pediu atendente enquanto falava com a IA!\n👉 Link: https://wa.me/${msg.from}`);
+            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\nO cliente pediu ajuda!${msg.linkAlerta}`);
             return;
         }
 

@@ -8,7 +8,7 @@ class QuantidadeStage {
         if (texto === '0') {
             await msg.reply(mensagens.erros.transferenciaHumano);
             sessao.etapa = 'em_atendimento_humano';
-            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO*\nO cliente pediu ajuda!\n👉 https://wa.me/${msg.from}`);
+            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\nO cliente pediu ajuda!${msg.linkAlerta}`);
             return;
         }
 

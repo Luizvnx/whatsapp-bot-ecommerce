@@ -1,5 +1,5 @@
 const catalogo = require('../data/catalogo.json');
-const mensagens = require('../data/mensagens.json'); 
+const mensagens = require('../data/mensagens.json');
 const EvolutionService = require('../services/EvolutionService');
 
 class InicioStage {

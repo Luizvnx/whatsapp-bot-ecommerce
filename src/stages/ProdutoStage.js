@@ -13,7 +13,7 @@ class ProdutoStage {
             await msg.reply(mensagens.erros.transferenciaHumano);
             sessao.etapa = 'em_atendimento_humano';
             
-            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\n\nO cliente pediu ajuda enquanto olhava os produtos!\n👉 Link direto: https://wa.me/${msg.from}`);
+            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\nO cliente pediu ajuda!${msg.linkAlerta}`);
             return;
         }
 

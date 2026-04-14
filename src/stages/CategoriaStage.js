@@ -34,7 +34,7 @@ class CategoriaStage {
                 
                 // Manda o alerta porque o cliente errou 2 vezes e o bot pausou
                 const numeroLoja = '557988125726'; 
-                await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\n\nO bot foi pausado porque o cliente está com dificuldades!\n👉 Clique aqui para assumir: https://wa.me/${msg.from}`);
+                await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\nO cliente pediu ajuda!${msg.linkAlerta}`);
                 
                 sessao.errosConsecutivos = 0; 
             } else {

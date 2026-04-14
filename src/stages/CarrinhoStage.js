@@ -9,8 +9,7 @@ class CarrinhoStage {
         if (texto === '0') {
             await msg.reply(mensagens.erros.transferenciaHumano);
             sessao.etapa = 'em_atendimento_humano';
-            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO*\nO cliente pediu ajuda no carrinho!\n👉 https://wa.me/${msg.from}`);
-            return;
+            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\nO cliente pediu ajuda!${msg.linkAlerta}`);
         }
 
         if (texto === '1') {
@@ -25,7 +24,7 @@ class CarrinhoStage {
 
         if (texto === '2') {
             // O cliente quer finalizar. (AQUI VAI ENTRAR O SEU FUTURO SISTEMA DE PAGAMENTO)
-            await msg.reply(`🎉 Perfeito! Seu pedido está sendo processado para pagamento.\n\n_(A integração com Pix/Cartão e endereço será construída nesta etapa!)_`);
+            await msg.reply(`🎉 Perfeito! Seu pedido está sendo processado para pagamento.`);
             sessao.etapa = 'aguardando_pagamento';
             return;
         }
