@@ -23,7 +23,6 @@ class CarrinhoStage {
         }
 
         if (texto === '2') {
-            // O cliente quer finalizar. (AQUI VAI ENTRAR O SEU FUTURO SISTEMA DE PAGAMENTO)
             await msg.reply(`🎉 Perfeito! Seu pedido está sendo processado para pagamento.`);
             sessao.etapa = 'aguardando_pagamento';
             return;

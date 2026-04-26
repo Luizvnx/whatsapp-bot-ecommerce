@@ -23,7 +23,7 @@ class EvolutionService {
                 headers: { 'apikey': apiKey, 'Content-Type': 'application/json' }
             });
         } catch (erro) {
-            // Silencioso para não travar o bot
+            console.error(`[Erro Evolution] Falha ao ${acao} etiqueta ${labelId} para ${numero}:`, erro.response ? erro.response.data : erro.message);
         }
     }
 }

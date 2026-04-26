@@ -1,12 +1,24 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 class GeminiService {
-    static async perguntar(mensagemCliente) {
+    static async perguntar(mensagemCliente, historicoCliente = []) {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         
+        const historicoLimpo = historicoCliente.map(msg => ({
+            role: msg.role,
+            parts: [{ text: msg.parts[0].text }]
+        }));
+
+        console.log(`🧠 [DEBUG IA] Enviando ${historicoLimpo.length} mensagens de contexto para o Gemini.`);
+
         const instrucaoMestra = `Você é o assistente virtual da loja Favo De Mel (Aracaju, próximo ao Shopping Jardins).
         Personalidade: Simpático, acolhedor e objetivo. Use emojis 🐝🍯.
         Catálogo: Mel Silvestre, Própolis, Hidromel, Cera e serviços de captura de abelhas.
+
+        👉 REGRA ABSOLUTA DE MEMÓRIA: 
+        Você POSSUI MEMÓRIA TOTAL DESTA CONVERSA. O histórico do que o cliente já disse é enviado para você a cada requisição. 
+        Se o cliente perguntar o próprio nome, o que ele disse antes, ou suas preferências, LEIA O HISTÓRICO E RESPONDA. 
+        É ESTRITAMENTE PROIBIDO dizer frases como "não tenho memória", "não tenho acesso a dados" ou "não guardo histórico". Você guarda sim!
         
         DIRETRIZ GLOBAL (A mais importante): 
         NUNCA invente ou detalhe preços, prazos, formas de pagamento, promoções, horários ou endereços. Para QUALQUER uma dessas dúvidas, responda educadamente a pergunta de forma genérica e instrua o cliente a procurar os detalhes exatos acessando o nosso catálogo (diga para ele digitar # e voltar ao Menu Principal) sem ser repatitivo e de forma humanizada.
@@ -22,17 +34,32 @@ class GeminiService {
         - Localização: Aracaju, Avenida Deputado Pedro Valadares, 690 sala 8 garden's gallery, próximo ao Shopping Jardins.
         - Horário de atendimento: Segunda a Sexta, das 8h às 18h.`;
 
+
         const model = genAI.getGenerativeModel({
             model: "gemini-2.5-flash",
             systemInstruction: instrucaoMestra
         });
 
         try {
-            const result = await model.generateContent(mensagemCliente);
-            return result.response.text();
+            const chat = model.startChat({ history: historicoLimpo });
+            const result = await chat.sendMessage(mensagemCliente);
+
+            const historicoSujo = await chat.getHistory();
+            const novoHistoricoLimpo = historicoSujo.map(msg => ({
+                role: msg.role,
+                parts: [{ text: msg.parts[0].text }]
+            }));
+
+            return {
+                resposta: result.response.text(),
+                historicoAtualizado: novoHistoricoLimpo
+            };
         } catch (erro) {
-            console.error('[Erro Gemini]:', erro);
-            return "Desculpe, tive um pequeno problema aqui na colmeia! 🐝 Tente perguntar de novo ou digite *#* para voltar ao menu.";
+            console.error('❌ Erro Gemini:', erro);
+            return { 
+                resposta: "Desculpe, tive um pequeno problema aqui na colmeia! 🐝 Tente perguntar de novo.", 
+                historicoAtualizado: historicoCliente 
+            };
         }
     }
 }

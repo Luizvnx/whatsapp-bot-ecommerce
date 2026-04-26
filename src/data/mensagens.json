@@ -22,7 +22,8 @@
     "erros": {
         "opcaoInvalida": "⚠️ Opção inválida. Digite o número correspondente, 6 para a IA ou 0 para falar com um atendente.",
         "transferenciaHumano": "🔇 Pausando o robô para atendimento humano. (Digite */bot* para reativar).",
-        "sessaoExpirada": "⏳ Sua sessão expirou devido à inatividade. Vamos começar de novo! 🐝\n\nDigite qualquer coisa para ver o menu."
+        "sessaoExpirada": "⏳ Sua sessão expirou devido à inatividade. Vamos começar de novo! 🐝\n\nDigite qualquer coisa para ver o menu.",
+        "botReativado": "🔄 Bot reativado! Vamos continuar... 🐝"
     },
     "finalizacao": {
         "resumoPedido": "Aqui está o resumo do seu pedido:\n\n",

@@ -8,7 +8,7 @@ const numeroLoja = process.env.NUMERO_DA_LOJA;
 class ProdutoStage {
     static async executar(msg, texto, sessao) {
         
-        // 1. O SEGURANÇA: Desvio para o Atendente Humano (Opção 0)
+        // Desvio para o Atendente Humano (Opção 0)
         if (texto === '0') {
             await msg.reply(mensagens.erros.transferenciaHumano);
             sessao.etapa = 'em_atendimento_humano';
@@ -24,7 +24,7 @@ class ProdutoStage {
             return;
         }
 
-        // 3. Verifica se o produto existe dentro da categoria que o cliente escolheu antes
+        // Verifica se o produto existe dentro da categoria que o cliente escolheu antes
         const categoriaMestre = catalogo.categorias[sessao.categoriaSelecionada];
         const produtoEscolhido = categoriaMestre.produtos[texto];
 
@@ -41,7 +41,7 @@ class ProdutoStage {
             return;
         }
 
-        // 4. O CAMINHO FELIZ (Início do Carrinho de Compras)
+        //(Início do Carrinho de Compras)
         sessao.errosConsecutivos = 0;
         sessao.produtoTemporario = produtoEscolhido;
         

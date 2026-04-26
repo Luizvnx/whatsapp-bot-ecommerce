@@ -21,7 +21,7 @@ class BotController {
 
             const { remoteJid, fromMe } = data.key;
             
-            //Bypass do @lid)
+            // Bypass do @lid
             let numeroReal = remoteJid;
             if (remoteJid.includes('@lid')) {
                 if (data.sender && data.sender.includes('@s.whatsapp.net')) {
@@ -54,23 +54,26 @@ class BotController {
                 reply: async (t) => await EvolutionService.enviarMensagemText(numeroCliente, t)
             };
 
-            sessao = SessaoService.obterSessao(numeroCliente);
+            sessao = await SessaoService.obterSessao(numeroCliente);
 
             // 1. Comando Global /BOT
             if (texto === '/bot') {
                 sessao.etapa = 'inicio';
                 sessao.processando = false; 
                 sessao.errosConsecutivos = 0;
-                sessao.carrinho = []; // Limpa o carrinho ao reiniciar o bot
-                await msg.reply(mensagens.geral.botReativado);
+                sessao.carrinho = []; 
+                //await msg.reply(mensagens.geral.botReativado);
                 
                 await EvolutionService.gerenciarEtiqueta(numeroCliente, '7', 'remove').catch(() => {});
                 await EvolutionService.gerenciarEtiqueta(numeroCliente, '8', 'add').catch(() => {});
 
-                return await estagios['inicio'].executar(msg, texto, sessao);
+                const resultado = await estagios['inicio'].executar(msg, texto, sessao);
+                // Salva no banco ao resetar o bot manualmente
+                await SessaoService.salvarSessao(numeroCliente, sessao);
+                return resultado;
             }
 
-            //Admin Global (Ações do Vendedor)
+            // Admin Global (Ações do Vendedor)
             if (fromMe) {
                 if (texto === '/pausarbot') { botPausadoGlobalmente = true; return; }
                 if (texto === '/ligarbot') { botPausadoGlobalmente = false; return; }
@@ -78,6 +81,7 @@ class BotController {
                 const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖', '🛒'].some(e => texto.includes(e));
                 if (!isMsgBot && sessao.etapa !== 'em_atendimento_humano') {
                     sessao.etapa = 'em_atendimento_humano';
+                    await SessaoService.salvarSessao(numeroCliente, sessao); 
                     await EvolutionService.gerenciarEtiqueta(numeroCliente, '8', 'remove').catch(() => {});
                 }
                 return; 
@@ -89,7 +93,6 @@ class BotController {
             try {
                 sessao.processando = true;
 
-                // Verifica se a sessão expirou por inatividade
                 if (SessaoService.verificarExpiracao(sessao, msg.from)) {
                     await msg.reply(mensagens.erros.sessaoExpirada);
                     return;
@@ -123,11 +126,16 @@ class BotController {
 
             } finally {
                 sessao.processando = false; 
+                // 👇 CORREÇÃO 3: Salva a sessão no banco sempre que terminar de processar o usuário
+                await SessaoService.salvarSessao(numeroCliente, sessao);
             }
 
         } catch (error) {
             console.error('❌ Erro no BotController:', error);
-            if (sessao) sessao.processando = false;
+            if (sessao) {
+                sessao.processando = false;
+                await SessaoService.salvarSessao(data?.key?.remoteJid?.split('@')[0], sessao).catch(()=>{});
+            }
         }
     }
 }
