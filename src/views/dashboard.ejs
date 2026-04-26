@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Favo de Mel </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <header class="bg-amber-500 text-white p-6 shadow-md">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                 Backoffice 
+            </h1>
+            <span class="text-sm bg-amber-600 px-3 py-1 rounded-full">Bot Online</span>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-6 mt-6">
+        <h2 class="text-xl font-semibold mb-6">Status dos Atendimentos</h2>
+        
+        <div id="statusGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <p class="text-gray-500 italic">⏳ Carregando dados da colmeia...</p>
+        </div>
+        <h2 class="text-xl font-semibold mb-4 mt-10 border-b pb-2">💬 Últimas Conversas com a IA</h2>
+        
+        <div id="conversasGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <p class="text-gray-500 italic">⏳ Puxando pergaminhos da colmeia...</p>
+        </div>
+    </main>
+
+    <script>
+        async function carregarEstatisticas() {
+            try {
+                // Bate na rota que você criou no adminRoutes.js
+                const response = await fetch('/admin/stats');
+                const result = await response.json();
+
+                if (result.success) {
+                    const grid = document.getElementById('statusGrid');
+                    grid.innerHTML = ''; // Limpa o "carregando"
+
+                    if(result.data.length === 0) {
+                        grid.innerHTML = '<p class="text-gray-500">Nenhum atendimento no momento.</p>';
+                        return;
+                    }
+
+                    // Cria um cartão para cada etapa que o bot reportar
+                    result.data.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-white p-6 rounded-lg shadow border border-amber-100 flex flex-col items-center justify-center';
+                        card.innerHTML = `
+                            <span class="text-4xl font-bold text-amber-600 mb-2">${item.total}</span>
+                            <span class="text-gray-600 font-medium uppercase text-sm tracking-wider text-center">
+                                ${item.etapa.replace(/_/g, ' ')}
+                            </span>
+                        `;
+                        grid.appendChild(card);
+                    });
+                }
+            } catch (error) {
+                console.error("Erro ao carregar o dashboard:", error);
+                document.getElementById('statusGrid').innerHTML = '<p class="text-red-500">Erro ao buscar dados do banco.</p>';
+            }
+        }
+
+        async function carregarConversas() {
+            try {
+                const response = await fetch('/admin/conversas');
+                const result = await response.json();
+
+                if (result.success) {
+                    const grid = document.getElementById('conversasGrid');
+                    grid.innerHTML = ''; 
+
+                    if(result.data.length === 0) {
+                        grid.innerHTML = '<p class="text-gray-500">Nenhuma conversa registrada ainda.</p>';
+                        return;
+                    }
+
+                    result.data.forEach(sessao => {
+                        // O segredo está aqui: lemos o JSON do banco de dados
+                        const dadosSessao = typeof sessao.dados_sessao === 'string' 
+                            ? JSON.parse(sessao.dados_sessao) 
+                            : (sessao.dados_sessao || {});
+                            
+                        const historico = dadosSessao.historicoIa || [];
+                        let htmlMensagens = '';
+
+                        if (historico.length === 0) {
+                            htmlMensagens = '<p class="text-sm text-gray-400 italic">Nenhuma mensagem trocada com a IA.</p>';
+                        } else {
+                            // Pegamos apenas as últimas 4 mensagens para o painel não ficar gigante
+                            const ultimasMsgs = historico.slice(-4);
+                            ultimasMsgs.forEach(msg => {
+                                const isUser = msg.role === 'user';
+                                const corTexto = isUser ? 'text-blue-700' : 'text-amber-700';
+                                const icone = isUser ? '👤 Cliente:' : '🤖 Bot:';
+                                
+                                htmlMensagens += `
+                                    <div class="mb-2 pb-2 border-b border-gray-100 last:border-0">
+                                        <span class="font-bold text-xs ${corTexto}">${icone}</span> 
+                                        <p class="text-sm text-gray-700 mt-1">${msg.parts[0].text}</p>
+                                    </div>
+                                `;
+                            });
+                        }
+
+                        // Formata a data para o padrão brasileiro
+                        const dataMsg = new Date(sessao.ultima_msg).toLocaleString('pt-BR');
+
+                        // Cria o "Card" do cliente
+                        const card = document.createElement('div');
+                        card.className = 'bg-white p-5 rounded-lg shadow border border-gray-200';
+                        card.innerHTML = `
+                            <div class="flex justify-between items-center mb-3 bg-gray-50 p-2 rounded border">
+                                <span class="font-bold text-gray-800">📱 ${sessao.telefone || 'Desconhecido'}</span>
+                                <div class="text-right">
+                                    <span class="block text-xs text-gray-500">${dataMsg}</span>
+                                    <span class="block text-xs font-bold text-amber-500 uppercase mt-1">Etapa: ${sessao.etapa}</span>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded border h-48 overflow-y-auto">
+                                ${htmlMensagens}
+                            </div>
+                        `;
+                        grid.appendChild(card);
+                    });
+                }
+            } catch (error) {
+                console.error("Erro ao carregar conversas:", error);
+            }
+        }
+
+        // Não esqueça de chamar a função no final do script!
+        carregarConversas();
+        setInterval(carregarConversas, 10000); // Atualiza junto com o status
+
+
+        // Roda a função assim que a tela abre e atualiza a cada 10 segundos
+        carregarEstatisticas();
+        setInterval(carregarEstatisticas, 10000);
+    </script>
+</body>
+</html>
