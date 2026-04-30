@@ -10,31 +10,16 @@ const adminRoutes = require('./src/routes/adminRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ==========================================
-// 1. INICIALIZAÇÃO DE SERVIÇOS
-// ==========================================
 DatabaseService.inicializar();
 
-// ==========================================
-// 2. CONFIGURAÇÕES DA VIEW (FRONTEND)
-// ==========================================
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src', 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ==========================================
-// 3. MIDDLEWARES GLOBAIS
-// ==========================================
 app.use(express.json()); 
 
-// ==========================================
-// 4. ROTAS PÚBLICAS (Sem restrição)
-// ==========================================
 app.use('/webhook', webhookRoutes);
 
-// ==========================================
-// 5. CONFIGURAÇÃO DE SEGURANÇA (Fail-Safe)
-// ==========================================
 const adminUser = process.env.ADMIN_USER;
 const adminPass = process.env.ADMIN_PASS;
 

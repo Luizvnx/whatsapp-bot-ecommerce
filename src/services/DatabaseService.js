@@ -20,6 +20,7 @@ class DatabaseService {
             const sql = `
                 CREATE TABLE IF NOT EXISTS tb_bot_sessoes (
                     id_cliente VARCHAR(50) PRIMARY KEY,
+                    nome_contato VARCHAR(100) DEFAULT 'Desconhecido',
                     etapa VARCHAR(30),
                     dados_sessao JSONB,
                     ultima_msg TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -34,7 +35,7 @@ class DatabaseService {
 
     static async limparSessoesInativas() {
         try {
-            const sql = `DELETE FROM tb_bot_sessoes WHERE ultima_msg < NOW() - INTERVAL '15 days'`;
+            const sql = `DELETE FROM tb_bot_sessoes WHERE ultima_msg < NOW() - INTERVAL '1 days'`;
             const result = await this.pool.query(sql);
             if (result.rowCount > 0) {
                 console.log(`🧹 Faxina concluída: ${result.rowCount} sessões inativas removidas do banco.`);
