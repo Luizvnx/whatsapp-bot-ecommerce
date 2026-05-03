@@ -20,6 +20,17 @@ class QuantidadeStage {
             return;
         }
 
+        if (!sessao.carrinho) {
+            sessao.carrinho = [];
+        }
+
+        // 2. Segurança: Verificar se existe um produto temporário na memória
+        if (!sessao.produtoTemporario) {
+            await msg.reply("❌ Ops, houve um erro ao recuperar o produto. Por favor, escolha o produto novamente.");
+            sessao.etapa = 'catalogo'; // Volta para o catálogo por segurança
+            return;
+        }
+
         // Adiciona o produto e a quantidade no carrinho
         sessao.carrinho.push({
             nome: sessao.produtoTemporario.nome,
