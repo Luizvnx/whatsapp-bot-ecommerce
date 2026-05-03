@@ -1,7 +1,6 @@
 const { Pool } = require('pg');
 
 class DatabaseService {
-    // Começa vazio
     static pool = null;
 
     static async inicializar() {
