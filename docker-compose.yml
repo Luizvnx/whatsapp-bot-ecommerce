@@ -1,0 +1,63 @@
+services:
+  # --- 1. O CÉREBRO: Seu Bot Node.js ---
+  bot-favo-de-mel:
+    container_name: bot_node
+    build: .
+    restart: always
+    depends_on:
+      - api
+      - postgres # Agora ele depende apenas do Postgres e da API
+    networks:
+      - evolution-net
+    env_file:
+      - .env
+
+  # --- 2. O MOTOR DE WHATSAPP: Evolution API ---
+  api:
+    container_name: evolution_api
+    image: evoapicloud/evolution-api:v2.3.7
+    restart: always
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks:
+      - evolution-net
+    env_file:
+      - .env
+
+  # --- 3. A MEMÓRIA: Banco de Dados PostgreSQL ---
+  postgres:
+    container_name: evolution_postgres
+    image: postgres:13
+    restart: always
+    ports:                 
+      - "5432:5432"        
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: typebot
+      POSTGRES_DB: evolution_db
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - evolution-net
+
+  redis:
+    container_name: evolution_redis
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6380:6379"
+    networks:
+      - evolution-net
+
+volumes:
+  evolution_instances:
+  pg_data:
+
+networks:
+  evolution-net:
+    driver: bridge

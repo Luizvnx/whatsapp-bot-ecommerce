@@ -1,5 +1,5 @@
 const BotController = require('./botController');
-const DatabaseService = require('../services/DatabaseService'); // 👈 Verifique se o caminho do import está correto para sua estrutura
+const DatabaseService = require('../services/DatabaseService');
 
 const bufferMensagens = new Map();
 

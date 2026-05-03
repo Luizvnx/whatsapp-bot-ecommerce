@@ -149,8 +149,6 @@ dist
 teste.js
 .teste.js
 
-#Catalago
-src/data/catalogo.json
 
 ### Sistema Operacional ###
 .DS_Store
