@@ -7,8 +7,6 @@ class DatabaseService {
         try {
             console.log('🔍 [DEBUG] Iniciando conexão com o banco de dados...');
 
-            // Se existir a DATABASE_URL (Nuvem/Railway), usa ela direto.
-            // Se não, usa as configurações locais (Seu PC).
             const dbConfig = process.env.DATABASE_URL 
                 ? { connectionString: process.env.DATABASE_URL }
                 : {

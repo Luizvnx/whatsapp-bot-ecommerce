@@ -135,8 +135,8 @@
                         card.innerHTML = `
                             <div class="flex justify-between items-center mb-3 bg-gray-50 p-2 rounded border">
                                 <div class="flex flex-col">
-                                    <span class="font-bold text-gray-800">👤 ${nomeContato}</span>
-                                    <span class="text-xs text-gray-500 font-mono">📱 ${idCliente || 'Sem número'}</span>
+                                    <span class="font-bold text-gray-800">👤 ${sessao.nome_contato}</span>
+                                    <span class="text-xs text-gray-500 font-mono">📱 ${sessao.id_cliente}</span>
                                 </div>
                                 <div class="text-right">
                                     <span class="block text-xs text-gray-500">${dataMsg}</span>
@@ -187,7 +187,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ telefone: id_cliente, novaEtapa: novaEtapa }) // Mantive a chave 'telefone' no JSON para não quebrar sua rota do Node
+                    body: JSON.stringify({ id_cliente: id_cliente, novaEtapa: novaEtapa }) // Usando a chave 'id_cliente' para manter a consistência com a rota do Node
                 });
 
                 const result = await response.json();

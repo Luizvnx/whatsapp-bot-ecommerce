@@ -25,7 +25,7 @@ router.get('/stats', async (req, res) => {
 router.get('/conversas', async (req, res) => {
     try {
         const sql = `
-            SELECT id_cliente AS telefone, nome_contato, etapa, dados_sessao, ultima_msg 
+            SELECT id_cliente, nome_contato, etapa, dados_sessao, ultima_msg 
             FROM tb_bot_sessoes 
             ORDER BY ultima_msg DESC 
             LIMIT 10
@@ -40,25 +40,27 @@ router.get('/conversas', async (req, res) => {
 });
 
 router.post('/alterar-status', async (req, res) => {
-    const { telefone, novaEtapa } = req.body;
+    const { id_cliente, novaEtapa } = req.body; // Receba id_cliente diretamente
 
-    if (!telefone || !novaEtapa) {
+    if (!id_cliente || !novaEtapa) {
         return res.status(400).json({ success: false, message: 'Dados incompletos.' });
     }
 
     try {
-        const numeroLimpo = telefone.replace(/\D/g, ''); 
-        let sql = '';
+        let sql = "";
+        let params = [];
 
         if (novaEtapa === 'inicio') {
-            sql = `UPDATE tb_bot_sessoes SET etapa = '${novaEtapa}', dados_sessao = '{}' WHERE id_cliente = '${numeroLimpo}'`;
+            sql = `UPDATE tb_bot_sessoes SET etapa = $1, dados_sessao = '{}' WHERE id_cliente = $2`;
+            params = [novaEtapa, id_cliente];
         } else {
-            sql = `UPDATE tb_bot_sessoes SET etapa = '${novaEtapa}' WHERE id_cliente = '${numeroLimpo}'`;
+            sql = `UPDATE tb_bot_sessoes SET etapa = $1 WHERE id_cliente = $2`;
+            params = [novaEtapa, id_cliente];
         }
         
-        await DatabaseService.executar(sql);
+        await DatabaseService.executar(sql, params);
         
-        console.log(`[Admin] Status do cliente ${telefone} alterado para: ${novaEtapa}`);
+        console.log(`[Admin] Status do cliente ${id_cliente} alterado para: ${novaEtapa}`);
         res.json({ success: true, message: 'Status atualizado com sucesso!' });
     } catch (err) {
         console.error('❌ Erro ao atualizar status:', err);
