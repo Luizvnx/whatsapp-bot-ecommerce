@@ -10,22 +10,29 @@ class WebhookController {
         try {
             const payload = req.body;
 
+            // 1. FILTRO CRUCIAL: Só processa mensagens recebidas (ignora o que você envia)
             if (payload.event === 'messages.upsert') {
                 const data = payload.data;
-                if (!data?.key || !data?.message) return;
+                
+                // Se a mensagem foi enviada por você (pelo celular da loja), ignoramos
+                if (!data?.key || data.key.fromMe === true) return;
+                if (!data?.message) return;
 
                 const remoteJid = data.key.remoteJid;
                 
+                // Captura o texto da mensagem
                 const textoMensagem = data.message.conversation || data.message.extendedTextMessage?.text || '';
-                // 1. Captura o nome do WhatsApp (ou define como Desconhecido)
+                
+                // Captura o nome de quem enviou (pushName do cliente)
                 const nomeContato = data.pushName || 'Desconhecido';
                 
                 if (!textoMensagem) return;
 
+                // Gerenciamento de Buffer (Agrupamento de mensagens)
                 if (!bufferMensagens.has(remoteJid)) {
                     bufferMensagens.set(remoteJid, {
                         dadosOriginais: data,
-                        nomeContato: nomeContato, // 👈 Guarda o nome no estado do buffer
+                        nomeContato: nomeContato,
                         textos: [],
                         timer: null
                     });
@@ -48,25 +55,26 @@ class WebhookController {
                     const nomeFinal = sessaoBuffer.nomeContato;
                     bufferMensagens.delete(remoteJid);
                     
-                    // 2. Extrai o ID limpo (apenas números)
-                    const id_cliente = remoteJid.replace(/\D/g, '');
+                    // 2. ID COMPLETO: Mantemos o @s.whatsapp.net para bater com o Dashboard
+                    const id_cliente = remoteJid;
 
-                    // 3. UPSERT: Grava o nome no banco de dados ANTES de chamar o BotController
+                    // 3. UPSERT PARAMETRIZADO: Protege contra nomes com aspas e SQL Injection
                     try {
                         const sql = `
                             INSERT INTO tb_bot_sessoes (id_cliente, nome_contato, etapa, ultima_msg, dados_sessao)
-                            VALUES ('${id_cliente}', '${nomeFinal}', 'inicio', NOW(), '{}')
+                            VALUES ($1, $2, 'inicio', NOW(), '{}')
                             ON CONFLICT (id_cliente) 
                             DO UPDATE SET 
                                 nome_contato = EXCLUDED.nome_contato,
                                 ultima_msg = NOW();
                         `;
-                        await DatabaseService.executar(sql);
+                        // Usamos parâmetros [$1, $2] para evitar erros com nomes tipo "D'Agostino"
+                        await DatabaseService.executar(sql, [id_cliente, nomeFinal]);
                     } catch (dbError) {
-                        console.error('⚠️ Erro ao processar UPSERT do contato:', dbError);
+                        console.error('⚠️ Erro ao processar UPSERT do contato:', dbError.message);
                     }
 
-                    // 4. Envia os dados para a IA continuar o atendimento
+                    // 4. Envia para a IA
                     await BotController.processarMensagem(dadosParaProcessar);
                     
                 }, 3500);
