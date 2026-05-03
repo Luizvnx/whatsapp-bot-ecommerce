@@ -1,4 +1,4 @@
-const SessaoService = require('../services/SessaoService');
+const SessaoService = require('../services/SessionService');
 const EvolutionService = require('../services/EvolutionService');
 const mensagens = require('../data/mensagens.json');
 
