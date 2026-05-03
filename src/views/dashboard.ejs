@@ -13,11 +13,23 @@
             <h1 class="text-2xl font-bold flex items-center gap-2">
                  🐝 Backoffice 
             </h1>
-            <span class="text-sm bg-amber-600 px-3 py-1 rounded-full">Bot Online</span>
+            <span id="badgeStatus" class="text-sm bg-gray-500 px-3 py-1 rounded-full text-white font-bold transition-colors">
+                ⏳ Checando Conexão...
+            </span>
         </div>
     </header>
 
     <main class="max-w-6xl mx-auto p-6 mt-6">
+        <div id="alertaConexao" class="hidden mb-8 bg-red-50 border-2 border-red-200 p-8 rounded-xl shadow-md flex flex-col items-center text-center">
+            <h3 class="text-2xl font-bold text-red-700 mb-2">⚠️ WhatsApp Desconectado!</h3>
+            <p class="text-gray-700 mb-6 max-w-lg">
+                O bot está offline. Isso acontece se o celular ficar sem internet ou se a sessão for encerrada. 
+                <br><b>Escaneie o QR Code abaixo com o WhatsApp do suporte para reconectar:</b>
+            </p>
+            <div id="qrCodeContainer" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 min-h-[250px] min-w-[250px] flex items-center justify-center">
+                <span class="text-gray-400 animate-pulse">Gerando QR Code...</span>
+            </div>
+        </div>
         <h2 class="text-xl font-semibold mb-6">Status dos Atendimentos</h2>
         
         <div id="statusGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -191,6 +203,43 @@
                 alert('Erro de conexão com o servidor.');
             }
         }
+
+        async function monitorarConexao() {
+            try {
+                const response = await fetch('/admin/instance-status');
+                const result = await response.json();
+                
+                const badge = document.getElementById('badgeStatus');
+                const alerta = document.getElementById('alertaConexao');
+                const qrContainer = document.getElementById('qrCodeContainer');
+
+                if (result.success) {
+                    if (result.status === 'open') {
+                        // Tudo certo, bot rodando!
+                        badge.className = 'text-sm bg-green-500 px-3 py-1 rounded-full text-white font-bold transition-colors shadow-sm';
+                        badge.innerHTML = '✅ Conectado';
+                        alerta.classList.add('hidden');
+                    } 
+                    else if (result.status === 'qrcode') {
+                        // Caiu a conexão, mostra o QR Code limpinho
+                        badge.className = 'text-sm bg-red-600 px-3 py-1 rounded-full text-white font-bold transition-colors shadow-sm animate-pulse';
+                        badge.innerHTML = '⚠️ Desconectado';
+                        alerta.classList.remove('hidden');
+                        qrContainer.innerHTML = `<img src="${result.qrCodeBase64}" alt="QR Code" class="w-64 h-64 object-contain">`;
+                    } 
+                    else {
+                    badge.className = 'text-sm bg-black px-3 py-1 rounded-full text-white font-bold';
+                    badge.innerHTML = '❌ Erro de API';
+                }
+                }
+            } catch (error) {
+                console.error("Erro ao verificar conexão:", error);
+            }
+        }
+
+        // Inicia o monitoramento e verifica a cada 5 segundos
+        monitorarConexao();
+        setInterval(monitorarConexao, 5000);
 
         // Inicialização
         carregarConversas();

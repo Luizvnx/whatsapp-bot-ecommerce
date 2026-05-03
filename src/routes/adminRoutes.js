@@ -66,4 +66,54 @@ router.post('/alterar-status', async (req, res) => {
     }
 });
 
+router.get('/instance-status', async (req, res) => {
+    try {
+        const evolutionUrl = process.env.EVOLUTION_URL || 'http://localhost:8081';
+        const apikey = process.env.EVOLUTION_API_KEY;
+        const instanceName = process.env.EVOLUTION_INSTANCE_NAME || 'FavoDeMel';
+
+        if (!apikey) {
+            console.warn('⚠️ API Key da Evolution não encontrada no .env');
+            return res.json({ success: false, status: 'offline', message: 'API Key ausente' });
+        }
+
+        // 1. Verifica o estado atual com timeout de 5 segundos para não travar o servidor
+        const stateResponse = await fetch(`${evolutionUrl}/instance/connectionState/${instanceName}`, {
+            headers: { 'apikey': apikey },
+            signal: AbortSignal.timeout(5000) 
+        });
+        
+        if (!stateResponse.ok) {
+            return res.json({ success: false, status: 'desconhecido' });
+        }
+        
+        const stateData = await stateResponse.json();
+        let status = stateData?.instance?.state || 'desconhecido';
+        let qrCodeBase64 = null;
+
+        // 2. Busca o QR Code de forma otimizada (apenas se estiver fechado ou tentando conectar)
+        if (status === 'close' || status === 'connecting') {
+            const qrResponse = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
+                headers: { 'apikey': apikey },
+                signal: AbortSignal.timeout(5000)
+            });
+            
+            if (qrResponse.ok) {
+                const qrData = await qrResponse.json();
+                if (qrData?.base64) {
+                    qrCodeBase64 = qrData.base64;
+                    status = 'qrcode'; 
+                }
+            }
+        }
+
+        res.json({ success: true, status, qrCodeBase64 });
+
+    } catch (err) {
+        console.error('❌ Erro de conexão com Evolution:', err.message);
+        // Devolve o status offline de forma limpa para o Dashboard mudar a bolinha vermelha
+        res.json({ success: false, status: 'offline' });
+    }
+});
+
 module.exports = router;
