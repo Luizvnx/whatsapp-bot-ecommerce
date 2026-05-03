@@ -1,64 +1,49 @@
 const { Pool } = require('pg');
+const config = require('../config');
 
 class DatabaseService {
-    static pool = null;
+    // Criamos o pool de conexão usando as configurações centralizadas
+    static pool = new Pool(
+        config.database.url 
+        ? { connectionString: config.database.url } 
+        : {
+            host: config.database.host,
+            user: config.database.user,
+            password: config.database.pass,
+            database: config.database.name,
+            port: config.database.port
+        }
+    );
 
+    // O método inicializar DEVE ser static para ser chamado sem dar 'new'
     static async inicializar() {
+        console.log('🔍 [DEBUG] Verificando tabelas no banco de dados...');
+        const sql = `
+            CREATE TABLE IF NOT EXISTS tb_bot_sessoes (
+                id_cliente VARCHAR(100) PRIMARY KEY,
+                nome_contato VARCHAR(150),
+                etapa VARCHAR(50) DEFAULT 'inicio',
+                dados_sessao JSONB DEFAULT '{}',
+                ultima_msg TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
         try {
-            console.log('🔍 [DEBUG] Iniciando conexão com o banco de dados...');
-
-            const dbConfig = process.env.DATABASE_URL 
-                ? { connectionString: process.env.DATABASE_URL }
-                : {
-                    user: process.env.POSTGRES_USER || 'postgres',
-                    password: process.env.POSTGRES_PASSWORD || 'typebot',
-                    host: process.env.BOT_DB_HOST || 'localhost',
-                    port: process.env.DB_PORT || 5432,
-                    database: process.env.POSTGRES_DB || 'evolution_db'
-                };
-
-            this.pool = new Pool(dbConfig);
-
-            const sql = `
-                CREATE TABLE IF NOT EXISTS tb_bot_sessoes (
-                    id_cliente VARCHAR(50) PRIMARY KEY,
-                    nome_contato VARCHAR(100) DEFAULT 'Desconhecido',
-                    etapa VARCHAR(30),
-                    dados_sessao JSONB,
-                    ultima_msg TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            `;
-            await this.pool.query(sql);
-            console.log('📦 Tabela do PostgreSQL verificada/criada com sucesso.');
-        } catch (err) {
-            console.error('❌ Erro ao inicializar o banco:', err);
+            await this.executar(sql);
+            console.log('📦 Banco de Dados pronto para uso.');
+        } catch (error) {
+            console.error('❌ Erro ao inicializar tabelas:', error.message);
+            throw error;
         }
     }
 
-    static async limparSessoesInativas() {
-        try {
-            const sql = `DELETE FROM tb_bot_sessoes WHERE ultima_msg < NOW() - INTERVAL '1 days'`;
-            const result = await this.pool.query(sql);
-            if (result.rowCount > 0) {
-                console.log(`🧹 Faxina concluída: ${result.rowCount} sessões inativas removidas do banco.`);
-            }
-        } catch (err) {
-            console.error('❌ Erro ao limpar sessões:', err);
-        }
-    }
-
+    // Método auxiliar para rodar queries
     static async executar(sql, params = []) {
         try {
-            if (!this.pool) {
-                throw new Error("O banco de dados ainda não foi inicializado!");
-            }
             return await this.pool.query(sql, params);
         } catch (err) {
-            console.error('❌ Erro na query PostgreSQL:', err);
+            console.error('❌ Erro na execução SQL:', err.message);
             throw err;
         }
     }
 }
-
 module.exports = DatabaseService;
-
