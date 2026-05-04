@@ -11,7 +11,11 @@ router.get('/', (req, res) => {
 // 2. ROTA DE DADOS (API): Alimenta a tela com informações reais
 router.get('/stats', async (req, res) => {
     try {
-        const sql = `SELECT etapa, COUNT(*) as total FROM tb_bot_sessoes GROUP BY etapa`;
+        const sql = `
+            SELECT COALESCE(etapa, 'desconhecido') AS etapa, COUNT(*)::int AS total 
+            FROM tb_bot_sessoes 
+            GROUP BY COALESCE(etapa, 'desconhecido')
+        `;
         const result = await DatabaseService.executar(sql);
         
         res.json({ success: true, data: result.rows });
@@ -79,7 +83,6 @@ router.get('/instance-status', async (req, res) => {
             return res.json({ success: false, status: 'offline', message: 'API Key ausente' });
         }
 
-        // 1. Verifica o estado atual com timeout de 5 segundos para não travar o servidor
         const stateResponse = await fetch(`${evolutionUrl}/instance/connectionState/${instanceName}`, {
             headers: { 'apikey': apikey },
             signal: AbortSignal.timeout(5000) 
