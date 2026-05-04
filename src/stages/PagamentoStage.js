@@ -1,6 +1,6 @@
 class PagamentoStage {
     static async executar(msg, texto, sessao) {
-        if (texto === 'cancelar') {
+        if (texto === 'cancelar' || texto === 'Cancelar') {
             sessao.etapa = 'inicio';
             await msg.reply("Pedido cancelado. Voltamos ao menu principal!");
         } else {

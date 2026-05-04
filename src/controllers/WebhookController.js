@@ -42,10 +42,9 @@ class WebhookController {
         buffer.data.message.conversation = textoCompleto; // Normaliza para o BotController
 
         try {
-            // Upsert seguro
             const sql = `
-                INSERT INTO tb_bot_sessoes (id_cliente, nome_contato) 
-                VALUES ($1, $2)
+                INSERT INTO tb_bot_sessoes (id_cliente, nome_contato, etapa, ultima_msg, dados_sessao) 
+                VALUES ($1, $2, 'inicio', NOW(), '{}')
                 ON CONFLICT (id_cliente) DO UPDATE SET 
                     nome_contato = EXCLUDED.nome_contato, 
                     ultima_msg = NOW();
