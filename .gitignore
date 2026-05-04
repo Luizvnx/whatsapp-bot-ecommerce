@@ -162,6 +162,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+.old
 
 
 
