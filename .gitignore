@@ -167,3 +167,4 @@ Thumbs.db
 
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+/.env.old
