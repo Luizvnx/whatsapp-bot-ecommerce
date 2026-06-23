@@ -58,13 +58,25 @@ class EvolutionService {
         }
     }
 
-    static async enviarProdutoNativo(numeroCliente, productId, textoIntroducao = "Veja este produto:") {
+    static async enviarProdutoNativo(numeroCliente, productIdOrUrl, textoIntroducao = "Veja este produto:") {
         try {
             const url = `${evolutionUrl}/message/sendProduct/${instanceName}`;
 
+            // Tratamento: se o usuário colocou a URL completa no JSON, nós extraímos apenas o ID do Produto
+            let productId = String(productIdOrUrl);
+            const urlRegex = /\/p\/(\d+)/;
+            const match = productId.match(urlRegex);
+            
+            if (match && match[1]) {
+                productId = match[1]; // Pega apenas a numeração do produto (ex: 6609979085680039)
+            }
+
+            // Opcional: Se a Evolution API exigir businessOwnerJid, adicionamos
+            // (Na maioria das vezes se não enviar, ele usa o da própria instância)
+
             const payload = {
                 number: numeroCliente,
-                productId: productId, // ID que vem do catálogo do Wpp
+                productId: productId,
                 caption: textoIntroducao,
                 delay: 1200 // Pequeno delay em milissegundos para parecer digitação humana
             };
