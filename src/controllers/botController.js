@@ -34,18 +34,22 @@ class BotController {
                 return; 
             }
 
-            // 2. Verifica bloqueios globais ou de atendimento
+            // 2. Valida expiração da sessão ANTES dos bloqueios de atendimento
+            // (Isso garante que pessoas "presas" no atendimento humano há mais de 24h sejam resetadas)
+            if (SessaoService.verificarExpiracao(sessao)) {
+                await info.reply(mensagens.erros.sessaoExpirada);
+                // Reseta as etiquetas do WhatsApp (Tira Humano, Põe Bot)
+                await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => {});
+                await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => {});
+                return;
+            }
+
+            // 3. Verifica bloqueios globais ou de atendimento
             if (botPausadoGlobalmente || sessao.etapa === 'em_atendimento_humano' || sessao.processando) {
                 return;
             }
 
             sessao.processando = true;
-
-            // 3. Valida expiração da sessão (Avisos de expiração podem ir para o numero limpo via WPP)
-            if (SessaoService.verificarExpiracao(sessao, info.numeroReal)) {
-                await info.reply(mensagens.erros.sessaoExpirada);
-                return;
-            }
 
             // 4. Intercepta Comandos Globais do Cliente (/bot, /carrinho)
             const comandoInterceptado = await this._processarComandosCliente(info, sessao);

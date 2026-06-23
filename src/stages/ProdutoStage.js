@@ -43,6 +43,9 @@ class ProdutoStage {
 
         //(Início do Carrinho de Compras)
         sessao.errosConsecutivos = 0;
+        
+        // --- CARRINHO DESATIVADO TEMPORARIAMENTE ---
+        /*
         sessao.produtoTemporario = produtoEscolhido;
         
         // Formata o preço para mostrar bonito
@@ -50,6 +53,30 @@ class ProdutoStage {
         await msg.reply(`Você selecionou: *${produtoEscolhido.nome}* (R$ ${precoFormatado}).\n\n${mensagens.carrinho.pedeQuantidade}`);
         await msg.reply(`✅ Você selecionou: *${produtoEscolhido.nome}* por R$ ${precoFormatado}.`);
         sessao.etapa = 'aguardando_quantidade';
+        */
+        // -------------------------------------------
+
+        // NOVO FLUXO: Envio Direto do Produto do Catálogo
+        if (produtoEscolhido.productId) {
+            try {
+                await EvolutionService.enviarProdutoNativo(
+                    msg.from, 
+                    produtoEscolhido.productId, 
+                    `Aqui está o produto selecionado: *${produtoEscolhido.nome}*!`
+                );
+            } catch (err) {
+                console.error(`Erro ao enviar o card do produto:`, err.message);
+                await msg.reply(`✅ Você selecionou: *${produtoEscolhido.nome}*.\nAcesse nosso catálogo no perfil para ver detalhes!`);
+            }
+        } else {
+            // Fallback caso o lojista ainda não tenha colocado o ID no JSON
+            const precoFormatado = produtoEscolhido.preco.toFixed(2).replace('.', ',');
+            await msg.reply(`✅ Você selecionou: *${produtoEscolhido.nome}* por R$ ${precoFormatado}.\n(Acesse nosso catálogo no perfil para comprar)`);
+        }
+
+        // Mantém a sessão aguardando produto para ele poder escolher outro dessa mesma categoria,
+        // mas informa como ele pode voltar.
+        await msg.reply(`\nDigite o número de outro produto dessa categoria para vê-lo, ou digite *#* para voltar ao menu principal.`);
     }
 }
 

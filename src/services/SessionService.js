@@ -42,14 +42,17 @@ class SessaoService {
 
     static verificarExpiracao(sessao) {
         const TEMPO_LIMITE = 24 * 60 * 60 * 1000;
+        let expirou = false;
         
         if (sessao.ultimaInteracao && (Date.now() - sessao.ultimaInteracao > TEMPO_LIMITE)) {
             sessao.etapa = 'inicio';
             sessao.carrinho = [];
             sessao.historicoIa = [];
+            expirou = true;
         }
         
         sessao.ultimaInteracao = Date.now(); 
+        return expirou;
     }
 }
 
