@@ -74,9 +74,14 @@ class EvolutionService {
             // Opcional: Se a Evolution API exigir businessOwnerJid, adicionamos
             // (Na maioria das vezes se não enviar, ele usa o da própria instância)
 
+            // O número da conta que é dona do catálogo (A Evolution exige isso na v2)
+            const numeroLoja = process.env.NUMERO_DA_LOJA || process.env.EVOLUTION_BUSINESS_NUMBER || '557988125726';
+
             const payload = {
                 number: numeroCliente,
                 productId: productId,
+                businessNumber: numeroLoja, // Padrão da Evolution API para referenciar o catálogo
+                businessOwnerJid: `${numeroLoja}@s.whatsapp.net`, // Compatibilidade com outras versões
                 caption: textoIntroducao,
                 delay: 1200 // Pequeno delay em milissegundos para parecer digitação humana
             };
