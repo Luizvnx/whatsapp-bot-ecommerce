@@ -21,7 +21,8 @@ class EvolutionService {
         try {
             await axios.post(url, {
                 number: numero,
-                text: texto
+                text: texto,
+                linkPreview: true
             }, {
                 headers: {
                     'apikey': apiKey,
@@ -60,42 +61,26 @@ class EvolutionService {
 
     static async enviarProdutoNativo(numeroCliente, productIdOrUrl, textoIntroducao = "Veja este produto:") {
         try {
-            const url = `${evolutionUrl}/message/sendProduct/${instanceName}`;
-
-            // Tratamento: se o usuário colocou a URL completa no JSON, nós extraímos apenas o ID do Produto
-            let productId = String(productIdOrUrl);
-            const urlRegex = /\/p\/(\d+)/;
-            const match = productId.match(urlRegex);
+            // Como a versão atual da Evolution API não possui o endpoint /message/sendProduct,
+            // a solução recomendada é enviar a URL do catálogo. O WhatsApp do cliente
+            // irá gerar automaticamente um "Card Preview" igual ao do catálogo nativo.
             
-            if (match && match[1]) {
-                productId = match[1]; // Pega apenas a numeração do produto (ex: 6609979085680039)
+            let productUrl = String(productIdOrUrl).trim();
+            
+            // Se o usuário tiver cadastrado apenas o ID (ex: 6609979085680039), reconstruímos o link
+            if (!productUrl.includes('wa.me')) {
+                const numeroLoja = process.env.NUMERO_DA_LOJA || process.env.EVOLUTION_BUSINESS_NUMBER || '557988125726';
+                productUrl = `https://wa.me/p/${productUrl}/${numeroLoja}`;
             }
 
-            // Opcional: Se a Evolution API exigir businessOwnerJid, adicionamos
-            // (Na maioria das vezes se não enviar, ele usa o da própria instância)
-
-            // O número da conta que é dona do catálogo (A Evolution exige isso na v2)
-            const numeroLoja = process.env.NUMERO_DA_LOJA || process.env.EVOLUTION_BUSINESS_NUMBER || '557988125726';
-
-            const payload = {
-                number: numeroCliente,
-                productId: productId,
-                businessNumber: numeroLoja, // Padrão da Evolution API para referenciar o catálogo
-                businessOwnerJid: `${numeroLoja}@s.whatsapp.net`, // Compatibilidade com outras versões
-                caption: textoIntroducao,
-                delay: 1200 // Pequeno delay em milissegundos para parecer digitação humana
-            };
-
-            const response = await axios.post(url, payload, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': apiKey 
-                }
-            });
-
-            return response.data;
+            const textoComLink = `${textoIntroducao}\n\n🛒 Acesse o produto aqui:\n${productUrl}`;
+            
+            // Reutiliza a função de texto que agora tem linkPreview: true
+            await this.enviarMensagemText(numeroCliente, textoComLink);
+            
+            return { status: 'success', method: 'link_preview' };
         } catch (error) {
-            console.error(`❌ Erro ao enviar produto nativo para ${numeroCliente}:`, error?.response?.data || error.message);
+            console.error(`❌ Erro ao enviar produto para ${numeroCliente}:`, error?.response?.data || error.message);
             throw error;
         }
     }
