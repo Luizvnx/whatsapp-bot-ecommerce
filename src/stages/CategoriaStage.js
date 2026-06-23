@@ -47,6 +47,23 @@ class CategoriaStage {
         sessao.errosConsecutivos = 0;
         sessao.categoriaSelecionada = texto; 
 
+        // Envia os cards nativos do WhatsApp Business (se o produto tiver o ID configurado)
+        for (const [chave, produto] of Object.entries(categoriaEscolhida.produtos || {})) {
+            if (produto.productId) {
+                try {
+                    await EvolutionService.enviarProdutoNativo(
+                        msg.from, 
+                        produto.productId, 
+                        `Veja nossa opção *${chave}*: ${produto.nome}`
+                    );
+                    // Pequeno delay para garantir a ordem de entrega das mensagens no WhatsApp
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } catch (err) {
+                    console.error(`Erro ao enviar o card do produto ${chave}:`, err.message);
+                }
+            }
+        }
+
         let submenu = `*${categoriaEscolhida.nome}*\n\n${mensagens.categoria.escolhaProduto}`;
         
         for (const [chave, produto] of Object.entries(categoriaEscolhida.produtos || {})) {
