@@ -52,6 +52,24 @@ class DatabaseService {
             throw err;
         }
     }
+
+    /**
+     * Limpa sessões inativas há mais de X dias (padrão 7 dias) na tabela tb_bot_sessoes
+     */
+    static async limparSessoesInativas(diasInatividade = 7) {
+        try {
+            console.log(`🧹 [LIMPEZA] Iniciando rotina de limpeza de sessões inativas (> ${diasInatividade} dias)...`);
+            const sql = `
+                DELETE FROM tb_bot_sessoes 
+                WHERE ultima_msg < NOW() - ($1 || ' days')::INTERVAL;
+            `;
+            const result = await this.executar(sql, [diasInatividade]);
+            console.log(`✅ [LIMPEZA] ${result.rowCount} sessões inativas removidas do banco de dados.`);
+            return result.rowCount;
+        } catch (error) {
+            console.error('❌ Erro na rotina de limpeza de sessões:', error.message);
+        }
+    }
 }
 
 module.exports = DatabaseService;

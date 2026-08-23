@@ -21,8 +21,7 @@ class EvolutionService {
         try {
             await axios.post(url, {
                 number: numero,
-                text: texto,
-                linkPreview: true
+                text: texto
             }, {
                 headers: {
                     'apikey': apiKey,
