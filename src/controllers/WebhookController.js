@@ -9,11 +9,17 @@ class WebhookController {
         res.sendStatus(200); // Resposta imediata para a Evolution API
 
         const { event, data } = req.body;
-        if (event !== 'messages.upsert' || data?.key?.fromMe) return;
+        if (event !== 'messages.upsert' || !data?.key || !data?.message) return;
 
         const remoteJid = data.key.remoteJid;
         const texto = data.message?.conversation || data.message?.extendedTextMessage?.text || '';
         if (!texto) return;
+
+        // Se a mensagem partiu do próprio atendente/número da loja (fromMe), processa imediatamente sem buffer
+        if (data.key.fromMe) {
+            await BotController.processarMensagem(data);
+            return;
+        }
 
         // Limpeza preventiva de memória
         if (bufferMensagens.size > MAX_BUFFER_SIZE) bufferMensagens.clear();

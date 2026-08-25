@@ -4,10 +4,20 @@ class GeminiService {
     static async perguntar(mensagemCliente, historicoCliente = []) {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         
-        const historicoLimpo = historicoCliente.map(msg => ({
-            role: msg.role,
-            parts: [{ text: msg.parts[0].text }]
-        }));
+        let historicoLimpo = (historicoCliente || []).map(msg => ({
+            role: msg.role === 'model' ? 'model' : 'user',
+            parts: [{ text: (msg.parts && msg.parts[0]?.text) ? msg.parts[0].text : '' }]
+        })).filter(m => m.parts[0].text.trim().length > 0);
+
+        // Se a última mensagem do histórico já for do usuário (ou a própria mensagem), remove para não conflitar com chat.sendMessage
+        if (historicoLimpo.length > 0 && historicoLimpo[historicoLimpo.length - 1].role === 'user') {
+            historicoLimpo.pop();
+        }
+
+        // Garante que o histórico para o Gemini comece com role 'user' se houver mensagens
+        if (historicoLimpo.length > 0 && historicoLimpo[0].role === 'model') {
+            historicoLimpo.shift();
+        }
 
         console.log(`🧠 [DEBUG IA] Enviando ${historicoLimpo.length} mensagens de contexto para o Gemini.`);
 
@@ -34,7 +44,6 @@ class GeminiService {
         - Atendimento humano: Disponível a qualquer momento, basta digitar 0.
         - Localização: Aracaju, Avenida Deputado Pedro Valadares, 690 sala 8 garden's gallery, próximo ao Shopping Jardins.
         - Horário de atendimento: Segunda a Sexta, das 8h às 18h.`;
-
 
         const model = genAI.getGenerativeModel({
             model: "gemini-2.5-flash",

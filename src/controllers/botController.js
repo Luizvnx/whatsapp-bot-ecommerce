@@ -47,30 +47,49 @@ class BotController {
     static async processarMensagem(data) {
         if (!data?.key || !data?.message) return;
 
-        const info = this._extrairDadosMensagem(data);
-        if (!info.textoBruto) return;
-
         let sessao;
         
         try {
-            // Busca a sessão usando o ID completo (numeroReal)
-            sessao = await SessaoService.obterSessao(info.numeroReal);
+            const rawRemoteJid = data.key.remoteJid;
+            let numeroReal = rawRemoteJid;
+            if (rawRemoteJid.includes('@lid')) {
+                numeroReal = (data.sender?.includes('@s.whatsapp.net')) ? data.sender 
+                           : (data.key.participant?.includes('@s.whatsapp.net')) ? data.key.participant 
+                           : rawRemoteJid;
+            }
 
+            // 1. Busca a sessão do cliente
+            sessao = await SessaoService.obterSessao(numeroReal);
+
+            // 2. Extrai dados da mensagem e injeta a sessão no info para reply salvar no histórico
+            const info = this._extrairDadosMensagem(data, sessao);
+            if (!info.textoBruto) return;
+
+            // Se for mensagem enviada pelo próprio atendente (via celular ou WhatsApp Web)
             if (info.fromMe) {
-                await this._processarAcoesAdmin(info.texto, info.numeroReal, sessao);
+                await this._processarAcoesAdmin(info.textoBruto, info.numeroReal, sessao);
                 return; 
             }
 
-            // 1. Valida expiração da sessão ANTES dos bloqueios de atendimento
+            // 3. REGISTRA A MENSAGEM DO CLIENTE NO HISTÓRICO (para exibição no Dashboard e contexto de IA)
+            if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
+            sessao.historicoIa.push({
+                role: 'user',
+                parts: [{ text: info.textoBruto }]
+            });
+            if (sessao.historicoIa.length > 30) {
+                sessao.historicoIa = sessao.historicoIa.slice(-30);
+            }
+
+            // 4. Valida expiração da sessão ANTES dos bloqueios de atendimento
             if (SessaoService.verificarExpiracao(sessao)) {
                 await info.reply(mensagens.erros.sessaoExpirada);
-                // Reseta as etiquetas do WhatsApp (Tira Humano, Põe Bot)
                 await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => {});
                 await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => {});
                 return;
             }
 
-            // 2. Se o cliente estiver em atendimento humano, permite apenas comandos de reativação (/bot, /voltar, menu)
+            // 5. Se o cliente estiver em atendimento humano, permite apenas comandos de reativação (/bot, /voltar, menu)
             if (sessao.etapa === 'em_atendimento_humano') {
                 if (info.texto === '/bot' || info.texto === '/voltar' || info.texto === 'menu') {
                     sessao.etapa = 'inicio';
@@ -82,11 +101,11 @@ class BotController {
                     await estagios['inicio'].executar(info, info.texto, sessao);
                     return;
                 }
-                // Silêncio total do robô durante atendimento humano
+                // Silêncio total do robô durante atendimento humano (a mensagem do cliente já foi gravada acima para o atendente ver no dashboard)
                 return;
             }
 
-            // 3. Verifica pausa global ou travamento de concorrência
+            // 6. Verifica pausa global ou travamento de concorrência
             const pausado = await this.isPausadoGlobalmente();
             if (pausado || sessao.processando) {
                 return;
@@ -94,20 +113,20 @@ class BotController {
 
             sessao.processando = true;
 
-            // 4. Intercepta Comandos Globais do Cliente (/bot, /carrinho)
+            // 7. Intercepta Comandos Globais do Cliente (/bot, /carrinho)
             const comandoInterceptado = await this._processarComandosCliente(info, sessao);
             if (comandoInterceptado) return;
 
-            // 5. Executa o Estágio Atual
+            // 8. Executa o Estágio Atual
             const estagioAtual = estagios[sessao.etapa] || estagios['inicio'];
             await estagioAtual.executar(info, info.texto, sessao);
 
         } catch (error) {
-            console.error(`❌ Erro processando cliente ${info?.numeroReal}:`, error);
+            console.error(`❌ Erro processando cliente:`, error);
         } finally {
             if (sessao) {
                 sessao.processando = false; 
-                await SessaoService.salvarSessao(info.numeroReal, sessao).catch(console.error);
+                await SessaoService.salvarSessao(sessao.id || data.key.remoteJid, sessao).catch(console.error);
             }
         }
     }
@@ -116,7 +135,7 @@ class BotController {
     // MÉTODOS PRIVADOS DE APOIO
     // ==========================================
 
-    static _extrairDadosMensagem(data) {
+    static _extrairDadosMensagem(data, sessao) {
         const { remoteJid, fromMe } = data.key;
         
         // Tratamento do @lid
@@ -146,29 +165,54 @@ class BotController {
             linkAlerta,
             textoBruto,
             texto: textoBruto.toLowerCase().trim(),
-            reply: async (t) => await EvolutionService.enviarMensagemText(numeroCliente, t)
+            reply: async (t) => {
+                // Registra a resposta do bot no histórico da conversa
+                if (sessao) {
+                    if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
+                    sessao.historicoIa.push({
+                        role: 'model',
+                        parts: [{ text: t }]
+                    });
+                    if (sessao.historicoIa.length > 30) {
+                        sessao.historicoIa = sessao.historicoIa.slice(-30);
+                    }
+                }
+                return await EvolutionService.enviarMensagemText(numeroCliente, t);
+            }
         };
     }
 
     static async _processarAcoesAdmin(texto, numeroReal, sessao) {
-        if (texto === '/pausarbot') { 
+        const textoLimpo = texto.toLowerCase().trim();
+
+        if (textoLimpo === '/pausarbot') { 
             await this.setPausadoGlobalmente(true);
             return; 
         }
-        if (texto === '/ligarbot') { 
+        if (textoLimpo === '/ligarbot') { 
             await this.setPausadoGlobalmente(false);
             return; 
         }
         
-        // Se o vendedor mandou mensagem e não é um comando/emoji do bot, assume atendimento humano
-        const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖', '🛒'].some(e => texto.includes(e));
+        // Se o vendedor mandou mensagem e não é um comando/emoji automático do bot, assume atendimento humano
+        const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖', '🛒', '👉 Link:'].some(e => texto.includes(e));
         
-        if (!isMsgBot && sessao.etapa !== 'em_atendimento_humano') {
-            sessao.etapa = 'em_atendimento_humano';
-            await SessaoService.salvarSessao(numeroReal, sessao); 
-            const numeroLimpoParaTag = numeroReal.split('@')[0];
-            await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '8', 'remove').catch(() => {});
-            await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '7', 'add').catch(() => {});
+        if (!isMsgBot) {
+            if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
+            sessao.historicoIa.push({
+                role: 'model',
+                parts: [{ text: `[Atendente Humano]: ${texto}` }]
+            });
+            if (sessao.historicoIa.length > 30) {
+                sessao.historicoIa = sessao.historicoIa.slice(-30);
+            }
+
+            if (sessao.etapa !== 'em_atendimento_humano') {
+                sessao.etapa = 'em_atendimento_humano';
+                const numeroLimpoParaTag = numeroReal.split('@')[0];
+                await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '8', 'remove').catch(() => {});
+                await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '7', 'add').catch(() => {});
+            }
         }
     }
 
