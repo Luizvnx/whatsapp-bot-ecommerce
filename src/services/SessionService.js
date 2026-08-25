@@ -2,8 +2,9 @@ const DatabaseService = require('./DatabaseService');
 
 class SessaoService {
     static async obterSessao(numeroCliente) {
-        const sql = `SELECT etapa, dados_sessao FROM tb_bot_sessoes WHERE id_cliente = $1`;
-        const result = await DatabaseService.executar(sql, [numeroCliente]);
+        const idAlt = numeroCliente.includes('@') ? numeroCliente.split('@')[0] : `${numeroCliente}@s.whatsapp.net`;
+        const sql = `SELECT id_cliente, etapa, dados_sessao FROM tb_bot_sessoes WHERE id_cliente = $1 OR id_cliente = $2 LIMIT 1`;
+        const result = await DatabaseService.executar(sql, [numeroCliente, idAlt]);
 
         if (result.rows.length > 0) {
             const row = result.rows[0];
@@ -11,7 +12,7 @@ class SessaoService {
             if (row.etapa) {
                 dados.etapa = row.etapa;
             }
-            dados.id = dados.id || numeroCliente;
+            dados.id = row.id_cliente || numeroCliente;
             if (!Array.isArray(dados.carrinho)) dados.carrinho = [];
             if (!Array.isArray(dados.historicoIa)) dados.historicoIa = [];
             return dados;

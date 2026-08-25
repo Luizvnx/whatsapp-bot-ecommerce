@@ -457,10 +457,13 @@
                                 </div>
                             `;
                         } else {
-                            const ultimas = historico.slice(-12);
+                            const ultimas = historico.slice(-40);
                             htmlMensagens = ultimas.map(msg => {
                                 const isUser = msg.role === 'user';
-                                const texto = (msg.parts && msg.parts[0]?.text) ? msg.parts[0].text : '';
+                                const rawText = (msg.parts && msg.parts[0]?.text) 
+                                    ? msg.parts[0].text 
+                                    : (typeof msg.content === 'string' ? msg.content : (typeof msg.text === 'string' ? msg.text : ''));
+                                const texto = rawText || '';
                                 const isAtendente = texto.startsWith('[Atendente Humano]:');
 
                                 if (isUser) {

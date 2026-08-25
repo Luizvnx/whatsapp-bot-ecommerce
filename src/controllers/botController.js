@@ -44,30 +44,64 @@ class BotController {
         return cacheBotPausado;
     }
 
+    static processarTextoProfundo(message) {
+        if (!message) return '';
+        let msg = message;
+        while (msg?.ephemeralMessage?.message || msg?.viewOnceMessage?.message || msg?.viewOnceMessageV2?.message || msg?.documentWithCaptionMessage?.message) {
+            msg = msg.ephemeralMessage?.message 
+               || msg.viewOnceMessage?.message 
+               || msg.viewOnceMessageV2?.message 
+               || msg.documentWithCaptionMessage?.message;
+        }
+        return (
+            msg?.conversation ||
+            msg?.extendedTextMessage?.text ||
+            msg?.imageMessage?.caption ||
+            msg?.videoMessage?.caption ||
+            msg?.documentMessage?.caption ||
+            msg?.buttonsResponseMessage?.selectedButtonId ||
+            msg?.buttonsResponseMessage?.selectedDisplayText ||
+            msg?.templateButtonReplyMessage?.selectedId ||
+            msg?.listResponseMessage?.singleSelectReply?.selectedRowId ||
+            msg?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson ||
+            ''
+        );
+    }
+
+    static processarNumeroProfundo(key, data) {
+        let remoteJid = key?.remoteJid || '';
+        if (remoteJid.includes('@lid')) {
+            if (data?.sender && data.sender.includes('@s.whatsapp.net')) {
+                remoteJid = data.sender;
+            } else if (key?.participant && key.participant.includes('@s.whatsapp.net')) {
+                remoteJid = key.participant;
+            }
+        }
+        if (remoteJid.includes(':') && remoteJid.includes('@')) {
+            const [usuario, dominio] = remoteJid.split('@');
+            const usuarioLimpo = usuario.split(':')[0];
+            remoteJid = `${usuarioLimpo}@${dominio}`;
+        }
+        return remoteJid;
+    }
+
     static async processarMensagem(data) {
         if (!data?.key || !data?.message) return;
 
         let sessao;
-        
-        try {
-            const rawRemoteJid = data.key.remoteJid;
-            let numeroReal = rawRemoteJid;
-            if (rawRemoteJid.includes('@lid')) {
-                numeroReal = (data.sender?.includes('@s.whatsapp.net')) ? data.sender 
-                           : (data.key.participant?.includes('@s.whatsapp.net')) ? data.key.participant 
-                           : rawRemoteJid;
-            }
+        let numeroReal = this.processarNumeroProfundo(data.key, data);
 
+        try {
             // 1. Busca a sessão do cliente
             sessao = await SessaoService.obterSessao(numeroReal);
 
             // 2. Extrai dados da mensagem e injeta a sessão no info para reply salvar no histórico
-            const info = this._extrairDadosMensagem(data, sessao);
+            const info = this._extrairDadosMensagem(data, sessao, numeroReal);
             if (!info.textoBruto) return;
 
             // Se for mensagem enviada pelo próprio atendente (via celular ou WhatsApp Web)
             if (info.fromMe) {
-                await this._processarAcoesAdmin(info.textoBruto, info.numeroReal, sessao);
+                await this._processarAcoesAdmin(info.textoBruto, numeroReal, sessao);
                 return; 
             }
 
@@ -101,7 +135,7 @@ class BotController {
                     await estagios['inicio'].executar(info, info.texto, sessao);
                     return;
                 }
-                // Silêncio total do robô durante atendimento humano (a mensagem do cliente já foi gravada acima para o atendente ver no dashboard)
+                // Silêncio total do robô durante atendimento humano
                 return;
             }
 
@@ -124,9 +158,9 @@ class BotController {
         } catch (error) {
             console.error(`❌ Erro processando cliente:`, error);
         } finally {
-            if (sessao) {
+            if (sessao && numeroReal) {
                 sessao.processando = false; 
-                await SessaoService.salvarSessao(sessao.id || data.key.remoteJid, sessao).catch(console.error);
+                await SessaoService.salvarSessao(numeroReal, sessao).catch(console.error);
             }
         }
     }
@@ -135,36 +169,27 @@ class BotController {
     // MÉTODOS PRIVADOS DE APOIO
     // ==========================================
 
-    static _extrairDadosMensagem(data, sessao) {
+    static _extrairDadosMensagem(data, sessao, numeroReal) {
         const { remoteJid, fromMe } = data.key;
         
-        // Tratamento do @lid
-        let numeroReal = remoteJid;
-        if (remoteJid.includes('@lid')) {
-            numeroReal = (data.sender?.includes('@s.whatsapp.net')) ? data.sender 
-                       : (data.key.participant?.includes('@s.whatsapp.net')) ? data.key.participant 
-                       : remoteJid;
-        }
-        
-        const numeroCliente = remoteJid.split('@')[0];
-        const numeroParaLink = numeroReal.split('@')[0]; 
-        const isLid = numeroParaLink.length > 13;
+        const numeroCliente = numeroReal.split('@')[0];
+        const isLid = numeroCliente.length > 13;
         const nomeCliente = data.pushName || 'um Cliente';
         
         const linkAlerta = isLid 
             ? `\n👉 *Aviso:* Número oculto pelo WhatsApp. Procure pela conversa de *${nomeCliente}* no seu aplicativo.`
-            : `\n👉 Link: https://wa.me/${numeroParaLink}`;
+            : `\n👉 Link: https://wa.me/${numeroCliente}`;
 
-        const textoBruto = data.message.conversation || data.message.extendedTextMessage?.text || '';
+        const textoBruto = this.processarTextoProfundo(data.message);
 
         return {
             numeroCliente, // Usado apenas para enviar mensagens (EvolutionService)
             numeroReal,    // Usado como Chave Primária no Banco de Dados
-            fromMe,
+            fromMe: Boolean(fromMe),
             nomeCliente,
             linkAlerta,
-            textoBruto,
-            texto: textoBruto.toLowerCase().trim(),
+            textoBruto: (textoBruto || '').trim(),
+            texto: (textoBruto || '').toLowerCase().trim(),
             reply: async (t) => {
                 // Registra a resposta do bot no histórico da conversa
                 if (sessao) {
