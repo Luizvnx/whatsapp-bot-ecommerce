@@ -1,5 +1,6 @@
 const SessaoService = require('../services/SessionService'); 
 const EvolutionService = require('../services/EvolutionService');
+const DatabaseService = require('../services/DatabaseService');
 const mensagens = require('../data/mensagens.json');
 
 const estagios = {
@@ -8,14 +9,41 @@ const estagios = {
     'aguardando_produto': require('../stages/ProdutoStage'),
     'aguardando_quantidade': require('../stages/QuantidadeStage'),
     'carrinho_opcoes': require('../stages/CarrinhoStage'),
-    'conversando_com_ia': require('../stages/IaStage')
+    'conversando_com_ia': require('../stages/IaStage'),
+    'em_atendimento_humano': require('../stages/HumanoStage')
 };
 
-// Variável de estado local (em ambientes escaláveis/cluster, isso deve ir para o Redis ou Banco de Dados)
-let botPausadoGlobalmente = false; 
+// Cache em memória para evitar consultas desnecessárias ao banco a cada mensagem
+let cacheBotPausado = false;
+let ultimaChecagemConfig = 0;
 
 class BotController {
     
+    static async isPausadoGlobalmente() {
+        const agora = Date.now();
+        // Atualiza o cache do banco a cada 5 segundos se necessário
+        if (agora - ultimaChecagemConfig > 5000) {
+            try {
+                const config = await DatabaseService.obterConfig('bot_global_status');
+                if (config && typeof config.pausado === 'boolean') {
+                    cacheBotPausado = config.pausado;
+                }
+            } catch (e) {
+                console.error('Erro ao ler config global do bot:', e.message);
+            }
+            ultimaChecagemConfig = agora;
+        }
+        return cacheBotPausado;
+    }
+
+    static async setPausadoGlobalmente(pausado) {
+        cacheBotPausado = Boolean(pausado);
+        ultimaChecagemConfig = Date.now();
+        await DatabaseService.salvarConfig('bot_global_status', { pausado: cacheBotPausado });
+        console.log(`[BotController] Automação Global ${cacheBotPausado ? '🛑 PAUSADA' : '🟢 ATIVADA'}`);
+        return cacheBotPausado;
+    }
+
     static async processarMensagem(data) {
         if (!data?.key || !data?.message) return;
 
@@ -25,17 +53,15 @@ class BotController {
         let sessao;
         
         try {
-            // CORRETO: Busca a sessão usando o ID completo (numeroReal)
+            // Busca a sessão usando o ID completo (numeroReal)
             sessao = await SessaoService.obterSessao(info.numeroReal);
 
             if (info.fromMe) {
-                // CORREÇÃO: Passando info.numeroReal para as ações de admin
                 await this._processarAcoesAdmin(info.texto, info.numeroReal, sessao);
                 return; 
             }
 
-            // 2. Valida expiração da sessão ANTES dos bloqueios de atendimento
-            // (Isso garante que pessoas "presas" no atendimento humano há mais de 24h sejam resetadas)
+            // 1. Valida expiração da sessão ANTES dos bloqueios de atendimento
             if (SessaoService.verificarExpiracao(sessao)) {
                 await info.reply(mensagens.erros.sessaoExpirada);
                 // Reseta as etiquetas do WhatsApp (Tira Humano, Põe Bot)
@@ -44,8 +70,25 @@ class BotController {
                 return;
             }
 
-            // 3. Verifica bloqueios globais ou de atendimento
-            if (botPausadoGlobalmente || sessao.etapa === 'em_atendimento_humano' || sessao.processando) {
+            // 2. Se o cliente estiver em atendimento humano, permite apenas comandos de reativação (/bot, /voltar, menu)
+            if (sessao.etapa === 'em_atendimento_humano') {
+                if (info.texto === '/bot' || info.texto === '/voltar' || info.texto === 'menu') {
+                    sessao.etapa = 'inicio';
+                    sessao.errosConsecutivos = 0;
+                    sessao.carrinho = [];
+                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => {});
+                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => {});
+                    await info.reply("🤖 *Atendimento automático reativado!*\nDigite qualquer coisa para ver o catálogo. 🍯");
+                    await estagios['inicio'].executar(info, info.texto, sessao);
+                    return;
+                }
+                // Silêncio total do robô durante atendimento humano
+                return;
+            }
+
+            // 3. Verifica pausa global ou travamento de concorrência
+            const pausado = await this.isPausadoGlobalmente();
+            if (pausado || sessao.processando) {
                 return;
             }
 
@@ -53,7 +96,7 @@ class BotController {
 
             // 4. Intercepta Comandos Globais do Cliente (/bot, /carrinho)
             const comandoInterceptado = await this._processarComandosCliente(info, sessao);
-            if (comandoInterceptado) return; // Se for um comando, finaliza o fluxo aqui
+            if (comandoInterceptado) return;
 
             // 5. Executa o Estágio Atual
             const estagioAtual = estagios[sessao.etapa] || estagios['inicio'];
@@ -62,10 +105,8 @@ class BotController {
         } catch (error) {
             console.error(`❌ Erro processando cliente ${info?.numeroReal}:`, error);
         } finally {
-            // Garante que a sessão seja salva e liberada independentemente de erros
             if (sessao) {
                 sessao.processando = false; 
-                // CORRETO: Salva usando o ID completo
                 await SessaoService.salvarSessao(info.numeroReal, sessao).catch(console.error);
             }
         }
@@ -109,14 +150,13 @@ class BotController {
         };
     }
 
-    // CORREÇÃO: Recebe numeroReal e usa ele para salvar a sessão e gerenciar etiquetas
     static async _processarAcoesAdmin(texto, numeroReal, sessao) {
         if (texto === '/pausarbot') { 
-            botPausadoGlobalmente = true; 
+            await this.setPausadoGlobalmente(true);
             return; 
         }
         if (texto === '/ligarbot') { 
-            botPausadoGlobalmente = false; 
+            await this.setPausadoGlobalmente(false);
             return; 
         }
         
@@ -125,18 +165,17 @@ class BotController {
         
         if (!isMsgBot && sessao.etapa !== 'em_atendimento_humano') {
             sessao.etapa = 'em_atendimento_humano';
-            // CORREÇÃO: Salva no banco usando a chave correta
             await SessaoService.salvarSessao(numeroReal, sessao); 
-            // CORREÇÃO: As APIs da Evolution preferem o número limpo para envio
             const numeroLimpoParaTag = numeroReal.split('@')[0];
             await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '8', 'remove').catch(() => {});
+            await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '7', 'add').catch(() => {});
         }
     }
 
     static async _processarComandosCliente(info, sessao) {
         const { texto, numeroCliente, reply } = info;
 
-        if (texto === '/bot') {
+        if (texto === '/bot' || texto === '/menu' || texto === 'menu') {
             sessao.etapa = 'inicio';
             sessao.errosConsecutivos = 0;
             sessao.carrinho = []; 

@@ -2,11 +2,19 @@ const DatabaseService = require('./DatabaseService');
 
 class SessaoService {
     static async obterSessao(numeroCliente) {
-        const sql = `SELECT dados_sessao FROM tb_bot_sessoes WHERE id_cliente = $1`;
+        const sql = `SELECT etapa, dados_sessao FROM tb_bot_sessoes WHERE id_cliente = $1`;
         const result = await DatabaseService.executar(sql, [numeroCliente]);
 
         if (result.rows.length > 0) {
-            return result.rows[0].dados_sessao;
+            const row = result.rows[0];
+            let dados = typeof row.dados_sessao === 'string' ? JSON.parse(row.dados_sessao) : (row.dados_sessao || {});
+            if (row.etapa) {
+                dados.etapa = row.etapa;
+            }
+            dados.id = dados.id || numeroCliente;
+            if (!Array.isArray(dados.carrinho)) dados.carrinho = [];
+            if (!Array.isArray(dados.historicoIa)) dados.historicoIa = [];
+            return dados;
         }
 
         const sessaoInicial = {
@@ -23,9 +31,12 @@ class SessaoService {
     }
 
     static async salvarSessao(numeroCliente, sessao) {
+        const etapa = sessao.etapa || 'inicio';
+        sessao.etapa = etapa;
+
         const sql = `
-            INSERT INTO tb_bot_sessoes (id_cliente, etapa, dados_sessao)
-            VALUES ($1, $2, $3)
+            INSERT INTO tb_bot_sessoes (id_cliente, etapa, dados_sessao, ultima_msg)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
             ON CONFLICT (id_cliente) 
             DO UPDATE SET 
                 dados_sessao = EXCLUDED.dados_sessao,
@@ -35,9 +46,33 @@ class SessaoService {
         
         await DatabaseService.executar(sql, [
             numeroCliente, 
-            sessao.etapa, 
+            etapa, 
             JSON.stringify(sessao)
         ]);
+    }
+
+    static async alterarEtapa(numeroCliente, novaEtapa, resetarCarrinho = false) {
+        const sessao = await this.obterSessao(numeroCliente);
+        sessao.etapa = novaEtapa;
+        sessao.processando = false;
+        sessao.ultimaInteracao = Date.now();
+
+        if (resetarCarrinho) {
+            sessao.carrinho = [];
+        }
+        if (novaEtapa === 'inicio') {
+            sessao.errosConsecutivos = 0;
+        }
+
+        await this.salvarSessao(numeroCliente, sessao);
+        return sessao;
+    }
+
+    static async limparCarrinho(numeroCliente) {
+        const sessao = await this.obterSessao(numeroCliente);
+        sessao.carrinho = [];
+        await this.salvarSessao(numeroCliente, sessao);
+        return sessao;
     }
 
     static verificarExpiracao(sessao) {

@@ -1,253 +1,759 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Favo de Mel</title>
+    <title>Central de Atendimento & Automação | Favo de Mel</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.98); }
+        }
+        .animate-subtle { animation: pulse-subtle 2s infinite ease-in-out; }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="h-full flex flex-col text-slate-800">
 
-    <header class="bg-amber-500 text-white p-6 shadow-md">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold flex items-center gap-2">
-                 🐝 Backoffice 
-            </h1>
-            <span id="badgeStatus" class="text-sm bg-gray-500 px-3 py-1 rounded-full text-white font-bold transition-colors">
-                ⏳ Checando Conexão...
-            </span>
+    <!-- Header Principal -->
+    <header class="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl shadow-inner">
+                    🍯
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight">Favo de Mel</h1>
+                    <p class="text-xs text-amber-100 font-medium">Central de Atendimento & Controle da Automação</p>
+                </div>
+            </div>
+
+            <!-- Controles do Header -->
+            <div class="flex items-center gap-3 flex-wrap">
+                
+                <!-- Master Switch: Automação Global -->
+                <div class="flex items-center bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/20 shadow-sm">
+                    <span class="text-xs font-semibold mr-2.5 text-white flex items-center gap-1.5">
+                        <span id="globalDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping inline-block"></span>
+                        Automação Global:
+                    </span>
+                    <button id="btnToggleGlobal" onclick="alternarAutomacaoGlobal()" 
+                            class="text-xs font-bold px-3 py-1 rounded-lg transition shadow flex items-center gap-1 bg-emerald-500 hover:bg-emerald-600 text-white">
+                        <span>🟢 ATIVADA</span>
+                    </button>
+                </div>
+
+                <!-- Status Conexão WhatsApp -->
+                <div id="badgeStatus" class="flex items-center gap-2 text-xs font-bold bg-white/15 px-3 py-2 rounded-xl border border-white/20 backdrop-blur-md shadow-sm">
+                    <span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
+                    <span>Checando WhatsApp...</span>
+                </div>
+
+                <!-- Botão Atualizar -->
+                <button onclick="atualizarTudo(true)" title="Recarregar dados agora" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition border border-white/20 text-white">
+                    <svg id="iconRefresh" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto p-6 mt-6">
-        <div id="alertaConexao" class="hidden mb-8 bg-red-50 border-2 border-red-200 p-8 rounded-xl shadow-md flex flex-col items-center text-center">
-            <h3 class="text-2xl font-bold text-red-700 mb-2">⚠️ WhatsApp Desconectado!</h3>
-            <p class="text-gray-700 mb-6 max-w-lg">
-                O bot está offline. Isso acontece se o celular ficar sem internet ou se a sessão for encerrada. 
-                <br><b>Escaneie o QR Code abaixo com o WhatsApp do suporte para reconectar:</b>
+    <!-- Banner de Aviso caso o Robô esteja pausado globalmente -->
+    <div id="bannerPausaGlobal" class="hidden bg-rose-600 text-white px-4 py-2.5 text-center text-sm font-semibold shadow-md flex items-center justify-center gap-2">
+        <span class="text-lg">🛑</span>
+        <span>ATENÇÃO: A automação global está PAUSADA. O robô não responderá nenhum cliente automaticamente até ser reativado.</span>
+        <button onclick="alternarAutomacaoGlobal()" class="ml-3 bg-white text-rose-700 px-3 py-0.5 rounded text-xs font-bold hover:bg-rose-50 transition shadow">
+            Reativar Agora
+        </button>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
+        
+        <!-- Alerta de Conexão Offline / QR Code -->
+        <div id="alertaConexao" class="hidden mb-6 bg-gradient-to-br from-rose-50 to-orange-50 border-2 border-rose-200 p-6 rounded-2xl shadow-md text-center max-w-xl mx-auto">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl font-bold">⚠️</div>
+            <h3 class="text-xl font-bold text-rose-800 mb-1">WhatsApp Desconectado</h3>
+            <p class="text-xs text-slate-600 mb-4 max-w-md mx-auto">
+                A sessão do WhatsApp foi encerrada ou o celular está offline. <b>Escaneie o QR Code abaixo com o aparelho conectado:</b>
             </p>
-            <div id="qrCodeContainer" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 min-h-[250px] min-w-[250px] flex items-center justify-center">
-                <span class="text-gray-400 animate-pulse">Gerando QR Code...</span>
+            <div id="qrCodeContainer" class="bg-white p-3 rounded-xl shadow-inner border border-slate-200 inline-block">
+                <span class="text-xs text-slate-400 animate-pulse">Obtendo QR Code...</span>
             </div>
         </div>
-        <h2 class="text-xl font-semibold mb-6">Status dos Atendimentos</h2>
-        
-        <div id="statusGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <p class="text-gray-500 italic">⏳ Carregando dados da colmeia...</p>
-        </div>
-        <h2 class="text-xl font-semibold mb-4 mt-10 border-b pb-2">💬 Últimas Conversas com a IA</h2>
-        
-        <div id="conversasGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <p class="text-gray-500 italic">⏳ Puxando pergaminhos da colmeia...</p>
-        </div>
+
+        <!-- Cards de Estatísticas / Filtros Rápidos -->
+        <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+            <!-- Total -->
+            <button onclick="aplicarFiltro('todas')" id="cardFiltro-todas" class="card-filtro bg-white p-4 rounded-xl border-2 border-amber-500 shadow-sm hover:shadow transition flex flex-col items-center justify-center text-center">
+                <span id="statTotalGeral" class="text-2xl font-extrabold text-slate-800">0</span>
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-0.5">👥 Todas Conversas</span>
+            </button>
+
+            <!-- Humano (Destaque) -->
+            <button onclick="aplicarFiltro('humano')" id="cardFiltro-humano" class="card-filtro bg-white p-4 rounded-xl border-2 border-slate-200 shadow-sm hover:shadow transition flex flex-col items-center justify-center text-center group">
+                <div class="flex items-center gap-1.5">
+                    <span id="statTotalHumano" class="text-2xl font-extrabold text-rose-600">0</span>
+                    <span id="pingHumano" class="hidden w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                </div>
+                <span class="text-xs font-bold text-rose-700 uppercase tracking-wider mt-0.5">🚨 Precisa de Humano</span>
+            </button>
+
+            <!-- IA -->
+            <button onclick="aplicarFiltro('ia')" id="cardFiltro-ia" class="card-filtro bg-white p-4 rounded-xl border-2 border-slate-200 shadow-sm hover:shadow transition flex flex-col items-center justify-center text-center">
+                <span id="statTotalIa" class="text-2xl font-extrabold text-indigo-600">0</span>
+                <span class="text-xs font-bold text-indigo-700 uppercase tracking-wider mt-0.5">🧠 Com a IA</span>
+            </button>
+
+            <!-- Carrinho -->
+            <button onclick="aplicarFiltro('carrinho')" id="cardFiltro-carrinho" class="card-filtro bg-white p-4 rounded-xl border-2 border-slate-200 shadow-sm hover:shadow transition flex flex-col items-center justify-center text-center">
+                <span id="statTotalCarrinho" class="text-2xl font-extrabold text-emerald-600">0</span>
+                <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider mt-0.5">🛒 No Carrinho</span>
+            </button>
+
+            <!-- Bot Automático -->
+            <button onclick="aplicarFiltro('bot')" id="cardFiltro-bot" class="card-filtro bg-white p-4 rounded-xl border-2 border-slate-200 shadow-sm hover:shadow transition flex flex-col items-center justify-center text-center">
+                <span id="statTotalBot" class="text-2xl font-extrabold text-amber-600">0</span>
+                <span class="text-xs font-bold text-amber-700 uppercase tracking-wider mt-0.5">🤖 No Menu do Bot</span>
+            </button>
+        </section>
+
+        <!-- Barra de Ferramentas: Busca e Status do Filtro -->
+        <section class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="relative w-full sm:w-80">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </span>
+                <input type="text" id="campoBusca" placeholder="Buscar por cliente ou telefone..." 
+                       oninput="aoDigitarBusca()"
+                       class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+            </div>
+
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 w-full sm:w-auto justify-between sm:justify-end">
+                <span>Filtro: <b id="labelFiltroAtivo" class="text-slate-800 uppercase">Todas Conversas</b></span>
+                <span class="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full text-xs font-bold" id="badgeTotalFiltrado">0 conversas</span>
+            </div>
+        </section>
+
+        <!-- Grid de Conversas -->
+        <section id="conversasGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="col-span-full text-center py-12 text-slate-400 italic">
+                ⏳ Puxando atendimentos em tempo real...
+            </div>
+        </section>
+
     </main>
 
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Script de Lógica e Atualização em Tempo Real -->
     <script>
-        async function carregarEstatisticas() {
+        let filtroAtivo = 'todas';
+        let termoBusca = '';
+        let timeoutBusca = null;
+        let estadoGlobalPausado = false;
+        let estaCarregandoConversas = false;
+
+        // Formatação de data amigável
+        function formatarData(isoString) {
+            if (!isoString) return '--';
+            const data = new Date(isoString);
+            const agora = new Date();
+            const diffMinutos = Math.floor((agora - data) / (1000 * 60));
+
+            if (diffMinutos < 1) return 'Agora mesmo';
+            if (diffMinutos < 60) return `há ${diffMinutos} min`;
+            
+            return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' (' + data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ')';
+        }
+
+        // Sistema de Toasts Modernos
+        function mostrarToast(mensagem, tipo = 'sucesso') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const cores = {
+                sucesso: 'bg-emerald-600 text-white border-emerald-700',
+                aviso: 'bg-amber-600 text-white border-amber-700',
+                erro: 'bg-rose-600 text-white border-rose-700',
+                info: 'bg-slate-800 text-white border-slate-900'
+            };
+
+            const icones = {
+                sucesso: '✅',
+                aviso: '⚠️',
+                erro: '❌',
+                info: 'ℹ️'
+            };
+
+            toast.className = `${cores[tipo] || cores.info} border px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 text-xs font-semibold transition-all transform duration-300 pointer-events-auto max-w-sm translate-y-2 opacity-0`;
+            toast.innerHTML = `<span>${icones[tipo] || 'ℹ️'}</span><span>${mensagem}</span>`;
+            
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // 1. Monitoramento do Status Global da Automação
+        async function carregarStatusGlobal() {
             try {
-                const response = await fetch('/admin/stats');
-                const result = await response.json();
-
-                if (result.success) {
-                    const grid = document.getElementById('statusGrid');
-                    grid.innerHTML = ''; 
-
-                    if(result.data.length === 0) {
-                        grid.innerHTML = '<p class="text-gray-500">Nenhum atendimento no momento.</p>';
-                        return;
-                    }
-
-                    result.data.forEach(item => {
-                        const card = document.createElement('div');
-                        card.className = 'bg-white p-6 rounded-lg shadow border border-amber-100 flex flex-col items-center justify-center';
-                        card.innerHTML = `
-                            <span class="text-4xl font-bold text-amber-600 mb-2">${item.total}</span>
-                            <span class="text-gray-600 font-medium uppercase text-sm tracking-wider text-center">
-                                ${item.etapa.replace(/_/g, ' ')}
-                            </span>
-                        `;
-                        grid.appendChild(card);
-                    });
+                const res = await fetch('/admin/global-config');
+                const data = await res.json();
+                if (data.success) {
+                    estadoGlobalPausado = data.pausado;
+                    atualizarInterfaceGlobal(data.pausado);
                 }
-            } catch (error) {
-                console.error("Erro ao carregar o dashboard:", error);
-                document.getElementById('statusGrid').innerHTML = '<p class="text-red-500">Erro ao buscar dados do banco.</p>';
+            } catch (err) {
+                console.error('Erro ao consultar status global:', err);
             }
         }
 
-        async function carregarConversas() {
-            try {
-                const scrollGeral = window.scrollY;
-                const scrollsDosChats = {};
+        function atualizarInterfaceGlobal(pausado) {
+            const btn = document.getElementById('btnToggleGlobal');
+            const dot = document.getElementById('globalDot');
+            const banner = document.getElementById('bannerPausaGlobal');
 
-                document.querySelectorAll('.caixa-chat').forEach(caixa => {
-                    scrollsDosChats[caixa.id] = caixa.scrollTop;
+            if (pausado) {
+                btn.className = 'text-xs font-bold px-3 py-1 rounded-lg transition shadow flex items-center gap-1 bg-rose-500 hover:bg-rose-600 text-white';
+                btn.innerHTML = '<span>🛑 PAUSADA</span>';
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-400 inline-block';
+                banner.classList.remove('hidden');
+            } else {
+                btn.className = 'text-xs font-bold px-3 py-1 rounded-lg transition shadow flex items-center gap-1 bg-emerald-500 hover:bg-emerald-600 text-white';
+                btn.innerHTML = '<span>🟢 ATIVADA</span>';
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping inline-block';
+                banner.classList.add('hidden');
+            }
+        }
+
+        async function alternarAutomacaoGlobal() {
+            const novoEstado = !estadoGlobalPausado;
+            const confirmMsg = novoEstado 
+                ? 'Deseja PAUSAR a automação do robô para TODOS os clientes? O bot não responderá nada automaticamente.'
+                : 'Deseja ATIVAR a automação global do robô? Ele voltará a atender os clientes.';
+            
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const res = await fetch('/admin/global-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pausado: novoEstado })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    estadoGlobalPausado = data.pausado;
+                    atualizarInterfaceGlobal(data.pausado);
+                    mostrarToast(data.message, data.pausado ? 'aviso' : 'sucesso');
+                } else {
+                    mostrarToast(data.message || 'Erro ao alterar status', 'erro');
+                }
+            } catch (err) {
+                mostrarToast('Erro de conexão com o servidor.', 'erro');
+            }
+        }
+
+        // 2. Estatísticas e Resumos
+        async function carregarEstatisticas() {
+            try {
+                const res = await fetch('/admin/stats');
+                const result = await res.json();
+
+                if (result.success && result.resumo) {
+                    const { totalGeral, totalHumano, totalIa, totalCarrinho, totalBot } = result.resumo;
+
+                    document.getElementById('statTotalGeral').textContent = totalGeral;
+                    document.getElementById('statTotalHumano').textContent = totalHumano;
+                    document.getElementById('statTotalIa').textContent = totalIa;
+                    document.getElementById('statTotalCarrinho').textContent = totalCarrinho;
+                    document.getElementById('statTotalBot').textContent = totalBot;
+
+                    const pingHumano = document.getElementById('pingHumano');
+                    if (totalHumano > 0) {
+                        pingHumano.classList.remove('hidden');
+                    } else {
+                        pingHumano.classList.add('hidden');
+                    }
+                }
+            } catch (err) {
+                console.error('Erro ao carregar estatísticas:', err);
+            }
+        }
+
+        // 3. Filtros e Busca
+        function aplicarFiltro(filtro) {
+            filtroAtivo = filtro;
+            
+            // Atualiza destaque visual dos cards de filtro
+            document.querySelectorAll('.card-filtro').forEach(card => {
+                card.classList.remove('border-amber-500', 'ring-2', 'ring-amber-400');
+                card.classList.add('border-slate-200');
+            });
+
+            const cardSelecionado = document.getElementById(`cardFiltro-${filtro}`);
+            if (cardSelecionado) {
+                cardSelecionado.classList.remove('border-slate-200');
+                cardSelecionado.classList.add('border-amber-500', 'ring-2', 'ring-amber-400');
+            }
+
+            const labelMap = {
+                todas: 'Todas Conversas',
+                humano: 'Precisa de Humano',
+                ia: 'Com a IA Especialista',
+                carrinho: 'No Carrinho',
+                bot: 'No Menu do Bot'
+            };
+            document.getElementById('labelFiltroAtivo').textContent = labelMap[filtro] || filtro;
+
+            carregarConversas();
+        }
+
+        function aoDigitarBusca() {
+            clearTimeout(timeoutBusca);
+            timeoutBusca = setTimeout(() => {
+                termoBusca = document.getElementById('campoBusca').value.trim();
+                carregarConversas();
+            }, 300);
+        }
+
+        // 4. Carregamento e Renderização das Conversas
+        async function carregarConversas() {
+            if (estaCarregandoConversas) return;
+            estaCarregandoConversas = true;
+
+            try {
+                // Guarda o estado de digitação dos inputs para não apagar o que o atendente está escrevendo
+                const textosDigitados = {};
+                document.querySelectorAll('.input-msg-rapida').forEach(input => {
+                    if (input.value.trim().length > 0) {
+                        textosDigitados[input.dataset.cliente] = input.value;
+                    }
                 });
 
-                const response = await fetch('/admin/conversas');
-                const result = await response.json();
+                // Guarda posições de scroll
+                const scrollsDosChats = {};
+                document.querySelectorAll('.caixa-chat').forEach(caixa => {
+                    scrollsDosChats[caixa.id] = {
+                        top: caixa.scrollTop,
+                        noFim: (caixa.scrollHeight - caixa.scrollTop - caixa.clientHeight) < 25
+                    };
+                });
+
+                const params = new URLSearchParams();
+                if (filtroAtivo !== 'todas') params.append('etapa', filtroAtivo);
+                if (termoBusca) params.append('busca', termoBusca);
+                params.append('limite', '30');
+
+                const res = await fetch(`/admin/conversas?${params.toString()}`);
+                const result = await res.json();
 
                 if (result.success) {
                     const grid = document.getElementById('conversasGrid');
-                    grid.innerHTML = ''; 
+                    document.getElementById('badgeTotalFiltrado').textContent = `${result.data.length} conversas`;
 
-                    if(result.data.length === 0) {
-                        grid.innerHTML = '<p class="text-gray-500">Nenhuma conversa registrada ainda.</p>';
+                    if (result.data.length === 0) {
+                        grid.innerHTML = `
+                            <div class="col-span-full bg-white p-12 rounded-2xl border border-slate-200 text-center">
+                                <div class="text-4xl mb-2">💬</div>
+                                <h4 class="text-base font-bold text-slate-700">Nenhum atendimento encontrado</h4>
+                                <p class="text-xs text-slate-400 mt-1">Não há conversas correspondentes ao filtro atual.</p>
+                            </div>
+                        `;
                         return;
                     }
 
+                    grid.innerHTML = '';
+
                     result.data.forEach(sessao => {
-                        const dadosSessao = typeof sessao.dados_sessao === 'string' 
-                            ? JSON.parse(sessao.dados_sessao) 
+                        const idCliente = sessao.id_cliente;
+                        const numeroLimpo = idCliente.split('@')[0];
+                        const nomeContato = sessao.nome_contato || 'Cliente';
+                        const etapa = sessao.etapa || 'inicio';
+                        const dataMsg = formatarData(sessao.ultima_msg);
+
+                        const dadosSessao = typeof sessao.dados_sessao === 'string'
+                            ? JSON.parse(sessao.dados_sessao)
                             : (sessao.dados_sessao || {});
-                            
+
+                        const isHumano = etapa === 'em_atendimento_humano';
+                        const isIa = etapa === 'conversando_com_ia';
+                        const isCarrinho = etapa === 'carrinho_opcoes';
+
+                        // Badge de Etapa
+                        let badgeEtapa = '';
+                        if (isHumano) {
+                            badgeEtapa = `<span class="inline-flex items-center gap-1 text-xs font-extrabold px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 border border-rose-200 animate-subtle">🚨 Suporte Humano</span>`;
+                        } else if (isIa) {
+                            badgeEtapa = `<span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">🧠 IA Especialista</span>`;
+                        } else if (isCarrinho) {
+                            badgeEtapa = `<span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">🛒 No Carrinho</span>`;
+                        } else {
+                            badgeEtapa = `<span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">🤖 Menu do Bot</span>`;
+                        }
+
+                        // Resumo do Carrinho (se houver itens)
+                        let htmlCarrinho = '';
+                        const itensCarrinho = dadosSessao.carrinho || [];
+                        if (itensCarrinho.length > 0) {
+                            let totalCarrinho = 0;
+                            const listaHtml = itensCarrinho.map(item => {
+                                const sub = (item.preco || 0) * (item.quantidade || 1);
+                                totalCarrinho += sub;
+                                return `
+                                    <div class="flex justify-between items-center text-xs py-0.5 text-slate-600">
+                                        <span>• ${item.quantidade}x ${item.nome}</span>
+                                        <span class="font-semibold">R$ ${sub.toFixed(2).replace('.', ',')}</span>
+                                    </div>
+                                `;
+                            }).join('');
+
+                            htmlCarrinho = `
+                                <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-3 mb-3">
+                                    <div class="flex justify-between items-center mb-1.5">
+                                        <span class="text-xs font-bold text-amber-900 flex items-center gap-1">
+                                            🛒 Itens no Carrinho (${itensCarrinho.length})
+                                        </span>
+                                        <button onclick="limparCarrinhoCliente('${idCliente}')" title="Esvaziar carrinho do cliente"
+                                                class="text-[11px] text-rose-600 hover:text-rose-800 font-semibold underline">
+                                            Limpar Carrinho
+                                        </button>
+                                    </div>
+                                    <div class="space-y-0.5 max-h-24 overflow-y-auto pr-1 custom-scrollbar">
+                                        ${listaHtml}
+                                    </div>
+                                    <div class="border-t border-amber-200 mt-1.5 pt-1 flex justify-between items-center text-xs font-extrabold text-amber-950">
+                                        <span>Total:</span>
+                                        <span>R$ ${totalCarrinho.toFixed(2).replace('.', ',')}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        // Mensagens / Histórico da Conversa
                         const historico = dadosSessao.historicoIa || [];
                         let htmlMensagens = '';
 
                         if (historico.length === 0) {
-                            htmlMensagens = '<p class="text-sm text-gray-400 italic">Nenhuma mensagem trocada com a IA.</p>';
+                            htmlMensagens = `
+                                <div class="text-center py-6 text-slate-400 text-xs italic">
+                                    Nenhuma mensagem no histórico recente deste cliente.
+                                </div>
+                            `;
                         } else {
-                            const ultimasMsgs = historico.slice(-8);
-                            ultimasMsgs.forEach(msg => {
+                            const ultimas = historico.slice(-12);
+                            htmlMensagens = ultimas.map(msg => {
                                 const isUser = msg.role === 'user';
-                                const corTexto = isUser ? 'text-blue-700' : 'text-amber-700';
-                                const icone = isUser ? '👤 Cliente:' : '🤖 Bot:';
-                                
-                                htmlMensagens += `
-                                    <div class="mb-2 pb-2 border-b border-gray-100 last:border-0">
-                                        <span class="font-bold text-xs ${corTexto}">${icone}</span> 
-                                        <p class="text-sm text-gray-700 mt-1">${msg.parts[0].text}</p>
-                                    </div>
-                                `;
-                            });
+                                const texto = (msg.parts && msg.parts[0]?.text) ? msg.parts[0].text : '';
+                                const isAtendente = texto.startsWith('[Atendente Humano]:');
+
+                                if (isUser) {
+                                    return `
+                                        <div class="flex flex-col items-start mb-2">
+                                            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[85%] shadow-sm">
+                                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">👤 ${nomeContato}</span>
+                                                <p class="text-xs text-slate-800 whitespace-pre-wrap">${texto}</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                } else if (isAtendente) {
+                                    return `
+                                        <div class="flex flex-col items-end mb-2">
+                                            <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-3.5 py-2 max-w-[85%] shadow-sm">
+                                                <span class="text-[10px] font-bold text-indigo-200 uppercase tracking-wider block mb-0.5">👨‍💼 Atendente</span>
+                                                <p class="text-xs whitespace-pre-wrap">${texto.replace('[Atendente Humano]:', '').trim()}</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                } else {
+                                    return `
+                                        <div class="flex flex-col items-end mb-2">
+                                            <div class="bg-amber-50 border border-amber-200 rounded-2xl rounded-tr-sm px-3.5 py-2 max-w-[85%] shadow-sm">
+                                                <span class="text-[10px] font-bold text-amber-700 uppercase tracking-wider block mb-0.5">🤖 Bot / IA</span>
+                                                <p class="text-xs text-slate-800 whitespace-pre-wrap">${texto}</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            }).join('');
                         }
 
-                        const dataMsg = new Date(sessao.ultima_msg).toLocaleString('pt-BR');
-                        
-                        // Atualizado para usar id_cliente ao invés de telefone
-                        const idCliente = sessao.id_cliente;
-                        const nomeContato = sessao.nome_contato || 'Desconhecido';
-                        const idSeguro = idCliente ? idCliente.replace(/\D/g, '') : Math.random().toString().substring(2, 10);
-                        const numeroLimpo = sessao.id_cliente.split('@')[0];
+                        // ID Seguro para os elementos DOM
+                        const idSeguro = idCliente.replace(/[^a-zA-Z0-9]/g, '_');
+                        const textoSalvo = textosDigitados[idCliente] || '';
 
                         const card = document.createElement('div');
-                        card.className = 'bg-white p-5 rounded-lg shadow border border-gray-200';
-                        
+                        card.className = `bg-white rounded-2xl shadow-sm border ${isHumano ? 'border-rose-300 ring-2 ring-rose-200' : 'border-slate-200'} p-5 flex flex-col justify-between transition hover:shadow-md`;
+
                         card.innerHTML = `
-                            <div class="flex justify-between items-center mb-3 bg-gray-50 p-2 rounded border">
-                                <div class="flex flex-col">
-                                    <span class="font-bold text-gray-800">👤 ${sessao.nome_contato}</span>
-                                    <span class="text-xs text-gray-500 font-mono">📱 ${numeroLimpo}</span>
+                            <div>
+                                <!-- Topo do Card -->
+                                <div class="flex justify-between items-start mb-3 pb-3 border-b border-slate-100 gap-2">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full ${isHumano ? 'bg-rose-100 text-rose-700 font-extrabold' : 'bg-amber-100 text-amber-800 font-bold'} flex items-center justify-center text-sm shadow-sm flex-shrink-0">
+                                            ${nomeContato.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold text-sm text-slate-900 leading-snug flex items-center gap-1.5">
+                                                <span>${nomeContato}</span>
+                                                <a href="https://wa.me/${numeroLimpo}" target="_blank" title="Abrir conversa no WhatsApp Web"
+                                                   class="text-emerald-600 hover:text-emerald-700 text-xs">
+                                                    💬
+                                                </a>
+                                            </h4>
+                                            <span class="text-xs font-mono text-slate-400">📱 ${numeroLimpo}</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right flex flex-col items-end gap-1">
+                                        ${badgeEtapa}
+                                        <span class="text-[11px] text-slate-400 font-medium">${dataMsg}</span>
+                                    </div>
                                 </div>
-                                <div class="text-right">
-                                    <span class="block text-xs text-gray-500">${dataMsg}</span>
-                                    <span class="block text-xs font-bold text-blue-600 uppercase mt-1">Etapa: ${sessao.etapa}</span>
+
+                                <!-- Resumo do Carrinho -->
+                                ${htmlCarrinho}
+
+                                <!-- Caixa de Mensagens -->
+                                <div id="chat-${idSeguro}" class="caixa-chat bg-slate-50 border border-slate-200 rounded-xl p-3.5 h-52 overflow-y-auto mb-3 custom-scrollbar flex flex-col">
+                                    ${htmlMensagens}
                                 </div>
-                            </div> <div id="chat-${idSeguro}" class="caixa-chat bg-gray-50 p-4 rounded border h-48 overflow-y-auto mb-3">
-                                ${htmlMensagens}
                             </div>
-                            
-                            <div class="flex gap-2 border-t pt-3">
-                                <button onclick="alterarEtapaBot('${idCliente}', 'inicio')" 
-                                        class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-1 px-3 rounded transition">
-                                    🔄 Resetar Bot
-                                </button>
+
+                            <!-- Área de Ações e Resposta Rápida -->
+                            <div class="border-t border-slate-100 pt-3 space-y-2.5">
                                 
-                                <button onclick="alterarEtapaBot('${idCliente}', 'atendimento_humano')" 
-                                        class="bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-bold py-1 px-3 rounded transition ml-auto">
-                                    ⏸️ Assumir Atendimento
-                                </button>
+                                <!-- Formulário de Resposta Rápida -->
+                                <div class="flex gap-2">
+                                    <input type="text" id="inputMsg-${idSeguro}" data-cliente="${idCliente}" value="${textoSalvo}"
+                                           placeholder="Digitar resposta direta via WhatsApp..."
+                                           onkeydown="if(event.key === 'Enter') enviarMensagemDireta('${idCliente}', '${idSeguro}')"
+                                           class="input-msg-rapida flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                                    
+                                    <button onclick="enviarMensagemDireta('${idCliente}', '${idSeguro}')"
+                                            class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow flex items-center gap-1 flex-shrink-0">
+                                        <span>Enviar</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                    </button>
+                                </div>
+
+                                <!-- Botões de Controle da Automação -->
+                                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                    
+                                    <!-- Ação Principal de Alternância -->
+                                    ${isHumano ? `
+                                        <div class="relative inline-block text-left w-full sm:w-auto">
+                                            <select onchange="devolverAoBotComEtapa('${idCliente}', this.value)"
+                                                    class="w-full sm:w-auto bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold py-1.5 px-3 rounded-lg transition cursor-pointer">
+                                                <option value="" disabled selected>🤖 Devolver para Automação ▾</option>
+                                                <option value="inicio">🔄 Reiniciar Menu Principal</option>
+                                                <option value="conversando_com_ia">🧠 Transferir para a IA</option>
+                                                <option value="aguardando_categoria">🛍️ Ver Produtos / Catálogo</option>
+                                                <option value="carrinho_opcoes">🛒 Finalizar Carrinho</option>
+                                            </select>
+                                        </div>
+                                    ` : `
+                                        <button onclick="alterarEtapaCliente('${idCliente}', 'em_atendimento_humano')"
+                                                class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold py-1.5 px-3 rounded-lg transition flex items-center gap-1">
+                                            ⏸️ Pausar Bot / Assumir Atendimento
+                                        </button>
+                                    `}
+
+                                    <div class="flex items-center gap-1.5 ml-auto">
+                                        <button onclick="alterarEtapaCliente('${idCliente}', 'inicio', true)" title="Resetar histórico e reiniciar no Menu"
+                                                class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold py-1.5 px-2.5 rounded-lg transition">
+                                            🔄 Resetar
+                                        </button>
+                                        <a href="https://wa.me/${numeroLimpo}" target="_blank"
+                                           class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition flex items-center gap-1 shadow-sm">
+                                            <span>WhatsApp</span>
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                        </a>
+                                    </div>
+
+                                </div>
+
                             </div>
                         `;
+
                         grid.appendChild(card);
                     });
 
-                    window.scrollTo(0, scrollGeral);
-                    
+                    // Restaura posição de scroll dos chats
                     document.querySelectorAll('.caixa-chat').forEach(caixa => {
-                        if (scrollsDosChats[caixa.id] !== undefined) {
-                            caixa.scrollTop = scrollsDosChats[caixa.id];
+                        const estado = scrollsDosChats[caixa.id];
+                        if (estado) {
+                            if (estado.noFim) {
+                                caixa.scrollTop = caixa.scrollHeight;
+                            } else {
+                                caixa.scrollTop = estado.top;
+                            }
                         } else {
                             caixa.scrollTop = caixa.scrollHeight;
                         }
                     });
                 }
-            } catch (error) {
-                console.error("Erro ao carregar conversas:", error);
+            } catch (err) {
+                console.error('Erro ao carregar conversas:', err);
+            } finally {
+                estaCarregandoConversas = false;
             }
         }
 
-        async function alterarEtapaBot(id_cliente, novaEtapa) {
-            const confirmacao = confirm(`Tem certeza que deseja mudar o cliente ${id_cliente} para a etapa: ${novaEtapa.toUpperCase()}?`);
-            
-            if (!confirmacao) return;
+        // 5. Ações Operacionais nos Clientes
+        async function alterarEtapaCliente(idCliente, novaEtapa, resetarCarrinho = false) {
+            try {
+                const res = await fetch('/admin/alterar-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_cliente: idCliente, novaEtapa, resetarCarrinho })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    mostrarToast(result.message, 'sucesso');
+                    carregarConversas();
+                    carregarEstatisticas();
+                } else {
+                    mostrarToast(result.message || 'Erro ao alterar status', 'erro');
+                }
+            } catch (err) {
+                mostrarToast('Erro de conexão com o servidor.', 'erro');
+            }
+        }
+
+        async function devolverAoBotComEtapa(idCliente, etapaSelecionada) {
+            if (!etapaSelecionada) return;
+            await alterarEtapaCliente(idCliente, etapaSelecionada);
+        }
+
+        async function enviarMensagemDireta(idCliente, idSeguro) {
+            const input = document.getElementById(`inputMsg-${idSeguro}`);
+            if (!input) return;
+
+            const mensagem = input.value.trim();
+            if (!mensagem) {
+                mostrarToast('Digite uma mensagem antes de enviar.', 'aviso');
+                return;
+            }
+
+            input.disabled = true;
 
             try {
-                const response = await fetch('/admin/alterar-status', {
+                const res = await fetch('/admin/enviar-mensagem', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id_cliente: id_cliente, novaEtapa: novaEtapa }) // Usando a chave 'id_cliente' para manter a consistência com a rota do Node
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_cliente: idCliente,
+                        mensagem: mensagem,
+                        assumirAtendimento: true
+                    })
                 });
 
-                const result = await response.json();
-
+                const result = await res.json();
                 if (result.success) {
+                    mostrarToast('Mensagem enviada com sucesso!', 'sucesso');
+                    input.value = '';
                     carregarConversas();
-                    carregarEstatisticas(); 
+                    carregarEstatisticas();
                 } else {
-                    alert('Erro ao alterar o status do bot.');
+                    mostrarToast(result.message || 'Erro ao enviar mensagem', 'erro');
                 }
-            } catch (error) {
-                console.error('Erro na requisição:', error);
-                alert('Erro de conexão com o servidor.');
+            } catch (err) {
+                mostrarToast('Falha na comunicação com o servidor.', 'erro');
+            } finally {
+                input.disabled = false;
+                input.focus();
             }
         }
 
+        async function limparCarrinhoCliente(idCliente) {
+            if (!confirm(`Deseja esvaziar o carrinho do cliente?`)) return;
+
+            try {
+                const res = await fetch('/admin/limpar-carrinho', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_cliente: idCliente })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    mostrarToast('Carrinho esvaziado com sucesso!', 'sucesso');
+                    carregarConversas();
+                } else {
+                    mostrarToast(result.message || 'Erro ao limpar carrinho', 'erro');
+                }
+            } catch (err) {
+                mostrarToast('Erro de conexão com o servidor.', 'erro');
+            }
+        }
+
+        // 6. Monitoramento de Conexão com Evolution API
         async function monitorarConexao() {
             try {
-                const response = await fetch('/admin/instance-status');
-                const result = await response.json();
-                
+                const res = await fetch('/admin/instance-status');
+                const result = await res.json();
+
                 const badge = document.getElementById('badgeStatus');
                 const alerta = document.getElementById('alertaConexao');
                 const qrContainer = document.getElementById('qrCodeContainer');
 
                 if (result.success) {
                     if (result.status === 'open') {
-                        // Tudo certo, bot rodando!
-                        badge.className = 'text-sm bg-green-500 px-3 py-1 rounded-full text-white font-bold transition-colors shadow-sm';
-                        badge.innerHTML = '✅ Conectado';
+                        badge.className = 'flex items-center gap-2 text-xs font-bold bg-emerald-500/20 text-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-400/30 backdrop-blur-md shadow-sm';
+                        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span>WhatsApp Conectado</span>';
                         alerta.classList.add('hidden');
-                    } 
-                    else if (result.status === 'qrcode') {
-                        // Caiu a conexão, mostra o QR Code limpinho
-                        badge.className = 'text-sm bg-red-600 px-3 py-1 rounded-full text-white font-bold transition-colors shadow-sm animate-pulse';
-                        badge.innerHTML = '⚠️ Desconectado';
+                    } else if (result.status === 'qrcode') {
+                        badge.className = 'flex items-center gap-2 text-xs font-bold bg-rose-600 text-white px-3 py-1.5 rounded-xl border border-rose-400 backdrop-blur-md shadow-sm animate-pulse';
+                        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-white"></span><span>Desconectado (QR Code)</span>';
                         alerta.classList.remove('hidden');
-                        qrContainer.innerHTML = `<img src="${result.qrCodeBase64}" alt="QR Code" class="w-64 h-64 object-contain">`;
-                    } 
-                    else {
-                    badge.className = 'text-sm bg-black px-3 py-1 rounded-full text-white font-bold';
-                    badge.innerHTML = '❌ Erro de API';
+                        qrContainer.innerHTML = `<img src="${result.qrCodeBase64}" alt="QR Code WhatsApp" class="w-56 h-56 object-contain mx-auto">`;
+                    } else {
+                        badge.className = 'flex items-center gap-2 text-xs font-bold bg-slate-800 text-slate-200 px-3 py-1.5 rounded-xl border border-slate-700 shadow-sm';
+                        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Status: ${result.status}</span>`;
+                    }
+                } else {
+                    badge.className = 'flex items-center gap-2 text-xs font-bold bg-rose-950 text-rose-200 px-3 py-1.5 rounded-xl border border-rose-800 shadow-sm';
+                    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span><span>API Offline</span>';
                 }
-                }
-            } catch (error) {
-                console.error("Erro ao verificar conexão:", error);
+            } catch (err) {
+                console.error('Erro ao verificar conexão:', err);
             }
         }
 
-        // Inicia o monitoramento e verifica a cada 5 segundos
-        monitorarConexao();
-        setInterval(monitorarConexao, 5000);
+        // Função de Atualização Geral
+        function atualizarTudo(animarIcone = false) {
+            if (animarIcone) {
+                const icone = document.getElementById('iconRefresh');
+                icone.classList.add('animate-spin');
+                setTimeout(() => icone.classList.remove('animate-spin'), 1000);
+            }
+            carregarStatusGlobal();
+            carregarEstatisticas();
+            carregarConversas();
+            monitorarConexao();
+        }
 
-        // Inicialização
-        carregarConversas();
-        setInterval(carregarConversas, 10000);
-
-        carregarEstatisticas();
-        setInterval(carregarEstatisticas, 10000);
+        // Inicialização e Ciclos de Polling em Segundo Plano
+        atualizarTudo();
+        setInterval(carregarStatusGlobal, 6000);
+        setInterval(carregarEstatisticas, 6000);
+        setInterval(carregarConversas, 6000);
+        setInterval(monitorarConexao, 6000);
     </script>
 </body>
 </html>

@@ -1,14 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const DatabaseService = require('../services/DatabaseService');
+const SessaoService = require('../services/SessionService');
+const EvolutionService = require('../services/EvolutionService');
+const BotController = require('../controllers/botController');
 
 // 1. ROTA VISUAL: Desenha a tela do Dashboard
 router.get('/', (req, res) => {
-    // Renderiza o arquivo dashboard.ejs
     res.render('dashboard'); 
 });
 
-// 2. ROTA DE DADOS (API): Alimenta a tela com informações reais
+// 2. ROTA DE CONFIGURAÇÃO GLOBAL: Consulta e altera o status global do bot
+router.get('/global-config', async (req, res) => {
+    try {
+        const pausado = await BotController.isPausadoGlobalmente();
+        res.json({ success: true, pausado });
+    } catch (err) {
+        console.error('❌ Erro ao buscar status global do bot:', err);
+        res.status(500).json({ success: false, message: 'Erro interno' });
+    }
+});
+
+router.post('/global-config', async (req, res) => {
+    try {
+        const { pausado } = req.body;
+        if (typeof pausado !== 'boolean') {
+            return res.status(400).json({ success: false, message: 'Parâmetro pausado inválido.' });
+        }
+        const novoStatus = await BotController.setPausadoGlobalmente(pausado);
+        res.json({ success: true, pausado: novoStatus, message: novoStatus ? 'Automação pausada globalmente.' : 'Automação ativada globalmente.' });
+    } catch (err) {
+        console.error('❌ Erro ao alterar status global do bot:', err);
+        res.status(500).json({ success: false, message: 'Erro interno' });
+    }
+});
+
+// 3. ROTA DE ESTATÍSTICAS
 router.get('/stats', async (req, res) => {
     try {
         const sql = `
@@ -17,25 +44,78 @@ router.get('/stats', async (req, res) => {
             GROUP BY COALESCE(etapa, 'desconhecido')
         `;
         const result = await DatabaseService.executar(sql);
+
+        const etapas = result.rows;
+        let totalGeral = 0;
+        let totalHumano = 0;
+        let totalIa = 0;
+        let totalCarrinho = 0;
+        let totalBot = 0;
+
+        etapas.forEach(item => {
+            totalGeral += item.total;
+            if (item.etapa === 'em_atendimento_humano') {
+                totalHumano += item.total;
+            } else if (item.etapa === 'conversando_com_ia') {
+                totalIa += item.total;
+            } else if (item.etapa === 'carrinho_opcoes') {
+                totalCarrinho += item.total;
+            } else {
+                totalBot += item.total;
+            }
+        });
         
-        res.json({ success: true, data: result.rows });
+        res.json({ 
+            success: true, 
+            data: etapas,
+            resumo: {
+                totalGeral,
+                totalHumano,
+                totalIa,
+                totalCarrinho,
+                totalBot
+            }
+        });
     } catch (err) {
         console.error('❌ Erro ao buscar estatísticas do painel:', err);
         res.status(500).json({ success: false, message: "Erro interno no BD" });
     }
 });
 
-// 3. ROTA DE DADOS (API): Busca as últimas 10 conversas
+// 4. ROTA DE CONVERSAS (com busca e filtros por etapa)
 router.get('/conversas', async (req, res) => {
     try {
-        const sql = `
-            SELECT id_cliente, nome_contato, etapa, dados_sessao, ultima_msg 
-            FROM tb_bot_sessoes 
-            ORDER BY ultima_msg DESC 
-            LIMIT 10
-        `;
-        const result = await DatabaseService.executar(sql);
-        
+        const { etapa, busca, limite = 25 } = req.query;
+        let sql = `SELECT id_cliente, nome_contato, etapa, dados_sessao, ultima_msg FROM tb_bot_sessoes WHERE 1=1`;
+        const params = [];
+
+        if (etapa && etapa !== 'todas') {
+            if (etapa === 'humano') {
+                params.push('em_atendimento_humano');
+                sql += ` AND etapa = $${params.length}`;
+            } else if (etapa === 'ia') {
+                params.push('conversando_com_ia');
+                sql += ` AND etapa = $${params.length}`;
+            } else if (etapa === 'carrinho') {
+                params.push('carrinho_opcoes');
+                sql += ` AND etapa = $${params.length}`;
+            } else if (etapa === 'bot') {
+                sql += ` AND (etapa NOT IN ('em_atendimento_humano', 'conversando_com_ia') OR etapa IS NULL)`;
+            } else {
+                params.push(etapa);
+                sql += ` AND etapa = $${params.length}`;
+            }
+        }
+
+        if (busca && busca.trim().length > 0) {
+            params.push(`%${busca.trim()}%`);
+            sql += ` AND (nome_contato ILIKE $${params.length} OR id_cliente ILIKE $${params.length})`;
+        }
+
+        params.push(Math.min(parseInt(limite) || 25, 100));
+        sql += ` ORDER BY ultima_msg DESC LIMIT $${params.length}`;
+
+        const result = await DatabaseService.executar(sql, params);
         res.json({ success: true, data: result.rows });
     } catch (err) {
         console.error('❌ Erro ao buscar conversas:', err);
@@ -43,35 +123,92 @@ router.get('/conversas', async (req, res) => {
     }
 });
 
+// 5. ALTERAÇÃO DE STATUS/ETAPA INDIVIDUAL DO CLIENTE
 router.post('/alterar-status', async (req, res) => {
-    const { id_cliente, novaEtapa } = req.body; // Receba id_cliente diretamente
+    const { id_cliente, novaEtapa, resetarCarrinho } = req.body;
 
     if (!id_cliente || !novaEtapa) {
         return res.status(400).json({ success: false, message: 'Dados incompletos.' });
     }
 
     try {
-        let sql = "";
-        let params = [];
+        await SessaoService.alterarEtapa(id_cliente, novaEtapa, Boolean(resetarCarrinho));
 
-        if (novaEtapa === 'inicio') {
-            sql = `UPDATE tb_bot_sessoes SET etapa = $1, dados_sessao = '{}' WHERE id_cliente = $2`;
-            params = [novaEtapa, id_cliente];
+        const numeroLimpo = id_cliente.split('@')[0];
+        if (novaEtapa === 'em_atendimento_humano') {
+            // Remove tag Bot (8) e adiciona tag Humano (7)
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '8', 'remove').catch(() => {});
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '7', 'add').catch(() => {});
         } else {
-            sql = `UPDATE tb_bot_sessoes SET etapa = $1 WHERE id_cliente = $2`;
-            params = [novaEtapa, id_cliente];
+            // Remove tag Humano (7) e adiciona tag Bot (8)
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '7', 'remove').catch(() => {});
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '8', 'add').catch(() => {});
         }
         
-        await DatabaseService.executar(sql, params);
-        
         console.log(`[Admin] Status do cliente ${id_cliente} alterado para: ${novaEtapa}`);
-        res.json({ success: true, message: 'Status atualizado com sucesso!' });
+        res.json({ success: true, message: 'Status do atendimento atualizado com sucesso!' });
     } catch (err) {
         console.error('❌ Erro ao atualizar status:', err);
         res.status(500).json({ success: false, message: 'Erro interno no BD' });
     }
 });
 
+// 6. ENVIO DIRETO DE MENSAGEM DO ATENDENTE PELO DASHBOARD
+router.post('/enviar-mensagem', async (req, res) => {
+    const { id_cliente, mensagem, assumirAtendimento = true } = req.body;
+
+    if (!id_cliente || !mensagem || !mensagem.trim()) {
+        return res.status(400).json({ success: false, message: 'Número do cliente e mensagem são obrigatórios.' });
+    }
+
+    try {
+        const numeroLimpo = id_cliente.split('@')[0];
+        
+        // 1. Envia via Evolution API
+        await EvolutionService.enviarMensagemText(numeroLimpo, mensagem.trim());
+
+        // 2. Registra na sessão e opcionalmente coloca em atendimento humano para o bot não interferir
+        const sessao = await SessaoService.obterSessao(id_cliente);
+        if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
+        
+        sessao.historicoIa.push({
+            role: 'model',
+            parts: [{ text: `[Atendente Humano]: ${mensagem.trim()}` }]
+        });
+
+        if (assumirAtendimento) {
+            sessao.etapa = 'em_atendimento_humano';
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '8', 'remove').catch(() => {});
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '7', 'add').catch(() => {});
+        }
+
+        await SessaoService.salvarSessao(id_cliente, sessao);
+
+        res.json({ success: true, message: 'Mensagem enviada com sucesso!' });
+    } catch (err) {
+        console.error('❌ Erro ao enviar mensagem do atendente:', err);
+        res.status(500).json({ success: false, message: 'Falha ao enviar mensagem via WhatsApp.' });
+    }
+});
+
+// 7. LIMPEZA DE CARRINHO INDIVIDUAL
+router.post('/limpar-carrinho', async (req, res) => {
+    const { id_cliente } = req.body;
+
+    if (!id_cliente) {
+        return res.status(400).json({ success: false, message: 'ID do cliente é obrigatório.' });
+    }
+
+    try {
+        await SessaoService.limparCarrinho(id_cliente);
+        res.json({ success: true, message: 'Carrinho do cliente foi esvaziado.' });
+    } catch (err) {
+        console.error('❌ Erro ao limpar carrinho:', err);
+        res.status(500).json({ success: false, message: 'Erro interno ao limpar carrinho.' });
+    }
+});
+
+// 8. MONITORAMENTO DE STATUS DA INSTÂNCIA EVOLUTION
 router.get('/instance-status', async (req, res) => {
     try {
         const evolutionUrl = process.env.EVOLUTION_URL || 'http://localhost:8081';
@@ -96,7 +233,7 @@ router.get('/instance-status', async (req, res) => {
         let status = stateData?.instance?.state || 'desconhecido';
         let qrCodeBase64 = null;
 
-        // 2. Busca o QR Code de forma otimizada (apenas se estiver fechado ou tentando conectar)
+        // Busca o QR Code de forma otimizada (apenas se desconectado)
         if (status === 'close' || status === 'connecting') {
             const qrResponse = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
                 headers: { 'apikey': apikey },
@@ -116,7 +253,6 @@ router.get('/instance-status', async (req, res) => {
 
     } catch (err) {
         console.error('❌ Erro de conexão com Evolution:', err.message);
-        // Devolve o status offline de forma limpa para o Dashboard mudar a bolinha vermelha
         res.json({ success: false, status: 'offline' });
     }
 });
