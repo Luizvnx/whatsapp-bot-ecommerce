@@ -1407,6 +1407,16 @@
         // ==========================================
         // 3. RENDERIZAÇÃO DE BOLHAS DE MENSAGENS (TEXTO, ÁUDIO, MÍDIAS)
         // ==========================================
+        function escapeHtml(texto) {
+            if (texto === undefined || texto === null) return '';
+            return String(texto)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         function formatarTextoMarkdown(texto) {
             if (!texto) return '';
             const esc = texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -2494,9 +2504,9 @@
                 if (result.success) {
                     if (result.status === 'open') {
                         if (badge) {
-                            badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-emerald-500/10 text-emerald-400 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-emerald-500/20 shadow-sm cursor-default';
+                            badge.className = 'flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-[#25D366] text-white shadow-xs hover:bg-[#20bd5a] transition cursor-pointer flex-shrink-0';
                             badge.title = 'WhatsApp Conectado e Operando';
-                            badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span class="hidden sm:inline">WhatsApp Conectado</span><span class="sm:hidden">Conectado</span>';
+                            badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-white flex-shrink-0"></span><span>WhatsApp Conectado</span>';
                         }
                         if (alerta) alerta.classList.add('hidden');
 
@@ -2518,9 +2528,9 @@
                         }
                     } else if (result.status === 'qrcode' || result.status === 'connecting' || result.status === 'close') {
                         if (badge) {
-                            badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-rose-950 text-rose-300 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-rose-800 shadow-sm animate-pulse cursor-pointer hover:bg-rose-900 transition';
+                            badge.className = 'flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-rose-600 text-white shadow-xs hover:bg-rose-700 transition cursor-pointer flex-shrink-0';
                             badge.title = 'WhatsApp Desconectado! Clique para ler o QR Code';
-                            badge.innerHTML = '<span class="w-2 h-2 rounded-sm bg-stone-1000"></span><span class="hidden sm:inline">WhatsApp Desconectado (Ler QR)</span><span class="sm:hidden">Ler QR</span>';
+                            badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-white flex-shrink-0"></span><span>WhatsApp Desconectado</span>';
                         }
                         if (alerta) alerta.classList.remove('hidden');
 
@@ -3020,7 +3030,7 @@
         async function carregarProdutosCatalogo() {
             const grid = document.getElementById('gridProdutosCatalogo');
             if (grid) {
-                grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-500 text-xs">⏳ Carregando produtos do banco de dados...</div>';
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-500 text-xs">⏳ Carregando produtos...</div>';
             }
 
             try {
@@ -3034,7 +3044,7 @@
                 }
             } catch (err) {
                 console.error('Erro ao buscar produtos:', err);
-                if (grid) grid.innerHTML = '<div class="col-span-full text-center py-12 text-rose-400 text-xs">Erro de conexão com o banco de dados.</div>';
+                if (grid) grid.innerHTML = '<div class="col-span-full text-center py-12 text-rose-400 text-xs">Não foi possível carregar os produtos no momento.</div>';
             }
         }
 
@@ -3156,7 +3166,7 @@
             }
 
             btn.disabled = true;
-            btn.textContent = 'Salvando no banco...';
+            btn.textContent = 'Salvando produto...';
 
             try {
                 const url = id ? `/admin/produtos/${id}` : '/admin/produtos';
@@ -3165,7 +3175,7 @@
                 const res = await fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome, categoria_id, preco, descricao, ativo })
+                    body: JSON.stringify({ nome, categoria_id, preco, descricao, ativo, foto: fotoProdutoAtual || null })
                 });
 
                 const result = await res.json();
@@ -3177,7 +3187,7 @@
                     mostrarToast(result.message || 'Erro ao salvar produto.', 'erro');
                 }
             } catch (err) {
-                mostrarToast('Falha na comunicação com o banco de dados.', 'erro');
+                mostrarToast('Falha ao salvar produto. Tente novamente.', 'erro');
             } finally {
                 btn.disabled = false;
                 btn.textContent = id ? 'Salvar Alterações' : 'Cadastrar Produto';

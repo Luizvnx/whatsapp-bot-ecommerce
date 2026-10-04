@@ -360,7 +360,7 @@ class WebhookController {
 
             // 1. Se a mensagem foi enviada no WhatsApp (verificação se foi o bot ou atendente humano)
             if (isFromMe) {
-                const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖', '🛒', '👉 Link:', '🍯'].some(e => (infoMsg.texto || '').includes(e));
+                const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖', '🛒', '👉 Link:', '🍯', 'Favo de Mel', 'Catálogo', 'Cardápio', 'R$'].some(e => (infoMsg.texto || '').includes(e));
                 if (isMsgBot) {
                     // Mensagem automática enviada pelo robô: NÃO altera o modo para humano
                     return;
@@ -395,6 +395,12 @@ class WebhookController {
 
         } catch (err) {
             console.error('❌ Erro ao processar webhook da Evolution:', err.message);
+        }
+    }
+
+    static registrarMensagemEnviadaPeloBot(msgId) {
+        if (msgId) {
+            mensagensProcessadasCache.add(msgId);
         }
     }
 }
