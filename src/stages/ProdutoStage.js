@@ -41,8 +41,13 @@ class ProdutoStage {
 
         const precoFormatado = produtoEscolhido.preco.toFixed(2).replace('.', ',');
         const desc = produtoEscolhido.descricao ? `_${produtoEscolhido.descricao}_\n\n` : '';
+        const textoMsg = `✅ Você selecionou: *${produtoEscolhido.nome}* (R$ ${precoFormatado}) 🍯\n${desc}${mensagens.produtos.pedeQuantidade}`;
 
-        await msg.reply(`✅ Você selecionou: *${produtoEscolhido.nome}* (R$ ${precoFormatado}) 🍯\n${desc}${mensagens.produtos.pedeQuantidade}`);
+        if (produtoEscolhido.foto && typeof msg.replyMedia === 'function') {
+            await msg.replyMedia(produtoEscolhido.foto, textoMsg);
+        } else {
+            await msg.reply(textoMsg);
+        }
         sessao.etapa = 'aguardando_quantidade';
     }
 }

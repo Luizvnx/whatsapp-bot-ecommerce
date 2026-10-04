@@ -642,7 +642,7 @@ router.get('/produtos', async (req, res) => {
 // 15.2. Criar novo produto
 router.post('/produtos', async (req, res) => {
     try {
-        const { categoria_id, nome, preco, descricao, estoque, ativo } = req.body;
+        const { categoria_id, nome, preco, descricao, foto, estoque, ativo } = req.body;
         if (!categoria_id || !nome || preco === undefined) {
             return res.status(400).json({ success: false, message: 'Categoria, Nome e Preço são obrigatórios.' });
         }
@@ -651,6 +651,7 @@ router.post('/produtos', async (req, res) => {
             nome,
             preco,
             descricao,
+            foto: foto || null,
             estoque,
             ativo
         });

@@ -26,7 +26,7 @@ class CatalogoService {
 
         try {
             const sqlCat = `SELECT id, nome, descricao, icone, ordem FROM tb_categorias WHERE ativo = true ORDER BY ordem ASC, id ASC`;
-            const sqlProd = `SELECT id, categoria_id, nome, preco, descricao, estoque FROM tb_produtos WHERE ativo = true ORDER BY id ASC`;
+            const sqlProd = `SELECT id, categoria_id, nome, preco, descricao, estoque, foto FROM tb_produtos WHERE ativo = true ORDER BY id ASC`;
 
             const [resCat, resProd] = await Promise.all([
                 DatabaseService.executar(sqlCat),
@@ -71,6 +71,7 @@ class CatalogoService {
                     nome: prod.nome,
                     preco: parseFloat(prod.preco),
                     descricao: prod.descricao || '',
+                    foto: prod.foto || null,
                     estoque: prod.estoque
                 };
             }
@@ -99,6 +100,7 @@ class CatalogoService {
                     p.nome, 
                     p.preco, 
                     p.descricao, 
+                    p.foto,
                     p.estoque, 
                     p.ativo, 
                     p.criado_em, 
@@ -142,14 +144,14 @@ class CatalogoService {
     /**
      * Cria um novo produto no banco de dados
      */
-    static async criarProduto({ categoria_id, nome, preco, descricao = '', estoque = 999, ativo = true }) {
+    static async criarProduto({ categoria_id, nome, preco, descricao = '', foto = null, estoque = 999, ativo = true }) {
         if (!categoria_id || !nome || preco === undefined || preco === null) {
             throw new Error('Campos obrigatórios: categoria_id, nome e preco.');
         }
 
         const sql = `
-            INSERT INTO tb_produtos (categoria_id, nome, preco, descricao, estoque, ativo, criado_em, atualizado_em)
-            VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO tb_produtos (categoria_id, nome, preco, descricao, foto, estoque, ativo, criado_em, atualizado_em)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING *;
         `;
         const res = await DatabaseService.executar(sql, [
@@ -157,6 +159,7 @@ class CatalogoService {
             nome.trim(),
             parseFloat(preco),
             descricao ? descricao.trim() : '',
+            foto || null,
             parseInt(estoque, 10) || 999,
             ativo === true || ativo === 'true'
         ]);
@@ -188,6 +191,10 @@ class CatalogoService {
         if (dados.descricao !== undefined) {
             campos.push(`descricao = $${contador++}`);
             valores.push(dados.descricao.trim());
+        }
+        if (dados.foto !== undefined) {
+            campos.push(`foto = $${contador++}`);
+            valores.push(dados.foto || null);
         }
         if (dados.estoque !== undefined) {
             campos.push(`estoque = $${contador++}`);

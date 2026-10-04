@@ -206,13 +206,79 @@ class BotController {
                     }
                 }
                 const resp = await EvolutionService.enviarMensagemText(numeroCliente, t);
+                const msgId = resp?.key?.id || null;
+                if (msgId) {
+                    try {
+                        const WebhookController = require('./WebhookController');
+                        if (typeof WebhookController.registrarMensagemEnviadaPeloBot === 'function') {
+                            WebhookController.registrarMensagemEnviadaPeloBot(msgId);
+                        }
+                    } catch (_) {}
+                }
                 try {
-                    await SessaoService.adicionarMensagem(numeroReal, 'atendente', t, 'Bot Favo de Mel', {
+                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', t, 'Bot Favo de Mel', {
                         tipo: 'texto',
-                        atendenteNome: 'Bot Favo de Mel'
+                        atendenteNome: 'Bot Favo de Mel',
+                        messageId: msgId,
+                        whatsappMessageId: msgId
                     });
+                    if (sessao) {
+                        if (!Array.isArray(sessao.historicoMensagens)) sessao.historicoMensagens = [];
+                        sessao.historicoMensagens.push(novaMsg);
+                    }
                 } catch (e) {
                     console.error('[BotController] Erro ao registrar mensagem do bot:', e.message);
+                }
+                return resp;
+            },
+            replyMedia: async (media, caption = '') => {
+                if (sessao) {
+                    if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
+                    sessao.historicoIa.push({
+                        role: 'model',
+                        parts: [{ text: caption || '[Foto do Produto]' }]
+                    });
+                    if (sessao.historicoIa.length > 30) {
+                        sessao.historicoIa = sessao.historicoIa.slice(-30);
+                    }
+                }
+                let resp = null;
+                try {
+                    resp = await EvolutionService.enviarMidia(numeroCliente, {
+                        media: media,
+                        mediatype: 'image',
+                        caption: caption || ''
+                    });
+                } catch (errMidia) {
+                    console.warn('[BotController] Falha ao enviar mídia, enviando texto como alternativa:', errMidia.message);
+                    return await EvolutionService.enviarMensagemText(numeroCliente, caption || '');
+                }
+
+                const msgId = resp?.key?.id || null;
+                if (msgId) {
+                    try {
+                        const WebhookController = require('./WebhookController');
+                        if (typeof WebhookController.registrarMensagemEnviadaPeloBot === 'function') {
+                            WebhookController.registrarMensagemEnviadaPeloBot(msgId);
+                        }
+                    } catch (_) {}
+                }
+                try {
+                    const isBase64 = typeof media === 'string' && (media.startsWith('data:') || media.length > 500);
+                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', caption, 'Bot Favo de Mel', {
+                        tipo: 'imagem',
+                        mediaUrl: isBase64 ? null : media,
+                        mediaBase64: isBase64 ? media : null,
+                        atendenteNome: 'Bot Favo de Mel',
+                        messageId: msgId,
+                        whatsappMessageId: msgId
+                    });
+                    if (sessao) {
+                        if (!Array.isArray(sessao.historicoMensagens)) sessao.historicoMensagens = [];
+                        sessao.historicoMensagens.push(novaMsg);
+                    }
+                } catch (e) {
+                    console.error('[BotController] Erro ao registrar foto do bot:', e.message);
                 }
                 return resp;
             }

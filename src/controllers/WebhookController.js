@@ -240,6 +240,15 @@ function normalizarNumero(key, data) {
 }
 
 class WebhookController {
+    static registrarMensagemEnviadaPeloBot(msgId) {
+        if (!msgId) return;
+        mensagensProcessadasCache.add(msgId);
+        if (mensagensProcessadasCache.size > 3000) {
+            const firstVal = mensagensProcessadasCache.values().next().value;
+            mensagensProcessadasCache.delete(firstVal);
+        }
+    }
+
     static async handleEvolutionWebhook(req, res) {
         res.sendStatus(200); // Resposta imediata para a Evolution API
 
@@ -349,8 +358,14 @@ class WebhookController {
                 quoted: quotedFormatado
             });
 
-            // 1. Se a mensagem foi enviada pelo atendente humano (pelo celular ou pelo painel)
+            // 1. Se a mensagem foi enviada no WhatsApp (verificação se foi o bot ou atendente humano)
             if (isFromMe) {
+                const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖', '🛒', '👉 Link:', '🍯'].some(e => (infoMsg.texto || '').includes(e));
+                if (isMsgBot) {
+                    // Mensagem automática enviada pelo robô: NÃO altera o modo para humano
+                    return;
+                }
+
                 const conversa = await SessionService.obterConversa(numeroReal);
                 if (conversa.modo_atendimento !== 'humano') {
                     await SessionService.alternarModoAtendimento(numeroReal, 'humano');

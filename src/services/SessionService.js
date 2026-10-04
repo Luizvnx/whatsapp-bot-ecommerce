@@ -4,6 +4,9 @@ const SocketService = require('./SocketService');
 class SessionService {
     // Fila sequencial em memória por cliente para evitar condições de corrida (Race Conditions)
     static queues = new Map();
+    // Cache em memória para leitura ultrarrápida intra-requisições (elimina queries redundantes)
+    static cacheConversas = new Map();
+    static CACHE_SESSAO_TTL = 8000; // 8 segundos de cache
 
     /**
      * Normaliza qualquer identificador para o JID canônico do WhatsApp (@s.whatsapp.net)
@@ -37,6 +40,13 @@ class SessionService {
     static async obterConversa(numeroCliente) {
         const idCanonico = this.normalizarId(numeroCliente);
         const numeroLimpo = idCanonico.split('@')[0];
+        const agora = Date.now();
+
+        // 1. Checa cache em memória para evitar queries desnecessárias e acelerar a resposta do bot
+        const cached = this.cacheConversas.get(idCanonico);
+        if (cached && (agora - cached.timestamp < this.CACHE_SESSAO_TTL)) {
+            return cached.dados;
+        }
         
         // Busca determinística pela sessão mais recente, cobrindo variações de sufixo
         const sql = `
@@ -72,6 +82,8 @@ class SessionService {
                     dados.historicoMensagens = [];
                 }
             }
+
+            this.cacheConversas.set(idCanonico, { dados, timestamp: Date.now() });
             return dados;
         }
 
@@ -92,6 +104,7 @@ class SessionService {
     static async salvarConversa(numeroCliente, dadosConversa) {
         const idCanonico = this.normalizarId(numeroCliente);
         dadosConversa.id_cliente = idCanonico;
+        this.cacheConversas.set(idCanonico, { dados: dadosConversa, timestamp: Date.now() });
 
         const sql = `
             INSERT INTO tb_bot_sessoes (id_cliente, nome_contato, etapa, dados_sessao, ultima_msg)
@@ -339,7 +352,18 @@ class SessionService {
 
     // Métodos mantidos para retrocompatibilidade de chamadas legadas caso existam
     static async obterSessao(numeroCliente) { return this.obterConversa(numeroCliente); }
-    static async salvarSessao(numeroCliente, sessao) { return this.salvarConversa(numeroCliente, sessao); }
+    static async salvarSessao(numeroCliente, sessao) {
+        const idCanonico = this.normalizarId(numeroCliente);
+        return await this.enfileirar(idCanonico, async () => {
+            const conversaAtual = await this.obterConversa(idCanonico);
+            if (Array.isArray(conversaAtual.historicoMensagens)) {
+                sessao.historicoMensagens = conversaAtual.historicoMensagens;
+            }
+            sessao.id_cliente = idCanonico;
+            await this.salvarConversa(idCanonico, sessao);
+            return sessao;
+        });
+    }
 }
 
 module.exports = SessionService;

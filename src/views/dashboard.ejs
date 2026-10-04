@@ -19,14 +19,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-                        serif: ['"Newsreader"', 'Georgia', 'serif'],
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                        serif: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
                         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace']
                     }
                 }
@@ -35,9 +35,9 @@
     </script>
     <style>
         :root {
-            --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-            --font-serif: 'Newsreader', Georgia, serif;
+            --font-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         html,
@@ -75,24 +75,25 @@
 
 <body class="h-full flex flex-col text-stone-900 antialiased overflow-hidden bg-[#f6f5f3]">
 
-        <!-- Topbar Banner & Header -->
-    <header class="bg-white border-b border-stone-200 px-3 sm:px-4 py-2 sm:py-2.5 sticky top-0 z-30 flex-shrink-0 shadow-xs">
-        <div class="max-w-7xl mx-auto flex justify-between items-center gap-3">
-            <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-sm bg-stone-900 text-amber-500 flex items-center justify-center border border-stone-800 shadow-xs flex-shrink-0">
+    <!-- Topbar Banner & Header -->
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-30 flex-shrink-0 shadow-xs">
+        <div class="max-w-7xl mx-auto px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="w-8 h-8 rounded-full bg-stone-900 text-amber-400 flex items-center justify-center border border-stone-800 shadow-xs flex-shrink-0">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" stroke-linejoin="round"/>
                         <path d="M12 11l8-4.5M12 11v9M12 11L4 6.5"/>
                     </svg>
                 </div>
-                <div>
-                    <h1 class="text-sm sm:text-base font-serif font-bold text-stone-900 leading-none">Favo de Mel</h1>
-                    <p class="text-[10px] font-mono uppercase tracking-wider text-amber-700 font-semibold mt-0.5 hidden xs:block">Terminal Operacional</p>
+                <div class="hidden xs:block">
+                    <h1 class="text-sm sm:text-base font-bold text-stone-900 leading-none">Favo de Mel</h1>
+                    <p class="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mt-0.5 hidden sm:block">Terminal Operacional</p>
                 </div>
             </div>
 
-            <!-- Header Navigation Switcher -->
-            <nav class="flex items-center bg-stone-100 p-0.5 rounded-sm border border-stone-200">
+            <!-- Header Navigation Switcher (Desktop md:flex) -->
+            <nav class="hidden md:flex items-center bg-stone-100 p-0.5 rounded-sm border border-stone-200">
                 <button type="button" onclick="trocarAba('atendimento')" id="btnAbaAtendimento"
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition bg-stone-900 text-stone-100 shadow-xs">
                     <span>Atendimento</span>
@@ -107,70 +108,76 @@
                 </button>
             </nav>
 
-            <!-- Header Status & Action Controls -->
+            <!-- Header Status & Action Controls (Always visible on mobile & desktop) -->
             <div class="flex items-center gap-1.5 sm:gap-2">
-                <!-- Socket Realtime Badge -->
+                <!-- Socket Realtime Badge (Desktop only) -->
                 <div id="badgeSocket" title="Status da Conexão em Tempo Real (WebSocket)"
-                    class="hidden sm:flex items-center gap-1.5 text-[11px] font-mono font-medium bg-stone-50 px-2 py-1 rounded-sm border border-stone-200 text-stone-700">
+                    class="hidden lg:flex items-center gap-1.5 text-[11px] font-mono font-medium bg-stone-50 px-2 py-1 rounded-sm border border-stone-200 text-stone-700">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                     <span>Tempo Real</span>
                 </div>
 
-                <!-- Instance Status Button -->
+                <!-- Instance Status Button: Solid Green Background with White Text -->
                 <button type="button" id="badgeStatus" onclick="clicarBadgeStatus()" title="Status da Conexão WhatsApp (Clique para ler QR Code se desconectado)"
-                    class="flex items-center gap-1.5 sm:gap-2 text-[11px] font-mono font-medium bg-white px-2.5 py-1 rounded-sm border border-stone-200 shadow-xs text-stone-700 hover:bg-stone-50 transition cursor-pointer">
-                    <span id="badgeStatusDot" class="w-1.5 h-1.5 rounded-full bg-stone-400 flex-shrink-0"></span>
-                    <span id="badgeStatusText">Conectando...</span>
+                    class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-[#25D366] text-white shadow-xs hover:bg-[#20bd5a] transition cursor-pointer flex-shrink-0">
+                    <span id="badgeStatusDot" class="w-2 h-2 rounded-full bg-white flex-shrink-0"></span>
+                    <span id="badgeStatusText">WhatsApp Conectado</span>
                 </button>
 
                 <!-- Sound Alert Toggle Button -->
-                <button onclick="alternarSom()" id="btnToggleSom" title="Alerta sonoro (Clique para silenciar)"
-                    class="p-1.5 sm:p-2 bg-white hover:bg-stone-50 text-stone-600 hover:text-stone-900 rounded-sm transition border border-stone-200 flex-shrink-0 shadow-xs">
+                <button onclick="alternarSom()" id="btnToggleSom" title="Alerta sonoro (Clique para silenciar/ativar)"
+                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white hover:bg-stone-100 text-stone-700 flex items-center justify-center border border-stone-200 shadow-xs flex-shrink-0 transition cursor-pointer">
                     <span id="iconSom" class="flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"/>
-                        </svg>
-                    </span>
-                </button>
-
-                <!-- Push Notification Permission Toggle Button -->
-                <button onclick="solicitarOuTestarNotificacao()" id="btnToggleNotif" title="Notificações no navegador"
-                    class="p-1.5 sm:p-2 bg-white hover:bg-stone-50 text-stone-600 hover:text-stone-900 rounded-sm transition border border-stone-200 flex-shrink-0 shadow-xs">
-                    <span id="iconNotif" class="flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                         </svg>
                     </span>
                 </button>
 
                 <!-- Refresh Button -->
                 <button onclick="atualizarTudo(true)" title="Atualizar dados agora"
-                    class="p-1.5 sm:p-2 bg-white hover:bg-stone-50 text-stone-600 hover:text-stone-900 rounded-sm transition border border-stone-200 flex-shrink-0 shadow-xs">
-                    <svg id="iconRefresh" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white hover:bg-stone-100 text-stone-700 flex items-center justify-center border border-stone-200 shadow-xs flex-shrink-0 transition cursor-pointer">
+                    <svg id="iconRefresh" class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
                         </path>
                     </svg>
                 </button>
 
-                <!-- User Identity Badge & Settings Button -->
-                <div class="flex items-center gap-1.5 sm:gap-2 border-l border-stone-200 pl-2 sm:pl-3 ml-1 sm:ml-2">
-                    <button type="button" onclick="abrirModalPerfil()" title="Configurações do Usuário"
-                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-white hover:bg-stone-50 border border-stone-200 text-xs font-semibold text-stone-800 transition cursor-pointer shadow-xs">
-                        <span id="userBadgeAvatar"
-                            class="w-5 h-5 rounded-sm bg-stone-900 text-amber-400 flex items-center justify-center text-[10px] font-mono font-bold">
-                            <%= (typeof user !=='undefined' && user && user.name) ? user.name.charAt(0).toUpperCase() : 'F' %>
-                        </span>
-                        <span id="userBadgeNome" class="hidden md:inline text-stone-800 font-medium">
-                            <%= (typeof user !=='undefined' && user && user.name) ? user.name : 'Atendente' %>
-                        </span>
-                    </button>
-                    <a href="/logout" title="Sair do Painel"
-                        class="px-2.5 py-1 rounded-sm bg-white hover:bg-stone-50 border border-stone-200 text-xs font-medium text-stone-600 hover:text-rose-700 transition shadow-xs">
-                        <span>Sair</span>
-                    </a>
-                </div>
+                <!-- User Profile Trigger Button: Round Icon only -->
+                <button type="button" onclick="abrirModalPerfil()" title="Configurações do Usuário"
+                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-stone-900 hover:bg-stone-800 text-amber-400 font-bold text-xs flex items-center justify-center border border-stone-700 shadow-xs transition hover:ring-2 hover:ring-amber-400 cursor-pointer flex-shrink-0">
+                    <span id="userBadgeAvatar">
+                        <%= (typeof user !=='undefined' && user && user.name) ? user.name.charAt(0).toUpperCase() : 'F' %>
+                    </span>
+                </button>
+
+                <!-- Logout Button -->
+                <a href="/logout" title="Sair do Painel"
+                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-600 flex items-center justify-center border border-stone-200 hover:border-rose-300 shadow-xs transition flex-shrink-0">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </a>
             </div>
+        </div>
+
+        <!-- Mobile Secondary Nav Bar (md:hidden) -->
+        <div class="md:hidden border-t border-stone-200 px-3 py-1.5 bg-stone-50 flex items-center justify-center">
+            <nav class="flex items-center w-full justify-between max-w-sm bg-stone-200/60 p-0.5 rounded-sm border border-stone-200">
+                <button type="button" onclick="trocarAba('atendimento')" id="btnAbaAtendimentoMobile"
+                    class="flex-1 py-1 text-center rounded-sm text-xs font-semibold transition bg-stone-900 text-stone-100 shadow-xs">
+                    <span>Atendimento</span>
+                </button>
+                <button type="button" onclick="trocarAba('catalogo')" id="btnAbaCatalogoMobile"
+                    class="flex-1 py-1 text-center rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900">
+                    <span>Catálogo</span>
+                </button>
+                <button type="button" onclick="trocarAba('metricas')" id="btnAbaMetricasMobile"
+                    class="flex-1 py-1 text-center rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900">
+                    <span>Métricas & Bot</span>
+                </button>
+            </nav>
         </div>
     </header>
 
@@ -400,7 +407,7 @@
         <div class="bg-white border border-stone-200 rounded-md p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs flex-shrink-0">
             <div>
                 <h2 class="text-sm sm:text-base font-serif font-bold text-stone-900 leading-tight">Catálogo de Produtos & Preços</h2>
-                <p class="text-[11px] sm:text-xs text-stone-500 font-mono">PostgreSQL (Railway) &middot; Sincronização em tempo real com o WhatsApp</p>
+                <p class="text-[11px] sm:text-xs text-stone-500 font-mono">Sincronização em tempo real com o WhatsApp</p>
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
@@ -429,7 +436,7 @@
         <div class="flex-1 bg-stone-50/50 border border-stone-200 rounded-md overflow-y-auto custom-scrollbar p-3 sm:p-4 shadow-xs">
             <div id="gridProdutosCatalogo" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div class="col-span-full text-center py-12 text-stone-400 font-mono text-xs">
-                    Carregando catálogo do banco de dados...
+                    Carregando catálogo de produtos...
                 </div>
             </div>
         </div>
@@ -487,7 +494,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="bg-white border border-stone-200 rounded-md p-4 shadow-xs space-y-3">
                 <div class="flex items-center justify-between border-b border-stone-100 pb-2">
-                    <h3 class="text-xs font-mono font-semibold text-stone-800 uppercase tracking-wider">Instância WhatsApp (Evolution)</h3>
+                    <h3 class="text-xs font-mono font-semibold text-stone-800 uppercase tracking-wider">Conexão do WhatsApp</h3>
                     <span id="cardInstanciaStatusBadge" class="text-[11px] font-mono px-2 py-0.5 rounded-sm font-medium bg-stone-100 text-stone-600">Verificando...</span>
                 </div>
                 <p class="text-xs text-stone-500">Monitoramento da conexão do seu número no WhatsApp. Se desconectar, o QR Code de reconexão aparecerá abaixo.</p>
@@ -498,8 +505,8 @@
 
             <div class="bg-white border border-stone-200 rounded-md p-4 shadow-xs space-y-3">
                 <div class="flex items-center justify-between border-b border-stone-100 pb-2">
-                    <h3 class="text-xs font-mono font-semibold text-stone-800 uppercase tracking-wider">Banco de Dados (PostgreSQL)</h3>
-                    <span class="text-[11px] font-mono px-2 py-0.5 rounded-sm font-medium bg-stone-100 text-stone-700 border border-stone-200">Conectado (Railway)</span>
+                    <h3 class="text-xs font-mono font-semibold text-stone-800 uppercase tracking-wider">Sincronização do Catálogo</h3>
+                    <span class="text-[11px] font-mono px-2 py-0.5 rounded-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">Sincronizado e Ativo</span>
                 </div>
                 <p class="text-xs text-stone-500">Tabelas de catálogo, produtos, sessões e histórico sincronizados na nuvem.</p>
                 <div class="pt-2 flex items-center gap-3">
@@ -546,6 +553,33 @@
                     <label class="block text-xs font-medium text-stone-700 mb-1">Descrição</label>
                     <textarea id="prodEditDescricao" rows="2" placeholder="Breve descrição dos benefícios ou tamanho (ex: 250ml, medicinal...)"
                         class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 resize-none"></textarea>
+                </div>
+
+                <!-- Foto do Produto -->
+                <div>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Foto do Produto (enviada pelo Bot no WhatsApp)</label>
+                    <div class="flex items-center gap-3 bg-stone-50 p-2.5 rounded-sm border border-stone-200">
+                        <div id="prodEditFotoPreviewContainer" class="w-14 h-14 rounded-sm bg-white border border-stone-300 flex items-center justify-center overflow-hidden flex-shrink-0 relative shadow-2xs">
+                            <img id="prodEditFotoPreview" src="" class="w-full h-full object-cover hidden">
+                            <span id="prodEditFotoPlaceholder" class="text-2xl">🍯</span>
+                        </div>
+                        <div class="flex-1 min-w-0 space-y-1.5">
+                            <div class="flex items-center gap-2">
+                                <label for="prodEditFotoArquivo" class="px-2.5 py-1 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-xs font-semibold cursor-pointer transition shadow-xs flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span>Escolher Foto</span>
+                                </label>
+                                <input type="file" id="prodEditFotoArquivo" accept="image/*" class="hidden" onchange="aoSelecionarFotoProduto(event)">
+                                <button type="button" onclick="removerFotoProduto()" id="btnRemoverFotoProduto" class="hidden text-xs text-rose-600 hover:text-rose-700 font-semibold underline">
+                                    Remover Foto
+                                </button>
+                            </div>
+                            <input type="text" id="prodEditFotoUrl" placeholder="Ou cole a URL da imagem (https://...)" oninput="aoDigitarUrlFotoProduto(this.value)"
+                                class="w-full bg-white border border-stone-300 rounded-sm px-2.5 py-1 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-900">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-2 pt-1">

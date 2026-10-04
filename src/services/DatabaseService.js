@@ -69,11 +69,13 @@ class DatabaseService {
                 nome VARCHAR(150) NOT NULL,
                 preco NUMERIC(10,2) NOT NULL,
                 descricao TEXT,
+                foto TEXT,
                 estoque INT DEFAULT 999,
                 ativo BOOLEAN DEFAULT TRUE,
                 criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+            ALTER TABLE tb_produtos ADD COLUMN IF NOT EXISTS foto TEXT;
 
             CREATE INDEX IF NOT EXISTS idx_tb_produtos_categoria ON tb_produtos(categoria_id);
             CREATE INDEX IF NOT EXISTS idx_tb_produtos_ativo ON tb_produtos(ativo);
