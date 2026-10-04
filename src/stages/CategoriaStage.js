@@ -39,7 +39,7 @@ class CategoriaStage {
             submenu += `*${chave}️⃣* - *${produto.nome}* - R$ ${precoFormatado}\n`;
         }
 
-        submenu += `\n👉 *Digite o número do produto* que deseja escolher, ou *#* para voltar ao menu principal.`;
+        submenu += `\n👉 *Digite o número do produto* que deseja escolher, *0* para trocar de categoria, ou *#* para voltar ao menu principal.`;
 
         await msg.reply(submenu);
         sessao.etapa = 'aguardando_produto';

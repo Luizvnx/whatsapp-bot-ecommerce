@@ -384,6 +384,23 @@ router.post('/conversa/:id_cliente/alternar-modo', async (req, res) => {
     }
 });
 
+// 9.1. ALTERAR ETAPA / DEVOLVER CLIENTE AO BOT
+router.post('/alterar-status', async (req, res) => {
+    const { id_cliente, novaEtapa, resetarCarrinho } = req.body;
+    if (!id_cliente || !novaEtapa) {
+        return res.status(400).json({ success: false, message: 'ID do cliente e nova etapa são obrigatórios.' });
+    }
+
+    try {
+        const conversa = await SessionService.alterarEtapa(id_cliente, novaEtapa, resetarCarrinho);
+        await SessionService.alternarModoAtendimento(id_cliente, 'bot');
+        res.json({ success: true, message: 'Cliente transferido para o bot com sucesso!', data: conversa });
+    } catch (err) {
+        console.error('❌ Erro ao alterar etapa do cliente:', err);
+        res.status(500).json({ success: false, message: 'Erro ao transferir etapa do bot.' });
+    }
+});
+
 // 10. STATUS DA CONEXÃO COM A EVOLUTION API (INSTÂNCIA ViP)
 router.get('/instance-status', async (req, res) => {
     try {

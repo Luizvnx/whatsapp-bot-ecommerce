@@ -10,6 +10,19 @@ class ProdutoStage {
             return await InicioStage.executar(msg, '', sessao);
         }
 
+        // Permite redefinir/trocar de categoria diretamente
+        if (t === '0' || t.includes('categoria') || t.includes('categorias') || t.includes('mudar') || t.includes('trocar') || t.includes('redefinir')) {
+            sessao.etapa = 'aguardando_categoria';
+            sessao.errosConsecutivos = 0;
+            const catalogo = await CatalogoService.obterCatalogo();
+            let msgCategorias = `🍯 *Categorias de Produtos - Favo de Mel*\n\nEscolha uma categoria para ver os itens:\n\n`;
+            for (const [chave, cat] of Object.entries(catalogo.categorias || {})) {
+                msgCategorias += `*${chave}️⃣* - ${cat.nome}\n`;
+            }
+            msgCategorias += `\n👉 *Digite o número da categoria* ou *#* para o menu principal.`;
+            return await msg.reply(msgCategorias);
+        }
+
         const catalogo = await CatalogoService.obterCatalogo();
         const catId = sessao.categoriaSelecionada || '1';
         const categoria = catalogo.categorias[catId];
@@ -32,7 +45,7 @@ class ProdutoStage {
                 sessao.etapa = 'em_atendimento_humano';
                 return;
             }
-            await msg.reply("⚠️ Produto não encontrado. Digite o número correspondente ao produto desejado, ou digite *#* para voltar ao menu.");
+            await msg.reply("⚠️ Produto não encontrado. Digite o número correspondente ao produto desejado, *0* para trocar de categoria, ou *#* para voltar ao menu.");
             return;
         }
 

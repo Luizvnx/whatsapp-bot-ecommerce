@@ -277,6 +277,12 @@ class CatalogoService {
         const sql = `
             INSERT INTO tb_categorias (id, nome, descricao, icone, ordem, ativo)
             VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (id) DO UPDATE SET
+                nome = EXCLUDED.nome,
+                descricao = EXCLUDED.descricao,
+                icone = CASE WHEN EXCLUDED.icone != '' THEN EXCLUDED.icone ELSE tb_categorias.icone END,
+                ordem = EXCLUDED.ordem,
+                ativo = EXCLUDED.ativo
             RETURNING *;
         `;
         const res = await DatabaseService.executar(sql, [

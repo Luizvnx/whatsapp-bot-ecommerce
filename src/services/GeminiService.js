@@ -104,6 +104,116 @@ DIRETRIZES DE RESPOSTA:
             transferirHumano
         };
     }
+
+    /**
+     * Sugere uma resposta inteligente para o atendente humano aprovar e enviar pelo painel
+     */
+    static async sugerirResposta(historicoMensagens = [], nomeContato = 'Cliente') {
+        const key = this.apiKey;
+        const historicoRecente = (Array.isArray(historicoMensagens) ? historicoMensagens : [])
+            .slice(-12)
+            .map(m => {
+                const quem = m.remetente === 'atendente' ? (m.atendenteNome || 'Atendente') : (nomeContato || 'Cliente');
+                return `${quem}: ${m.texto || '[Mídia]'}`;
+            })
+            .join('\n');
+
+        if (!key || !historicoRecente.trim()) {
+            return `Olá, ${nomeContato || 'tudo bem'}! Como posso te ajudar hoje com nossos produtos da Favo de Mel? 🐝`;
+        }
+
+        const prompt = `Você é um atendente experiente da loja Favo de Mel (Aracaju/SE), especializada em produtos puros da colmeia, méis de abelhas nativas, própolis, resgate de enxames e consultoria.
+Analise o histórico recente da conversa abaixo com o cliente "${nomeContato}" e crie uma resposta recomendada ideal para o atendente humano enviar pelo WhatsApp.
+A resposta deve ser cordial, acolhedora, objetiva e útil (use emojis com moderação, como 🐝🍯).
+
+HISTÓRICO RECENTE:
+${historicoRecente}
+
+INSTRUÇÃO: Escreva apenas a mensagem recomendada para envio direto, sem introduções, sem aspas e sem meta-comentários.`;
+
+        const modelos = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+
+        for (const model of modelos) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+                const response = await axios.post(url, {
+                    contents: [{
+                        role: 'user',
+                        parts: [{ text: prompt }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.5,
+                        maxOutputTokens: 350
+                    }
+                }, { timeout: 10000 });
+
+                const cand = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (cand && cand.trim()) {
+                    return cand.trim().replace(/^["']|["']$/g, '');
+                }
+            } catch (err) {
+                console.warn(`[GeminiService] Falha ao sugerir resposta com ${model}:`, err.message);
+            }
+        }
+
+        return `Olá, ${nomeContato}! Estou verificando sua solicitação aqui e já te passo mais detalhes em instantes. 🐝`;
+    }
+
+    /**
+     * Gera um resumo estruturado da conversa para o operador
+     */
+    static async resumirConversa(historicoMensagens = [], nomeContato = 'Cliente') {
+        const key = this.apiKey;
+        const historicoTexto = (Array.isArray(historicoMensagens) ? historicoMensagens : [])
+            .slice(-30)
+            .map(m => {
+                const quem = m.remetente === 'atendente' ? (m.atendenteNome || 'Atendente') : (nomeContato || 'Cliente');
+                return `[${quem}]: ${m.texto || '[Mídia]'}`;
+            })
+            .join('\n');
+
+        if (!key || !historicoTexto.trim()) {
+            return `Resumo do Atendimento:\n• Cliente: ${nomeContato}\n• Total de mensagens: ${(historicoMensagens || []).length}\n• Sem dados suficientes para gerar resumo inteligente.`;
+        }
+
+        const prompt = `Você é um assistente de CRM da Favo de Mel. Analise o histórico desta conversa com o cliente "${nomeContato}" e gere um resumo conciso com:
+1. 👤 Cliente: Identificação e perfil
+2. 🎯 Objetivo / Interesse Principal: O que o cliente deseja (produtos, orçamento de resgate, consultoria ou dúvidas)
+3. 📌 Status Atual: Onde a conversa parou
+4. 🚀 Próxima Ação Recomendada para o Atendente
+
+HISTÓRICO:
+${historicoTexto}
+
+Formate em tópicos curtos e claros.`;
+
+        const modelos = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+
+        for (const model of modelos) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+                const response = await axios.post(url, {
+                    contents: [{
+                        role: 'user',
+                        parts: [{ text: prompt }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.3,
+                        maxOutputTokens: 400
+                    }
+                }, { timeout: 10000 });
+
+                const cand = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (cand && cand.trim()) {
+                    return cand.trim();
+                }
+            } catch (err) {
+                console.warn(`[GeminiService] Falha ao resumir conversa com ${model}:`, err.message);
+            }
+        }
+
+        return `Resumo do Atendimento:\n• Cliente: ${nomeContato}\n• Mensagens trocadas: ${(historicoMensagens || []).length}\n• Status: Atendimento em andamento.`;
+    }
 }
 
 module.exports = GeminiService;
