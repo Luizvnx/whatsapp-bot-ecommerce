@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-slate-100">
+<html lang="pt-BR" class="h-full bg-[#f6f5f3]">
 
 <head>
     <meta charset="UTF-8">
@@ -12,48 +12,32 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="manifest" href="/site.webmanifest">
-    <meta name="theme-color" content="#f8fafc">
+    <meta name="theme-color" content="#f6f5f3">
 
     <!-- Socket.io & Tailwind -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    borderRadius: {
-                        '3xl': 'var(--radius-3xl)',
-                        '2xl': 'var(--radius-2xl)',
-                        'xl': 'var(--radius-xl)',
-                        'lg': 'var(--radius-lg)',
-                        'md': 'var(--radius-md)',
-                        'sm': 'var(--radius-sm)',
-                    },
                     fontFamily: {
-                        sans: ['var(--font-sans)'],
-                        mono: ['var(--font-mono)'],
-                        serif: ['var(--font-serif)'],
+                        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        serif: ['"Newsreader"', 'Georgia', 'serif'],
+                        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace']
                     }
                 }
             }
         }
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
     <style>
         :root {
-            --radius-3xl: 4px;
-            --radius-2xl: 4px;
-            --radius-xl: 4px;
-            --radius-lg: 4px;
-            --radius-md: 4px;
-            --radius-sm: 2px;
-
-            --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
-            --font-mono: 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
-            --font-serif: 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
+            --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-serif: 'Newsreader', Georgia, serif;
         }
 
         html,
@@ -64,7 +48,8 @@
         }
 
         .custom-scrollbar::-webkit-scrollbar {
-            width: 5px;
+            width: 4px;
+            height: 4px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
@@ -72,69 +57,53 @@
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(148, 163, 184, 0.4);
-            border-radius: 4px;
+            background: #d6d3d1;
+            border-radius: 2px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(100, 116, 139, 0.6);
+            background: #a8a29e;
         }
 
         .chat-bg {
-            background-color: #efeae2;
-            background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+            background-color: #f7f6f2;
+            background-image: radial-gradient(#e5e4de 1px, transparent 1px);
             background-size: 20px 20px;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-fadeIn {
-            animation: fadeIn 0.22s ease-out forwards;
         }
     </style>
 </head>
 
-<body class="h-full flex flex-col text-slate-800 antialiased overflow-hidden bg-slate-100">
+<body class="h-full flex flex-col text-stone-900 antialiased overflow-hidden bg-[#f6f5f3]">
 
-    <!-- Topbar Banner & Header -->
-    <header
-        class="bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3 sticky top-0 z-30 flex-shrink-0 shadow-xs">
-        <div class="max-w-7xl mx-auto flex justify-between items-center gap-2">
+        <!-- Topbar Banner & Header -->
+    <header class="bg-white border-b border-stone-200 px-3 sm:px-4 py-2 sm:py-2.5 sticky top-0 z-30 flex-shrink-0 shadow-xs">
+        <div class="max-w-7xl mx-auto flex justify-between items-center gap-3">
             <div class="flex items-center gap-2.5">
-                <img src="/logo.png" alt="Logo" class="w-10 h-10 sm:w-12 sm:h-12 object-contain flex-shrink-0"
-                    onerror="this.onerror=null; this.src='/apple-touch-icon.png';">
+                <div class="w-8 h-8 rounded-sm bg-stone-900 text-amber-500 flex items-center justify-center border border-stone-800 shadow-xs flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" stroke-linejoin="round"/>
+                        <path d="M12 11l8-4.5M12 11v9M12 11L4 6.5"/>
+                    </svg>
+                </div>
                 <div>
-                    <h1 class="text-sm sm:text-base font-bold text-slate-900 leading-none">Favo de Mel</h1>
-                    <p class="text-[11px] sm:text-xs text-amber-600 font-medium mt-0.5 hidden xs:block">Atendimento & Vendas</p>
+                    <h1 class="text-sm sm:text-base font-serif font-bold text-stone-900 leading-none">Favo de Mel</h1>
+                    <p class="text-[10px] font-mono uppercase tracking-wider text-amber-700 font-semibold mt-0.5 hidden xs:block">Terminal Operacional</p>
                 </div>
             </div>
 
             <!-- Header Navigation Switcher -->
-            <nav class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+            <nav class="flex items-center bg-stone-100 p-0.5 rounded-sm border border-stone-200">
                 <button type="button" onclick="trocarAba('atendimento')" id="btnAbaAtendimento"
-                    class="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition bg-emerald-600 text-white shadow-sm">
-                    <span>💬</span>
-                    <span class="hidden sm:inline">Atendimento</span>
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition bg-stone-900 text-stone-100 shadow-xs">
+                    <span>Atendimento</span>
                 </button>
                 <button type="button" onclick="trocarAba('catalogo')" id="btnAbaCatalogo"
-                    class="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">
-                    <span>🍯</span>
-                    <span class="hidden sm:inline">Catálogo & Produtos</span>
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900 hover:bg-stone-200/60">
+                    <span>Catálogo</span>
                 </button>
                 <button type="button" onclick="trocarAba('metricas')" id="btnAbaMetricas"
-                    class="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">
-                    <span>📊</span>
-                    <span class="hidden sm:inline">Métricas & Bot</span>
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900 hover:bg-stone-200/60">
+                    <span>Métricas & Bot</span>
                 </button>
             </nav>
 
@@ -142,33 +111,41 @@
             <div class="flex items-center gap-1.5 sm:gap-2">
                 <!-- Socket Realtime Badge -->
                 <div id="badgeSocket" title="Status da Conexão em Tempo Real (WebSocket)"
-                    class="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 text-emerald-700">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    class="hidden sm:flex items-center gap-1.5 text-[11px] font-mono font-medium bg-stone-50 px-2 py-1 rounded-sm border border-stone-200 text-stone-700">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                     <span>Tempo Real</span>
                 </div>
 
                 <!-- Instance Status Button -->
                 <button type="button" id="badgeStatus" onclick="clicarBadgeStatus()" title="Status da Conexão WhatsApp (Clique para ler QR Code se desconectado)"
-                    class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-slate-200 shadow-xs text-slate-600 hover:bg-slate-50 transition cursor-pointer">
-                    <span class="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0"></span>
+                    class="flex items-center gap-1.5 sm:gap-2 text-[11px] font-mono font-medium bg-white px-2.5 py-1 rounded-sm border border-stone-200 shadow-xs text-stone-700 hover:bg-stone-50 transition cursor-pointer">
+                    <span id="badgeStatusDot" class="w-1.5 h-1.5 rounded-full bg-stone-400 flex-shrink-0"></span>
                     <span id="badgeStatusText">Conectando...</span>
                 </button>
 
                 <!-- Sound Alert Toggle Button -->
-                <button onclick="alternarSom()" id="btnToggleSom" title="Alerta Sonoro Ativo (Clique para silenciar)"
-                    class="p-1.5 sm:p-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition border border-slate-200 flex-shrink-0 shadow-xs">
-                    <span id="iconSom" class="text-xs sm:text-sm">🔊</span>
+                <button onclick="alternarSom()" id="btnToggleSom" title="Alerta sonoro (Clique para silenciar)"
+                    class="p-1.5 sm:p-2 bg-white hover:bg-stone-50 text-stone-600 hover:text-stone-900 rounded-sm transition border border-stone-200 flex-shrink-0 shadow-xs">
+                    <span id="iconSom" class="flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"/>
+                        </svg>
+                    </span>
                 </button>
 
                 <!-- Push Notification Permission Toggle Button -->
-                <button onclick="solicitarOuTestarNotificacao()" id="btnToggleNotif" title="Notificações no Navegador"
-                    class="p-1.5 sm:p-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition border border-slate-200 flex-shrink-0 shadow-xs">
-                    <span id="iconNotif" class="text-xs sm:text-sm">🔔</span>
+                <button onclick="solicitarOuTestarNotificacao()" id="btnToggleNotif" title="Notificações no navegador"
+                    class="p-1.5 sm:p-2 bg-white hover:bg-stone-50 text-stone-600 hover:text-stone-900 rounded-sm transition border border-stone-200 flex-shrink-0 shadow-xs">
+                    <span id="iconNotif" class="flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                    </span>
                 </button>
 
                 <!-- Refresh Button -->
                 <button onclick="atualizarTudo(true)" title="Atualizar dados agora"
-                    class="p-1.5 sm:p-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition border border-slate-200 flex-shrink-0 shadow-xs">
+                    class="p-1.5 sm:p-2 bg-white hover:bg-stone-50 text-stone-600 hover:text-stone-900 rounded-sm transition border border-stone-200 flex-shrink-0 shadow-xs">
                     <svg id="iconRefresh" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
@@ -177,20 +154,19 @@
                 </button>
 
                 <!-- User Identity Badge & Settings Button -->
-                <div class="flex items-center gap-1.5 sm:gap-2 border-l border-slate-200 pl-2 sm:pl-3 ml-1 sm:ml-2">
-                    <button type="button" onclick="abrirModalPerfil()" title="Configurações do Usuário e Senha"
-                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 transition cursor-pointer hover:border-amber-400 shadow-xs">
+                <div class="flex items-center gap-1.5 sm:gap-2 border-l border-stone-200 pl-2 sm:pl-3 ml-1 sm:ml-2">
+                    <button type="button" onclick="abrirModalPerfil()" title="Configurações do Usuário"
+                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-white hover:bg-stone-50 border border-stone-200 text-xs font-semibold text-stone-800 transition cursor-pointer shadow-xs">
                         <span id="userBadgeAvatar"
-                            class="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[10px] font-extrabold shadow-xs">
+                            class="w-5 h-5 rounded-sm bg-stone-900 text-amber-400 flex items-center justify-center text-[10px] font-mono font-bold">
                             <%= (typeof user !=='undefined' && user && user.name) ? user.name.charAt(0).toUpperCase() : 'F' %>
                         </span>
-                        <span id="userBadgeNome" class="hidden md:inline text-slate-800 font-semibold">
-                            <%= (typeof user !=='undefined' && user && user.name) ? user.name : 'Favo de Mel' %>
+                        <span id="userBadgeNome" class="hidden md:inline text-stone-800 font-medium">
+                            <%= (typeof user !=='undefined' && user && user.name) ? user.name : 'Atendente' %>
                         </span>
-                        <span class="text-[10px] text-slate-400">⚙️</span>
                     </button>
                     <a href="/logout" title="Sair do Painel"
-                        class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-600 hover:text-rose-600 transition flex items-center gap-1 shadow-xs">
+                        class="px-2.5 py-1 rounded-sm bg-white hover:bg-stone-50 border border-stone-200 text-xs font-medium text-stone-600 hover:text-rose-700 transition shadow-xs">
                         <span>Sair</span>
                     </a>
                 </div>
@@ -200,412 +176,335 @@
 
     <!-- Disconnection Alert Banner -->
     <div id="alertaConexao"
-        class="hidden bg-rose-50 border-b border-rose-200 px-4 py-2.5 text-center text-xs font-semibold text-rose-800 shadow-xs">
+        class="hidden bg-stone-900 border-b border-stone-800 px-4 py-2 text-center text-xs text-stone-100 shadow-xs">
         <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
             <div class="flex items-center gap-2">
-                <span class="text-base animate-pulse">⚠️</span>
-                <span>WhatsApp Desconectado! Conecte seu aparelho para enviar e receber mensagens.</span>
+                <span class="w-2 h-2 rounded-sm bg-stone-1000"></span>
+                <span class="font-medium">WhatsApp desconectado. Conecte seu aparelho para sincronizar mensagens.</span>
             </div>
             <button type="button" onclick="abrirModalQrCode()"
-                class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]">
-                <span>📱</span>
+                class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-sm text-xs transition shadow-xs">
                 <span>Escanear QR Code</span>
             </button>
         </div>
     </div>
 
     <!-- 1. ABA ATENDIMENTO (Conversas e Chat ao Vivo) -->
-    <main id="abaConteudoAtendimento" class="flex-1 flex overflow-hidden max-w-7xl mx-auto w-full p-2 sm:p-4 gap-3">
+    <main id="abaConteudoAtendimento" class="flex-1 flex overflow-hidden max-w-7xl mx-auto w-full p-2 sm:p-3 gap-3">
 
         <!-- LEFT COLUMN: Conversation List (Sidebar) -->
         <section id="painelLista"
-            class="w-full md:w-80 lg:w-96 bg-white border border-slate-200 rounded-2xl flex flex-col overflow-hidden flex-shrink-0 shadow-sm">
+            class="w-full md:w-80 lg:w-96 bg-white border border-stone-200 rounded-md flex flex-col overflow-hidden flex-shrink-0 shadow-xs">
 
-            <!-- Sidebar Header & Search -->
-            <div class="p-3 border-b border-slate-100 space-y-2.5">
+            <div class="p-3 border-b border-stone-200 space-y-2.5 bg-stone-50/50">
                 <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
-                        <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Conversas</h2>
+                        <h2 class="text-xs font-mono font-semibold text-stone-600 uppercase tracking-wider">Conversas</h2>
                         <span id="badgeTotalConversas"
-                            class="text-[11px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">0</span>
+                            class="text-[11px] font-mono font-semibold bg-white text-stone-700 border border-stone-200 px-1.5 py-0.5 rounded-sm">0</span>
                     </div>
-                    <!-- Botão Nova Conversa Estilo WhatsApp -->
                     <button type="button" onclick="abrirModalNovaConversa()" id="btnNovaConversa"
-                        title="Iniciar nova conversa, adicionar contato ou criar grupo"
-                        class="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-semibold transition shadow-xs hover:scale-[1.02] active:scale-[0.98]">
+                        title="Iniciar nova conversa, contato ou grupo"
+                        class="flex items-center gap-1.5 px-2.5 py-1 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-xs font-medium transition shadow-xs">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4">
-                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>
                         <span>Nova Conversa</span>
                     </button>
                 </div>
                 <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-stone-400">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                     </span>
                     <input type="text" id="campoBusca" placeholder="Buscar por cliente ou telefone..."
                         oninput="aoDigitarBusca()"
-                        class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition">
+                        class="w-full pl-8 pr-3 py-1.5 bg-white border border-stone-200 rounded-sm text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-900 transition">
                 </div>
             </div>
 
-            <!-- Conversation List Items Container -->
-            <div id="listaConversas" class="flex-1 overflow-y-auto custom-scrollbar divide-y divide-slate-100">
-                <div class="p-8 text-center text-slate-400 text-xs italic">
-                    ⏳ Carregando conversas em tempo real...
+            <div id="listaConversas" class="flex-1 overflow-y-auto custom-scrollbar divide-y divide-stone-100">
+                <div class="p-8 text-center text-stone-400 font-mono text-xs">
+                    Carregando conversas...
                 </div>
             </div>
-
         </section>
 
         <!-- RIGHT COLUMN: Active Chat Panel -->
         <section id="painelChat"
-            class="hidden md:flex flex-1 bg-white border border-slate-200 rounded-2xl flex-col overflow-hidden shadow-sm relative">
+            class="hidden md:flex flex-1 bg-white border border-stone-200 rounded-md flex-col overflow-hidden shadow-xs relative">
 
-            <!-- Empty State (When no conversation is selected) -->
             <div id="chatEmptyState"
-                class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/50">
+                class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#faf9f7]">
                 <div
-                    class="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 shadow-sm text-emerald-600">
-                    💬
+                    class="w-12 h-12 rounded-sm bg-white border border-stone-200 flex items-center justify-center mb-3 shadow-xs text-stone-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
                 </div>
-                <h3 class="text-lg font-bold text-slate-800">Selecione uma conversa</h3>
-                <p class="text-xs text-slate-500 max-w-sm mt-1">
-                    Escolha um contato na lista à esquerda para acompanhar o histórico em tempo real e responder
-                    diretamente pelo WhatsApp.
+                <h3 class="text-base font-serif font-semibold text-stone-900">Selecione uma conversa</h3>
+                <p class="text-xs text-stone-500 max-w-sm mt-1">
+                    Escolha um contato na lista para visualizar o histórico de mensagens e responder diretamente pelo WhatsApp.
                 </p>
             </div>
 
-            <!-- Active Chat Content (Hidden initially) -->
             <div id="chatContent" class="hidden flex-1 flex flex-col h-full overflow-hidden">
-
-                <!-- Chat Top Header -->
-                <div
-                    class="p-3 sm:p-3.5 border-b border-slate-200 bg-white/95 backdrop-blur-md flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                        <!-- Back Button (Mobile only) -->
+                <div class="p-3 border-b border-stone-200 bg-white flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2.5 min-w-0 flex-1">
                         <button onclick="voltarParaLista()" type="button"
-                            class="md:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition flex-shrink-0"
-                            title="Voltar para a lista de conversas">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                    d="M15 19l-7-7 7-7"></path>
+                            class="md:hidden p-1 text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-sm transition flex-shrink-0"
+                            title="Voltar para a lista">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
                         </button>
 
                         <div id="chatHeaderAvatar"
-                            class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold flex items-center justify-center text-sm sm:text-base shadow-xs flex-shrink-0">
+                            class="w-8 h-8 rounded-sm bg-stone-100 text-stone-700 border border-stone-200 font-mono font-bold flex items-center justify-center text-xs shadow-xs flex-shrink-0">
                             C
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <h3 id="chatHeaderNome"
-                                    class="text-xs sm:text-sm font-bold text-slate-900 leading-tight truncate">Nome do
-                                    Cliente</h3>
-                                <!-- Copilot Mode Switch Badge -->
+                                <h3 id="chatHeaderNome" class="text-xs sm:text-sm font-semibold text-stone-900 leading-tight truncate">Nome do Cliente</h3>
                                 <span id="badgeModoAtendimento" onclick="alternarModoAtendimento()"
                                     title="Clique para alternar o modo do Copiloto IA"
-                                    class="cursor-pointer text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 hidden xs:inline-flex items-center gap-1 transition hover:opacity-80">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    class="cursor-pointer text-[10px] font-mono font-medium px-2 py-0.5 rounded-sm border bg-stone-50 text-stone-700 border-stone-200 hidden xs:inline-flex items-center gap-1.5 transition hover:bg-stone-100">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                                     <span id="textoModoAtendimento">Copiloto IA</span>
                                 </span>
                             </div>
-                            <span id="chatHeaderNumero"
-                                class="text-[10px] sm:text-xs font-mono text-slate-500 truncate block">📱
-                                0000000000</span>
+                            <span id="chatHeaderNumero" class="text-[10px] sm:text-xs font-mono text-stone-500 truncate block">0000000000</span>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                        <!-- Ver Carrinho Button -->
+                    <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
                         <button onclick="abrirModalCarrinhoCliente()" id="btnVerCarrinho" title="Ver Carrinho do Cliente"
-                            class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition flex items-center gap-1.5 shadow-xs">
-                            <span>🛒</span>
-                            <span class="hidden md:inline">Carrinho</span>
-                            <span id="badgeCarrinhoQtd" class="hidden px-1.5 py-0.5 bg-amber-500 text-slate-950 font-bold rounded-full text-[10px]">0</span>
+                            class="bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 px-2.5 py-1 rounded-sm text-xs font-medium transition flex items-center gap-1.5 shadow-xs">
+                            <span>Carrinho</span>
+                            <span id="badgeCarrinhoQtd" class="hidden px-1.5 py-0.2 bg-amber-600 text-white font-mono font-bold rounded-sm text-[10px]">0</span>
                         </button>
 
-                        <!-- Devolver ao Bot Button -->
                         <button onclick="abrirModalDevolverBot()" id="btnDevolverBot" title="Transferir cliente de volta para o Bot"
-                            class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition flex items-center gap-1.5 shadow-xs">
-                            <span>🤖</span>
-                            <span class="hidden md:inline">Devolver ao Bot</span>
+                            class="bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 px-2.5 py-1 rounded-sm text-xs font-medium transition shadow-xs">
+                            <span>Devolver ao Bot</span>
                         </button>
 
-                        <!-- Download TXT Button -->
-                        <button onclick="exportarChatParaTXT()" id="btnExportarTXT"
-                            title="Baixar Histórico Completo do Chat em TXT"
-                            class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition flex items-center gap-1.5 shadow-xs">
-                            <span>📥</span>
-                            <span class="hidden md:inline">Baixar TXT</span>
+                        <button onclick="exportarChatParaTXT()" id="btnExportarTXT" title="Exportar histórico em TXT"
+                            class="bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 px-2.5 py-1 rounded-sm text-xs font-medium transition shadow-xs">
+                            <span class="hidden md:inline">Exportar TXT</span>
+                            <span class="md:hidden">TXT</span>
                         </button>
 
-                        <!-- WhatsApp Direct Link -->
                         <a id="btnAbrirWhatsappDirect" href="#" target="_blank"
-                            class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition flex items-center gap-1.5 shadow-xs">
-                            <span class="hidden sm:inline">WhatsApp Web</span>
-                            <span class="sm:hidden">WhatsApp</span>
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14">
-                                </path>
+                            class="bg-stone-900 hover:bg-stone-800 text-stone-100 px-2.5 py-1 rounded-sm text-xs font-medium transition flex items-center gap-1 shadow-xs">
+                            <span>WhatsApp</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                             </svg>
                         </a>
                     </div>
                 </div>
 
-                <!-- Chat Message Stream -->
-                <div id="chatMensagensStream"
-                    class="flex-1 chat-bg p-3 sm:p-4 overflow-y-auto custom-scrollbar space-y-3">
-                    <!-- Dynamic Message Bubbles Rendered Here -->
+                <div id="chatMensagensStream" class="flex-1 chat-bg p-3 sm:p-4 overflow-y-auto custom-scrollbar space-y-3">
+                    <!-- Dynamic Message Bubbles -->
                 </div>
 
-                <!-- Chat Input Footer -->
-                <div class="p-2.5 sm:p-3 border-t border-slate-200 bg-white/95 backdrop-blur-md relative">
-
-                    <!-- Barra de Resposta Ativa ("Respondendo a...") -->
+                <div class="p-2.5 sm:p-3 border-t border-stone-200 bg-white relative">
                     <div id="barraRespostaMensagem"
-                        class="hidden mb-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2.5 animate-fadeIn shadow-sm">
-                        <div class="flex items-center gap-2.5 overflow-hidden flex-1 border-l-4 border-emerald-500 pl-2.5">
+                        class="hidden mb-2 p-2 bg-stone-50 border border-stone-200 rounded-sm flex items-center justify-between gap-2 shadow-xs">
+                        <div class="flex items-center gap-2 overflow-hidden flex-1 border-l-2 border-stone-900 pl-2">
                             <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
-                                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
-                                    </svg>
-                                    <span>Respondendo a <span id="autorRespostaTexto">Cliente</span></span>
-                                </div>
-                                <p id="previewRespostaTexto" class="text-xs text-slate-700 truncate mt-0.5 font-medium"></p>
+                                <span class="text-[10px] font-mono uppercase font-semibold text-stone-600">Respondendo a <span id="autorRespostaTexto">Cliente</span></span>
+                                <p id="previewRespostaTexto" class="text-xs text-stone-800 truncate mt-0.5 font-medium"></p>
                             </div>
                         </div>
                         <button type="button" onclick="cancelarResposta()" title="Cancelar resposta (Esc)"
-                            class="p-1.5 text-slate-400 hover:text-slate-700 bg-white hover:bg-slate-100 rounded-lg transition border border-slate-200 flex-shrink-0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            class="p-1 text-stone-400 hover:text-stone-700 bg-white rounded-sm border border-stone-200">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
                         </button>
                     </div>
 
-                    <!-- Hidden File Input for Attachments -->
                     <input type="file" id="inputFileMidia" class="hidden"
                         accept="image/*,application/pdf,.doc,.docx,.xlsx,.txt" onchange="aoSelecionarArquivo(event)">
 
-                    <!-- Normal Input Form -->
                     <form id="formChatNormal" onsubmit="enviarMensagem(event)" class="flex gap-1.5 sm:gap-2 items-end">
-
-                        <!-- Attachment Button 📎 -->
                         <button type="button" onclick="document.getElementById('inputFileMidia').click()"
-                            title="Enviar Imagem, PDF ou Documento"
-                            class="p-2.5 text-slate-500 hover:text-slate-800 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl transition flex-shrink-0 shadow-xs">
+                            title="Anexar arquivo ou imagem"
+                            class="p-2 text-stone-600 hover:text-stone-900 bg-stone-50 border border-stone-200 hover:bg-stone-100 rounded-sm transition flex-shrink-0">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13">
-                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                             </svg>
                         </button>
 
-                        <!-- Text Input with Copilot Button -->
                         <div class="relative flex-1">
                             <textarea id="inputMensagemChat" placeholder="Digite uma mensagem..." rows="1"
                                 autocomplete="off" onkeydown="aoPressionarTeclaMensagem(event)"
                                 oninput="autoAjustarAlturaTextarea(this)"
-                                class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-9 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition resize-none custom-scrollbar max-h-32 overflow-y-auto block leading-relaxed"></textarea>
+                                class="w-full bg-stone-50/50 border border-stone-200 rounded-sm pl-3 pr-20 py-2 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 transition resize-none custom-scrollbar max-h-32 overflow-y-auto block leading-relaxed"></textarea>
 
-                            <!-- AI Suggest Button ✨ -->
                             <button type="button" onclick="sugerirRespostaIA()" id="btnSugerirIA"
-                                title="Sugerir Resposta com IA Gemini"
-                                class="absolute right-2 top-2 p-1 text-indigo-500 hover:text-indigo-700 transition text-sm flex items-center justify-center">
-                                <span id="iconSugerirIA">✨</span>
+                                title="Sugerir resposta com IA"
+                                class="absolute right-2 top-1.5 px-2 py-0.5 text-[10px] font-mono uppercase font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-sm transition flex items-center gap-1">
+                                <span id="iconSugerirIA">IA</span>
                             </button>
                         </div>
 
-                        <!-- Audio Record Button 🎙️ -->
                         <button type="button" onclick="iniciarGravacaoAudio()" id="btnGravarAudio"
-                            title="Gravar Mensagem de Voz"
-                            class="p-2.5 text-slate-500 hover:text-emerald-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl transition flex-shrink-0 shadow-xs">
+                            title="Gravar mensagem de voz"
+                            class="p-2 text-stone-600 hover:text-stone-900 bg-stone-50 border border-stone-200 hover:bg-stone-100 rounded-sm transition flex-shrink-0">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z">
-                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
                             </svg>
                         </button>
 
-                        <!-- Send Button -->
                         <button type="submit" id="btnEnviarMsg"
-                            class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5 flex-shrink-0">
+                            class="bg-stone-900 hover:bg-stone-800 text-stone-100 px-3.5 py-2 rounded-sm text-xs font-semibold uppercase tracking-wider transition shadow-xs flex items-center gap-1.5 flex-shrink-0">
                             <span class="hidden sm:inline">Enviar</span>
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                             </svg>
                         </button>
                     </form>
 
-                    <!-- Recording Audio Live Interface (Hidden by default) -->
                     <div id="painelGravacaoAudio"
-                        class="hidden flex items-center justify-between gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-2 animate-fadeIn">
-                        <div class="flex items-center gap-2.5">
-                            <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
-                            <span class="text-xs font-bold text-rose-700">Gravando áudio:</span>
-                            <span id="tempoGravacao" class="text-xs font-mono font-bold text-rose-900">00:00</span>
+                        class="hidden flex items-center justify-between gap-3 bg-stone-100 border border-stone-300 rounded-sm px-3 py-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-rose-600"></span>
+                            <span class="text-xs font-semibold text-stone-800">Gravação em andamento:</span>
+                            <span id="tempoGravacao" class="text-xs font-mono font-bold text-stone-900">00:00</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <!-- Cancel Recording -->
-                            <button type="button" onclick="cancelarGravacaoAudio()" title="Cancelar Gravação"
-                                class="px-3 py-1.5 text-rose-700 hover:text-rose-900 bg-white hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-semibold transition">
-                                🗑️ Cancelar
+                            <button type="button" onclick="cancelarGravacaoAudio()" title="Cancelar gravação"
+                                class="px-2.5 py-1 text-stone-700 hover:text-stone-900 bg-white border border-stone-300 rounded-sm text-xs font-medium transition">
+                                Cancelar
                             </button>
-                            <!-- Send Recorded Audio -->
-                            <button type="button" onclick="finalizarEEnviarAudio()" title="Enviar Áudio de Voz"
-                                class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-1">
-                                <span>Enviar</span> 🚀
+                            <button type="button" onclick="finalizarEEnviarAudio()" title="Enviar áudio gravado"
+                                class="bg-stone-900 hover:bg-stone-800 text-stone-100 px-3 py-1 rounded-sm text-xs font-semibold uppercase tracking-wide transition shadow-xs">
+                                Enviar
                             </button>
                         </div>
                     </div>
-
                 </div>
-
             </div>
-
         </section>
-
     </main>
 
-    <!-- 2. ABA CATÁLOGO & PRODUTOS (Gestão Completa de Produtos e Preços no Banco de Dados) -->
-    <div id="abaConteudoCatalogo" class="hidden flex-1 overflow-hidden max-w-7xl mx-auto w-full p-2 sm:p-4 flex-col gap-3">
-        <!-- Top Toolbar -->
-        <div class="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm flex-shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center text-xl shadow-xs">
-                    🍯
-                </div>
-                <div>
-                    <h2 class="text-sm sm:text-base font-bold text-slate-900 leading-tight">Catálogo de Produtos & Preços</h2>
-                    <p class="text-[11px] sm:text-xs text-slate-500">Banco de Dados PostgreSQL (Railway). Os valores editados aqui refletem em tempo real no WhatsApp.</p>
-                </div>
+    <!-- 2. ABA CATÁLOGO & PRODUTOS -->
+    <div id="abaConteudoCatalogo" class="hidden flex-1 overflow-hidden max-w-7xl mx-auto w-full p-2 sm:p-3 flex-col gap-3">
+        <div class="bg-white border border-stone-200 rounded-md p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs flex-shrink-0">
+            <div>
+                <h2 class="text-sm sm:text-base font-serif font-bold text-stone-900 leading-tight">Catálogo de Produtos & Preços</h2>
+                <p class="text-[11px] sm:text-xs text-stone-500 font-mono">PostgreSQL (Railway) &middot; Sincronização em tempo real com o WhatsApp</p>
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
-                <!-- Search -->
                 <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
                     <input type="text" id="buscaProdutoCatalogo" placeholder="Buscar produto..." oninput="filtrarProdutosCatalogo()"
-                        class="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-amber-500 transition w-36 sm:w-52">
+                        class="px-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-sm text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 transition w-36 sm:w-52">
                 </div>
 
-                <!-- Category Filter -->
                 <select id="filtroCategoriaCatalogo" onchange="filtrarProdutosCatalogo()"
-                    class="py-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:bg-white focus:ring-1 focus:ring-amber-500 transition">
+                    class="py-1.5 px-2.5 bg-stone-50 border border-stone-200 rounded-sm text-xs text-stone-800 focus:outline-none focus:bg-white focus:border-stone-900 transition">
                     <option value="">Todas as Categorias</option>
                 </select>
 
-                <!-- Nova Categoria Button -->
                 <button type="button" onclick="abrirModalNovaCategoria()"
-                    class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-xs">
-                    <span>📁</span>
-                    <span class="hidden sm:inline">+ Categoria</span>
+                    class="px-3 py-1.5 bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 rounded-sm text-xs font-medium transition shadow-xs">
+                    <span>+ Categoria</span>
                 </button>
 
-                <!-- Novo Produto Button -->
                 <button type="button" onclick="abrirModalNovoProduto()"
-                    class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98]">
-                    <span>➕</span>
+                    class="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs">
                     <span>Novo Produto</span>
                 </button>
             </div>
         </div>
 
-        <!-- Products Grid Container -->
-        <div class="flex-1 bg-slate-50/50 border border-slate-200 rounded-2xl overflow-y-auto custom-scrollbar p-3 sm:p-4 shadow-xs">
-            <div id="gridProdutosCatalogo" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                <div class="col-span-full text-center py-12 text-slate-400 text-xs">
-                    ⏳ Carregando catálogo do banco de dados...
+        <div class="flex-1 bg-stone-50/50 border border-stone-200 rounded-md overflow-y-auto custom-scrollbar p-3 sm:p-4 shadow-xs">
+            <div id="gridProdutosCatalogo" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div class="col-span-full text-center py-12 text-stone-400 font-mono text-xs">
+                    Carregando catálogo do banco de dados...
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 3. ABA MÉTRICAS & CONTROLE DO BOT (Painel Antigo Integrado) -->
-    <div id="abaConteudoMetricas" class="hidden flex-1 overflow-y-auto custom-scrollbar max-w-7xl mx-auto w-full p-2 sm:p-4 flex-col gap-4">
-        <!-- Top Status Banner & Bot Global Switch -->
-        <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-3.5">
-                <div id="iconeStatusBotGlobal" class="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center text-2xl shadow-xs">
-                    🤖
+    <!-- 3. ABA MÉTRICAS & CONTROLE DO BOT -->
+    <div id="abaConteudoMetricas" class="hidden flex-1 overflow-y-auto custom-scrollbar max-w-7xl mx-auto w-full p-2 sm:p-3 flex-col gap-3">
+        <div class="bg-white border border-stone-200 rounded-md p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <h2 class="text-sm sm:text-base font-serif font-bold text-stone-900">Automação Global do Bot</h2>
+                    <span id="badgeBotStatusGlobal" class="text-[11px] font-mono font-medium px-2 py-0.5 rounded-sm bg-stone-100 text-stone-700 border border-stone-200">
+                        Ativo
+                    </span>
                 </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-sm sm:text-base font-bold text-slate-900">Controle Global do Bot</h2>
-                        <span id="badgeBotStatusGlobal" class="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Ativo
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-500 mt-0.5">Pause o bot instantaneamente se desejar que apenas atendentes humanos falem no WhatsApp.</p>
-                </div>
+                <p class="text-xs text-stone-500 mt-0.5">Pause o bot instantaneamente se desejar que apenas atendentes humanos falem no WhatsApp.</p>
             </div>
 
             <button type="button" id="btnToggleBotGlobal" onclick="alternarStatusBotGlobal()"
-                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs">
+                class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-xs font-semibold uppercase tracking-wider transition shadow-xs">
                 <span id="textoBtnBotGlobal">Pausar Bot Geral</span>
             </button>
         </div>
 
         <!-- Metric Stat Cards -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-                <span class="text-xs text-slate-500 font-semibold block">Total de Clientes</span>
-                <span id="statTotalGeral" class="text-2xl font-extrabold text-slate-900 mt-1 block">0</span>
-                <span class="text-[10px] text-slate-400 mt-0.5 block">Sessões cadastradas</span>
+            <div class="bg-white border border-stone-200 rounded-md p-3.5 shadow-xs">
+                <span class="text-[11px] font-mono uppercase tracking-wider text-stone-500 font-medium block">Total de Clientes</span>
+                <span id="statTotalGeral" class="text-2xl font-mono font-bold text-stone-900 mt-1 block">0</span>
+                <span class="text-[10px] text-stone-400 mt-0.5 block">Sessões cadastradas</span>
             </div>
-            <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-                <span class="text-xs text-emerald-700 font-semibold block">Com o Bot</span>
-                <span id="statTotalBot" class="text-2xl font-extrabold text-emerald-600 mt-1 block">0</span>
-                <span class="text-[10px] text-slate-400 mt-0.5 block">Navegando no catálogo</span>
+            <div class="bg-white border border-stone-200 rounded-md p-3.5 shadow-xs">
+                <span class="text-[11px] font-mono uppercase tracking-wider text-emerald-700 font-medium block">Com o Bot</span>
+                <span id="statTotalBot" class="text-2xl font-mono font-bold text-emerald-600 mt-1 block">0</span>
+                <span class="text-[10px] text-stone-400 mt-0.5 block">Navegando no catálogo</span>
             </div>
-            <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-                <span class="text-xs text-blue-700 font-semibold block">Atendimento Humano</span>
-                <span id="statTotalHumano" class="text-2xl font-extrabold text-blue-600 mt-1 block">0</span>
-                <span class="text-[10px] text-slate-400 mt-0.5 block">Em espera ou ao vivo</span>
+            <div class="bg-white border border-stone-200 rounded-md p-3.5 shadow-xs">
+                <span class="text-[11px] font-mono uppercase tracking-wider text-stone-700 font-medium block">Atendimento Humano</span>
+                <span id="statTotalHumano" class="text-2xl font-mono font-bold text-stone-800 mt-1 block">0</span>
+                <span class="text-[10px] text-stone-400 mt-0.5 block">Em espera ou ao vivo</span>
             </div>
-            <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-                <span class="text-xs text-amber-700 font-semibold block">No Carrinho</span>
-                <span id="statTotalCarrinho" class="text-2xl font-extrabold text-amber-600 mt-1 block">0</span>
-                <span class="text-[10px] text-slate-400 mt-0.5 block">Montando pedido</span>
+            <div class="bg-white border border-stone-200 rounded-md p-3.5 shadow-xs">
+                <span class="text-[11px] font-mono uppercase tracking-wider text-amber-700 font-medium block">No Carrinho</span>
+                <span id="statTotalCarrinho" class="text-2xl font-mono font-bold text-amber-600 mt-1 block">0</span>
+                <span class="text-[10px] text-stone-400 mt-0.5 block">Montando pedido</span>
             </div>
-            <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-                <span class="text-xs text-indigo-700 font-semibold block">Consultando IA</span>
-                <span id="statTotalIa" class="text-2xl font-extrabold text-indigo-600 mt-1 block">0</span>
-                <span class="text-[10px] text-slate-400 mt-0.5 block">Assistente Gemini</span>
+            <div class="bg-white border border-stone-200 rounded-md p-3.5 shadow-xs">
+                <span class="text-[11px] font-mono uppercase tracking-wider text-stone-600 font-medium block">Consultando IA</span>
+                <span id="statTotalIa" class="text-2xl font-mono font-bold text-stone-700 mt-1 block">0</span>
+                <span class="text-[10px] text-stone-400 mt-0.5 block">Assistente Gemini</span>
             </div>
         </div>
 
         <!-- Two Columns: Instance WhatsApp + Database Status -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Card Conexão WhatsApp Evolution -->
-            <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Instância WhatsApp (Evolution)</h3>
-                    <span id="cardInstanciaStatusBadge" class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600">Verificando...</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="bg-white border border-stone-200 rounded-md p-4 shadow-xs space-y-3">
+                <div class="flex items-center justify-between border-b border-stone-100 pb-2">
+                    <h3 class="text-xs font-mono font-semibold text-stone-800 uppercase tracking-wider">Instância WhatsApp (Evolution)</h3>
+                    <span id="cardInstanciaStatusBadge" class="text-[11px] font-mono px-2 py-0.5 rounded-sm font-medium bg-stone-100 text-stone-600">Verificando...</span>
                 </div>
-                <p class="text-xs text-slate-500">Monitoramento da conexão do seu número no WhatsApp. Se desconectar, o QR Code de reconexão aparecerá abaixo.</p>
-                <div id="cardInstanciaQrCode" class="text-center py-4 text-xs text-slate-500">
-                    ✅ Conexão ativa e sincronizada.
+                <p class="text-xs text-stone-500">Monitoramento da conexão do seu número no WhatsApp. Se desconectar, o QR Code de reconexão aparecerá abaixo.</p>
+                <div id="cardInstanciaQrCode" class="text-center py-4 text-xs font-mono text-stone-500">
+                    Conexão ativa e sincronizada.
                 </div>
             </div>
 
-            <!-- Card Banco de Dados PostgreSQL -->
-            <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Banco de Dados (PostgreSQL)</h3>
-                    <span class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Conectado (Railway)</span>
+            <div class="bg-white border border-stone-200 rounded-md p-4 shadow-xs space-y-3">
+                <div class="flex items-center justify-between border-b border-stone-100 pb-2">
+                    <h3 class="text-xs font-mono font-semibold text-stone-800 uppercase tracking-wider">Banco de Dados (PostgreSQL)</h3>
+                    <span class="text-[11px] font-mono px-2 py-0.5 rounded-sm font-medium bg-stone-100 text-stone-700 border border-stone-200">Conectado (Railway)</span>
                 </div>
-                <p class="text-xs text-slate-500">Tabelas de catálogo, produtos, sessões e histórico sincronizados na nuvem.</p>
+                <p class="text-xs text-stone-500">Tabelas de catálogo, produtos, sessões e histórico sincronizados na nuvem.</p>
                 <div class="pt-2 flex items-center gap-3">
-                    <button type="button" onclick="carregarEstatisticas()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl transition shadow-xs">
-                        🔄 Atualizar Métricas Agora
+                    <button type="button" onclick="carregarEstatisticas()" class="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-200 text-xs font-medium text-stone-700 rounded-sm transition shadow-xs">
+                        Atualizar Métricas
                     </button>
                 </div>
             </div>
@@ -613,58 +512,57 @@
     </div>
 
     <!-- MODAL DE PRODUTO (NOVO OU EDITAR) -->
-    <div id="modalProduto" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-4 sm:p-6 space-y-4 shadow-2xl animate-fadeIn">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 id="tituloModalProduto" class="text-sm sm:text-base font-bold text-slate-900">🍯 Novo Produto</h3>
-                <button type="button" onclick="fecharModalProduto()" class="text-slate-400 hover:text-slate-700 text-base">✕</button>
+    <div id="modalProduto" class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4">
+        <div class="bg-white border border-stone-300 rounded-md max-w-lg w-full p-5 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b border-stone-200 pb-3">
+                <h3 id="tituloModalProduto" class="text-base font-serif font-bold text-stone-900">Novo Produto</h3>
+                <button type="button" onclick="fecharModalProduto()" class="text-stone-400 hover:text-stone-700 text-base">✕</button>
             </div>
 
             <form id="formProduto" onsubmit="salvarProduto(event)" class="space-y-3.5">
                 <input type="hidden" id="prodEditId" value="">
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nome do Produto *</label>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Nome do Produto *</label>
                     <input type="text" id="prodEditNome" required placeholder="Ex: Mel de Flor de Laranjeira"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Categoria *</label>
+                        <label class="block text-xs font-medium text-stone-700 mb-1">Categoria *</label>
                         <select id="prodEditCategoria" required
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
-                            <!-- Populated dynamically -->
+                            class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-stone-900">
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Preço (R$) *</label>
+                        <label class="block text-xs font-medium text-stone-700 mb-1">Preço (R$) *</label>
                         <input type="number" id="prodEditPreco" required step="0.01" min="0" placeholder="Ex: 85.00"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
+                            class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Descrição</label>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Descrição</label>
                     <textarea id="prodEditDescricao" rows="2" placeholder="Breve descrição dos benefícios ou tamanho (ex: 250ml, medicinal...)"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40 resize-none"></textarea>
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 resize-none"></textarea>
                 </div>
 
                 <div class="flex items-center gap-2 pt-1">
                     <input type="checkbox" id="prodEditAtivo" checked
-                        class="w-4 h-4 rounded border-slate-300 bg-slate-50 text-amber-500 focus:ring-amber-500">
-                    <label for="prodEditAtivo" class="text-xs font-semibold text-slate-700 cursor-pointer">
+                        class="w-4 h-4 rounded-sm border-stone-300 text-stone-900 focus:ring-stone-900">
+                    <label for="prodEditAtivo" class="text-xs font-medium text-stone-700 cursor-pointer">
                         Produto ativo e visível no WhatsApp
                     </label>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex justify-end gap-2 pt-2 border-t border-stone-200">
                     <button type="button" onclick="fecharModalProduto()"
-                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+                        class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">
                         Cancelar
                     </button>
                     <button type="submit" id="btnSalvarProduto"
-                        class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-md">
+                        class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs">
                         Salvar Produto
                     </button>
                 </div>
@@ -673,46 +571,40 @@
     </div>
 
     <!-- MODAL DE NOVA CATEGORIA -->
-    <div id="modalCategoria" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl animate-fadeIn">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 class="text-sm sm:text-base font-bold text-slate-900">📁 Nova Categoria</h3>
-                <button type="button" onclick="fecharModalCategoria()" class="text-slate-400 hover:text-slate-700 text-base">✕</button>
+    <div id="modalCategoria" class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4">
+        <div class="bg-white border border-stone-300 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b border-stone-200 pb-3">
+                <h3 class="text-base font-serif font-bold text-stone-900">Nova Categoria</h3>
+                <button type="button" onclick="fecharModalCategoria()" class="text-stone-400 hover:text-stone-700 text-base">✕</button>
             </div>
 
             <form id="formCategoria" onsubmit="salvarCategoria(event)" class="space-y-3.5">
-                <div class="grid grid-cols-3 gap-3">
-                    <div class="col-span-1">
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Código (ID) *</label>
-                        <input type="text" id="catEditId" required placeholder="Ex: 4"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Ícone</label>
-                        <input type="text" id="catEditIcone" value="🍯" placeholder="Ex: 🍯, 🌿, 🕯️"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
-                    </div>
+                <div>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Código (ID) *</label>
+                    <input type="text" id="catEditId" required placeholder="Ex: 4"
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
+                    <input type="hidden" id="catEditIcone" value="">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nome da Categoria *</label>
-                    <input type="text" id="catEditNome" required placeholder="Ex: 🍯 Sachês e Blends Especiais"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Nome da Categoria *</label>
+                    <input type="text" id="catEditNome" required placeholder="Ex: Sachês e Blends Especiais"
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Descrição</label>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Descrição</label>
                     <textarea id="catEditDescricao" rows="2" placeholder="Subtítulo que aparecerá no menu do WhatsApp"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40 resize-none"></textarea>
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 resize-none"></textarea>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <div class="flex justify-end gap-2 pt-2 border-t border-stone-200">
                     <button type="button" onclick="fecharModalCategoria()"
-                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+                        class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">
                         Cancelar
                     </button>
                     <button type="submit" id="btnSalvarCategoria"
-                        class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-md">
+                        class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs">
                         Salvar Categoria
                     </button>
                 </div>
@@ -721,35 +613,31 @@
     </div>
 
     <!-- MODAL DO CARRINHO DO CLIENTE -->
-    <div id="modalCarrinhoCliente" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl animate-fadeIn">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">🛒</span>
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-900">Carrinho do Cliente</h3>
-                        <p id="carrinhoClienteNome" class="text-[11px] text-slate-500">Cliente</p>
-                    </div>
+    <div id="modalCarrinhoCliente" class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4">
+        <div class="bg-white border border-stone-300 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b border-stone-200 pb-3">
+                <div>
+                    <h3 class="text-base font-serif font-bold text-stone-900">Carrinho do Cliente</h3>
+                    <p id="carrinhoClienteNome" class="text-xs text-stone-500 font-mono">Cliente</p>
                 </div>
-                <button type="button" onclick="fecharModalCarrinhoCliente()" class="text-slate-400 hover:text-slate-700 text-base">✕</button>
+                <button type="button" onclick="fecharModalCarrinhoCliente()" class="text-stone-400 hover:text-stone-700 text-base">✕</button>
             </div>
 
             <div id="carrinhoItensContainer" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
-                <!-- Injected via JS -->
             </div>
 
-            <div class="border-t border-slate-100 pt-3 flex justify-between items-center text-xs">
-                <span class="font-bold text-slate-700">Total do Pedido:</span>
-                <span id="carrinhoTotalValor" class="text-base font-extrabold text-amber-600">R$ 0,00</span>
+            <div class="border-t border-stone-200 pt-3 flex justify-between items-center text-xs">
+                <span class="font-medium text-stone-700">Total do Pedido:</span>
+                <span id="carrinhoTotalValor" class="text-base font-mono font-bold text-amber-700">R$ 0,00</span>
             </div>
 
-            <div class="flex justify-between items-center gap-2 pt-2 border-t border-slate-100">
+            <div class="flex justify-between items-center gap-2 pt-2 border-t border-stone-200">
                 <button type="button" onclick="limparCarrinhoAtivo()" id="btnEsvaziarCarrinho"
-                    class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold transition">
-                    🗑️ Esvaziar Carrinho
+                    class="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-stone-200 hover:border-rose-300 rounded-sm text-xs font-medium transition">
+                    Esvaziar Carrinho
                 </button>
                 <button type="button" onclick="fecharModalCarrinhoCliente()"
-                    class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+                    class="px-4 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">
                     Fechar
                 </button>
             </div>
@@ -757,47 +645,44 @@
     </div>
 
     <!-- MODAL DE DEVOLVER AO BOT -->
-    <div id="modalDevolverBot" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl animate-fadeIn">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">🤖</span>
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-900">Devolver Cliente para o Bot</h3>
-                        <p class="text-[11px] text-slate-500">Escolha a etapa em que o bot irá reassumir a conversa</p>
-                    </div>
+    <div id="modalDevolverBot" class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4">
+        <div class="bg-white border border-stone-300 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b border-stone-200 pb-3">
+                <div>
+                    <h3 class="text-base font-serif font-bold text-stone-900">Devolver Cliente para o Bot</h3>
+                    <p class="text-xs text-stone-500">Selecione o estágio em que a automação reassume a conversa</p>
                 </div>
-                <button type="button" onclick="fecharModalDevolverBot()" class="text-slate-400 hover:text-slate-700 text-base">✕</button>
+                <button type="button" onclick="fecharModalDevolverBot()" class="text-stone-400 hover:text-stone-700 text-base">✕</button>
             </div>
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Selecione a Etapa:</label>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Etapa de Destino:</label>
                     <select id="selectEtapaDevolucao"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/40">
-                        <option value="inicio">🐝 Menu Principal (Boas-vindas)</option>
-                        <option value="aguardando_categoria">🍯 Ver Categorias do Catálogo</option>
-                        <option value="carrinho_opcoes">🛒 Carrinho / Finalizar Pedido</option>
-                        <option value="conversando_com_ia">❓ Consulta com Assistente IA</option>
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-2 text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-stone-900">
+                        <option value="inicio">Menu Principal (Boas-vindas)</option>
+                        <option value="aguardando_categoria">Categorias do Catálogo</option>
+                        <option value="carrinho_opcoes">Carrinho / Finalizar Pedido</option>
+                        <option value="conversando_com_ia">Consulta com Assistente IA</option>
                     </select>
                 </div>
 
                 <div class="flex items-center gap-2 pt-1">
                     <input type="checkbox" id="checkResetarCarrinhoDevolver"
-                        class="w-4 h-4 rounded border-slate-300 bg-slate-50 text-blue-600 focus:ring-blue-500">
-                    <label for="checkResetarCarrinhoDevolver" class="text-xs font-semibold text-slate-700 cursor-pointer">
-                        Resetar/Esvaziar carrinho do cliente ao devolver
+                        class="w-4 h-4 rounded-sm border-stone-300 text-stone-900 focus:ring-stone-900">
+                    <label for="checkResetarCarrinhoDevolver" class="text-xs font-medium text-stone-700 cursor-pointer">
+                        Resetar carrinho do cliente ao devolver
                     </label>
                 </div>
             </div>
 
-            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <div class="flex justify-end gap-2 pt-3 border-t border-stone-200">
                 <button type="button" onclick="fecharModalDevolverBot()"
-                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+                    class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">
                     Cancelar
                 </button>
                 <button type="button" onclick="confirmarDevolverBot()" id="btnConfirmarDevolver"
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition shadow-md">
+                    class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs">
                     Confirmar Devolução
                 </button>
             </div>
@@ -805,65 +690,61 @@
     </div>
 
     <!-- MODAL DE CONFIGURAÇÃO DE USUÁRIO & SENHA -->
-    <div id="modalPerfilUsuario" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl animate-fadeIn">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">👤</span>
-                    <div>
-                        <h3 class="text-sm sm:text-base font-bold text-slate-900">Configurações de Usuário</h3>
-                        <p class="text-[11px] text-slate-500">Altere o nome do atendente, login e senha de acesso</p>
-                    </div>
+    <div id="modalPerfilUsuario" class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4">
+        <div class="bg-white border border-stone-300 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b border-stone-200 pb-3">
+                <div>
+                    <h3 class="text-base font-serif font-bold text-stone-900">Configurações de Usuário</h3>
+                    <p class="text-xs text-stone-500">Credenciais e identificação do atendente</p>
                 </div>
-                <button type="button" onclick="fecharModalPerfil()" class="text-slate-400 hover:text-slate-700 text-base">✕</button>
+                <button type="button" onclick="fecharModalPerfil()" class="text-stone-400 hover:text-stone-700 text-base">✕</button>
             </div>
 
             <form id="formPerfilUsuario" onsubmit="salvarPerfil(event)" class="space-y-3.5">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nome do Atendente *</label>
-                    <input type="text" id="perfilNome" required placeholder="Ex: Favo de Mel ou seu nome"
-                        value="<%= (typeof user !=='undefined' && user && user.name) ? user.name : 'Favo de Mel' %>"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
-                    <span class="text-[10px] text-slate-400 mt-0.5 block">Identificação interna usada no atendimento.</span>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Nome do Atendente *</label>
+                    <input type="text" id="perfilNome" required placeholder="Ex: Luiz"
+                        value="<%= (typeof user !=='undefined' && user && user.name) ? user.name : 'Atendente' %>"
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail / Usuário de Login *</label>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">E-mail / Login *</label>
                     <input type="text" id="perfilEmail" required placeholder="Ex: admin@favodemel.com"
                         value="<%= (typeof user !=='undefined' && user && user.email) ? user.email : 'admin@favodemel.com' %>"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                 </div>
 
-                <div class="pt-2 border-t border-slate-100 space-y-3">
-                    <span class="text-xs font-bold text-amber-600 block">Alterar Senha de Acesso</span>
+                <div class="pt-2 border-t border-stone-200 space-y-3">
+                    <span class="text-xs font-mono uppercase tracking-wider font-semibold text-stone-700 block">Alterar Senha de Acesso</span>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Senha Atual (apenas se for alterar a senha)</label>
+                        <label class="block text-xs font-medium text-stone-700 mb-1">Senha Atual</label>
                         <input type="password" id="perfilSenhaAtual" placeholder="Digite sua senha atual"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
+                            class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">Nova Senha</label>
+                            <label class="block text-xs font-medium text-stone-700 mb-1">Nova Senha</label>
                             <input type="password" id="perfilNovaSenha" placeholder="Nova senha"
-                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
+                                class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">Confirmar Nova Senha</label>
-                            <input type="password" id="perfilConfirmaSenha" placeholder="Repita a nova senha"
-                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-amber-500/40">
+                            <label class="block text-xs font-medium text-stone-700 mb-1">Confirmar Senha</label>
+                            <input type="password" id="perfilConfirmaSenha" placeholder="Repita a senha"
+                                class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <div class="flex justify-end gap-2 pt-3 border-t border-stone-200">
                     <button type="button" onclick="fecharModalPerfil()"
-                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+                        class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">
                         Cancelar
                     </button>
                     <button type="submit" id="btnSalvarPerfil"
-                        class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-md">
+                        class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs">
                         Salvar Alterações
                     </button>
                 </div>
@@ -872,102 +753,82 @@
     </div>
 
     <!-- MODAL QR CODE WHATSAPP -->
-    <div id="modalQrCodeWhatsApp" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl animate-fadeIn text-center">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2 text-left">
-                    <div class="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center text-xl">
-                        📱
-                    </div>
-                    <div>
-                        <h3 class="text-sm sm:text-base font-bold text-slate-900">Conectar WhatsApp</h3>
-                        <p class="text-[11px] text-slate-500">Escaneie o código com seu WhatsApp</p>
-                    </div>
+    <div id="modalQrCodeWhatsApp" class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4">
+        <div class="bg-white border border-stone-300 rounded-md max-w-md w-full p-5 space-y-4 shadow-xl text-center">
+            <div class="flex justify-between items-center border-b border-stone-200 pb-3">
+                <div class="text-left">
+                    <h3 class="text-base font-serif font-bold text-stone-900">Conectar WhatsApp</h3>
+                    <p class="text-xs text-stone-500">Escaneie o código com seu aplicativo WhatsApp</p>
                 </div>
-                <button type="button" onclick="fecharModalQrCode()" class="text-slate-400 hover:text-slate-700 text-base">✕</button>
+                <button type="button" onclick="fecharModalQrCode()" class="text-stone-400 hover:text-stone-700 text-base">✕</button>
             </div>
 
-            <!-- QR Code Display Box -->
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center min-h-[280px]">
-                <div id="qrCodeModalLoading" class="text-xs text-slate-500 flex flex-col items-center gap-2">
-                    <span class="text-2xl animate-spin">⏳</span>
-                    <span>Carregando QR Code do WhatsApp...</span>
+            <div class="p-4 bg-stone-50 border border-stone-200 rounded-sm flex flex-col items-center justify-center min-h-[260px]">
+                <div id="qrCodeModalLoading" class="text-xs text-stone-500 flex flex-col items-center gap-2 font-mono">
+                    <span>Carregando QR Code...</span>
                 </div>
                 <div id="qrCodeModalImagemContainer" class="hidden flex flex-col items-center">
-                    <div class="p-3 bg-white rounded-2xl shadow-md border-4 border-emerald-500/20">
-                        <img id="qrCodeModalImg" src="" alt="QR Code WhatsApp" class="w-56 h-56 sm:w-64 sm:h-64 object-contain">
+                    <div class="p-2 bg-white rounded-sm border border-stone-300">
+                        <img id="qrCodeModalImg" src="" alt="QR Code WhatsApp" class="w-56 h-56 sm:w-60 sm:h-60 object-contain">
                     </div>
-                    <span class="text-[11px] text-slate-500 mt-2.5 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Aguardando leitura pelo aplicativo WhatsApp...
+                    <span class="text-[11px] font-mono text-stone-500 mt-2.5 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                        Aguardando leitura no aplicativo...
                     </span>
                 </div>
-                <div id="qrCodeModalConectado" class="hidden text-xs text-emerald-700 flex flex-col items-center gap-2 py-6">
-                    <span class="text-3xl">✅</span>
-                    <span class="font-bold text-sm">WhatsApp Conectado com Sucesso!</span>
-                    <span class="text-[11px] text-slate-500">Sua instância está online e pronta para responder clientes.</span>
+                <div id="qrCodeModalConectado" class="hidden text-xs text-emerald-800 flex flex-col items-center gap-1.5 py-6">
+                    <span class="font-bold text-sm">WhatsApp Conectado com Sucesso</span>
+                    <span class="text-[11px] text-stone-500 font-mono">Instância online e sincronizada</span>
                 </div>
             </div>
 
-            <!-- Step by Step Instructions -->
-            <div class="text-left bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 space-y-1.5">
-                <p class="font-bold text-slate-800">Como conectar:</p>
-                <ol class="list-decimal list-inside space-y-1 text-slate-600 text-[11px]">
-                    <li>Abra o <strong>WhatsApp</strong> no celular.</li>
-                    <li>Toque em <strong>Mais opções (⋮)</strong> no Android ou <strong>Configurações (⚙️)</strong> no iPhone.</li>
-                    <li>Toque em <strong>Aparelhos conectados</strong> e depois em <strong>Conectar um aparelho</strong>.</li>
-                    <li>Aponte a câmera para o QR Code acima.</li>
+            <div class="text-left bg-stone-50 border border-stone-200 rounded-sm p-3 text-xs text-stone-700 space-y-1">
+                <p class="font-semibold text-stone-900">Instruções:</p>
+                <ol class="list-decimal list-inside space-y-0.5 text-stone-600 text-[11px]">
+                    <li>Abra o WhatsApp no celular.</li>
+                    <li>Toque em Aparelhos conectados e em Conectar um aparelho.</li>
+                    <li>Aponte a câmera para o código exibido acima.</li>
                 </ol>
             </div>
 
-            <!-- Actions -->
-            <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <div class="flex items-center justify-between gap-2 pt-2 border-t border-stone-200">
                 <button type="button" onclick="carregarQrCodeModal(true)" id="btnAtualizarQrModal"
-                    class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-xs">
-                    <span>🔄</span>
-                    <span>Atualizar QR Code</span>
+                    class="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 rounded-sm text-xs font-medium transition shadow-xs">
+                    Atualizar QR Code
                 </button>
                 <button type="button" onclick="fecharModalQrCode()"
-                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition shadow-sm">
+                    class="px-4 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs">
                     Fechar
                 </button>
             </div>
         </div>
     </div>
 
-
     <!-- Attachment Preview Modal -->
-    <div id="modalAnexo"
-        class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div
-            class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-4 space-y-4 shadow-2xl animate-fadeIn">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
-                <h3 class="text-sm font-bold text-slate-900">📎 Enviar Anexo</h3>
-                <button onclick="fecharModalAnexo()" class="text-slate-400 hover:text-slate-700 text-base">✕</button>
+    <div id="modalAnexo" class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4">
+        <div class="bg-white border border-stone-300 rounded-md max-w-md w-full p-4 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b border-stone-200 pb-2.5">
+                <h3 class="text-sm font-semibold text-stone-900">Enviar Anexo</h3>
+                <button onclick="fecharModalAnexo()" class="text-stone-400 hover:text-stone-700 text-base">✕</button>
             </div>
 
             <div id="previewAnexoContainer"
-                class="flex flex-col items-center justify-center p-4 bg-slate-50 border border-slate-200 rounded-xl min-h-[140px]">
-                <!-- Preview injected via JS -->
+                class="flex flex-col items-center justify-center p-4 bg-stone-50 border border-stone-200 rounded-sm min-h-[140px]">
             </div>
 
             <div>
-                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Legenda (opcional):</label>
+                <label class="block text-[11px] font-medium text-stone-600 mb-1">Legenda (opcional):</label>
                 <input type="text" id="inputLegendaAnexo" placeholder="Digite uma legenda para a imagem ou documento..."
                     onkeydown="if(event.key === 'Enter') { event.preventDefault(); enviarAnexoConfirmado(); }"
-                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20">
+                    class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
                 <button onclick="fecharModalAnexo()"
-                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">Cancelar</button>
+                    class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">Cancelar</button>
                 <button onclick="enviarAnexoConfirmado()" id="btnEnviarAnexo"
-                    class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
-                    <span>Enviar</span>
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                    </svg>
+                    class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-xs font-semibold uppercase tracking-wide transition shadow-xs">
+                    Enviar
                 </button>
             </div>
         </div>
@@ -975,193 +836,146 @@
 
     <!-- Modal: Confirmar Exclusão de Mensagem para Todos -->
     <div id="modalConfirmarApagar" onclick="if(event.target === this) fecharModalConfirmarApagar()"
-        class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-4 space-y-3.5 shadow-2xl animate-fadeIn">
-            <div class="flex items-center gap-2.5 text-rose-600">
-                <div class="w-9 h-9 rounded-full bg-rose-50 flex items-center justify-center border border-rose-200 text-base flex-shrink-0">
-                    🗑️
-                </div>
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900">Apagar para todos?</h3>
-                    <p class="text-[11px] text-slate-500">Exclui a mensagem no WhatsApp para todos os participantes.</p>
-                </div>
+        class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4">
+        <div class="bg-white border border-stone-300 rounded-md max-w-sm w-full p-4 space-y-3.5 shadow-xl">
+            <div>
+                <h3 class="text-sm font-semibold text-stone-900">Apagar Mensagem para Todos?</h3>
+                <p class="text-[11px] text-stone-500 mt-0.5">A mensagem será removida da conversa no WhatsApp.</p>
             </div>
 
-            <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200 leading-relaxed">
-                A mensagem será marcada como <strong class="text-slate-800 font-semibold">"mensagem apagada"</strong> no painel e continuará preservada para auditoria da equipe.
+            <p class="text-xs text-stone-600 bg-stone-50 p-2.5 rounded-sm border border-stone-200 leading-relaxed font-mono">
+                O registro será mantido internamente como "mensagem apagada" para histórico de auditoria.
             </p>
 
             <div class="flex justify-end gap-2 pt-1">
                 <button type="button" onclick="fecharModalConfirmarApagar()"
-                    class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+                    class="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">
                     Cancelar
                 </button>
                 <button type="button" onclick="executarApagarMensagemConfirmada()" id="btnConfirmarApagar"
-                    class="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
-                    <span>Apagar para Todos</span>
+                    class="px-4 py-1.5 bg-rose-700 hover:bg-rose-600 text-white rounded-sm text-xs font-semibold uppercase tracking-wide transition shadow-xs">
+                    Apagar Mensagem
                 </button>
             </div>
         </div>
     </div>
 
     <!-- AI Summary Modal -->
-    <div id="modalResumoIA"
-        class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div
-            class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl animate-fadeIn">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-lg">✨</span>
-                    <h3 class="text-sm font-bold text-slate-900">Resumo da Conversa</h3>
-                </div>
-                <button onclick="fecharModalResumoIA()" class="text-slate-400 hover:text-slate-700 text-base">✕</button>
+    <div id="modalResumoIA" class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4">
+        <div class="bg-white border border-stone-300 rounded-md max-w-lg w-full p-5 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b border-stone-200 pb-3">
+                <h3 class="text-base font-serif font-bold text-stone-900">Resumo da Conversa</h3>
+                <button onclick="fecharModalResumoIA()" class="text-stone-400 hover:text-stone-700 text-base">✕</button>
             </div>
 
             <div id="conteudoResumoIA"
-                class="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto custom-scrollbar font-sans">
-                ⏳ Gerando resumo com IA...
+                class="p-3 bg-stone-50 border border-stone-200 rounded-sm text-xs text-stone-800 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto custom-scrollbar font-mono">
+                Gerando resumo com IA...
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
                 <button onclick="copiarResumoIA()"
-                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">📋
-                    Copiar Resumo</button>
+                    class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">
+                    Copiar Resumo
+                </button>
                 <button onclick="fecharModalResumoIA()"
-                    class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-sm">Fechar</button>
+                    class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-xs font-semibold uppercase tracking-wide transition shadow-xs">
+                    Fechar
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Image Lightbox Zoom Modal -->
     <div id="modalZoomImagem"
-        class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
+        class="hidden fixed inset-0 z-50 bg-stone-950/80 flex items-center justify-center p-4 cursor-pointer"
         onclick="fecharModalZoom()">
         <img id="imgZoomModal" src=""
-            class="max-w-full max-h-[90vh] rounded-2xl shadow-2xl object-contain border border-white/20"
+            class="max-w-full max-h-[90vh] rounded-sm shadow-xl object-contain border border-stone-700"
             onclick="event.stopPropagation()">
     </div>
 
-    <!-- Modal: Nova Conversa / Contato / Grupo (Estilo WhatsApp) -->
+    <!-- Modal: Nova Conversa / Contato / Grupo -->
     <div id="modalNovaConversa" onclick="if(event.target === this) fecharModalNovaConversa()"
-        class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-        <div
-            class="bg-white border border-slate-200 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-
-            <!-- Modal Header -->
-            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <div
-                        class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg">
-                        💬
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-900">Nova Conversa</h3>
-                        <p class="text-[11px] text-slate-500">Inicie atendimentos, salve contatos ou crie grupos no
-                            WhatsApp</p>
-                    </div>
+        class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white border border-stone-300 w-full max-w-lg rounded-md shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-3 border-b border-stone-200 bg-stone-50 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-serif font-bold text-stone-900">Nova Conversa</h3>
+                    <p class="text-xs text-stone-500 font-mono">Iniciar atendimento direto, salvar contato ou criar grupo</p>
                 </div>
                 <button onclick="fecharModalNovaConversa()"
-                    class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition text-sm"
+                    class="p-1 text-stone-400 hover:text-stone-700 rounded-sm hover:bg-stone-100 transition text-sm"
                     title="Fechar">✕</button>
             </div>
 
             <!-- Tabs Navigation -->
-            <div class="flex border-b border-slate-200 bg-slate-50/80 px-3 pt-2 gap-1.5">
+            <div class="flex border-b border-stone-200 bg-stone-50 px-3 pt-2 gap-1">
                 <button type="button" onclick="trocarAbaNovaConversa('numero')" id="tabBtnNumero"
-                    class="tab-btn-nova-conversa flex-1 py-2 px-3 text-xs font-bold rounded-t-xl transition border-b-2 flex items-center justify-center gap-1.5 border-emerald-600 text-emerald-700 bg-white">
-                    <span>📱</span>
+                    class="tab-btn-nova-conversa flex-1 py-1.5 px-3 text-xs font-semibold rounded-t-sm transition border-b-2 border-stone-900 text-stone-900 bg-white">
                     <span>Por Número</span>
                 </button>
                 <button type="button" onclick="trocarAbaNovaConversa('contato')" id="tabBtnContato"
-                    class="tab-btn-nova-conversa flex-1 py-2 px-3 text-xs font-bold rounded-t-xl transition border-b-2 flex items-center justify-center gap-1.5 border-transparent text-slate-500 hover:text-slate-800">
-                    <span>👤</span>
+                    class="tab-btn-nova-conversa flex-1 py-1.5 px-3 text-xs font-semibold rounded-t-sm transition border-b-2 border-transparent text-stone-500 hover:text-stone-800">
                     <span>Novo Contato</span>
                 </button>
                 <button type="button" onclick="trocarAbaNovaConversa('grupo')" id="tabBtnGrupo"
-                    class="tab-btn-nova-conversa flex-1 py-2 px-3 text-xs font-bold rounded-t-xl transition border-b-2 flex items-center justify-center gap-1.5 border-transparent text-slate-500 hover:text-slate-800">
-                    <span>👥</span>
+                    class="tab-btn-nova-conversa flex-1 py-1.5 px-3 text-xs font-semibold rounded-t-sm transition border-b-2 border-transparent text-stone-500 hover:text-stone-800">
                     <span>Novo Grupo</span>
                 </button>
             </div>
 
             <!-- Tab 1: Conversar por Número -->
             <form id="formNovoChatNumero" onsubmit="submeterNovoChat(event)"
-                class="p-4 sm:p-5 space-y-3.5 flex-1 overflow-y-auto custom-scrollbar">
+                class="p-4 space-y-3 flex-1 overflow-y-auto custom-scrollbar">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                        Número de Telefone / WhatsApp <span class="text-rose-500">*</span>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">
+                        Número de Telefone / WhatsApp <span class="text-rose-600">*</span>
                     </label>
                     <div class="flex items-center gap-2">
-                        <!-- Flag Selector (apenas a bandeira com chevron ↕) -->
-                        <div class="relative flex-shrink-0 group" title="Clique para trocar de país">
-                            <div
-                                class="flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 px-3 py-2.5 rounded-xl transition cursor-pointer shadow-xs">
-                                <img id="flagDisplayChat" src="https://flagcdn.com/w40/br.png" alt="Brasil (+55)"
-                                    class="w-5 h-3.5 object-cover rounded-sm select-none">
-                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                </svg>
-                            </div>
-                            <select id="selectPaisChat" onchange="aoMudarPais('chat')"
-                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer bg-white text-slate-800 text-xs">
-                                <option value="55" data-iso="br" selected>🇧🇷 Brasil (+55)</option>
-                                <option value="1" data-iso="us">🇺🇸 Estados Unidos (+1)</option>
-                                <option value="351" data-iso="pt">🇵🇹 Portugal (+351)</option>
-                                <option value="34" data-iso="es">🇪🇸 Espanha (+34)</option>
-                                <option value="54" data-iso="ar">🇦🇷 Argentina (+54)</option>
-                                <option value="1" data-iso="ca">🇨🇦 Canadá (+1)</option>
-                                <option value="52" data-iso="mx">🇲🇽 México (+52)</option>
-                                <option value="44" data-iso="gb">🇬🇧 Reino Unido (+44)</option>
-                                <option value="39" data-iso="it">🇮🇹 Itália (+39)</option>
-                                <option value="33" data-iso="fr">🇫🇷 França (+33)</option>
-                                <option value="49" data-iso="de">🇩🇪 Alemanha (+49)</option>
-                                <option value="56" data-iso="cl">🇨🇱 Chile (+56)</option>
-                                <option value="57" data-iso="co">🇨🇴 Colômbia (+57)</option>
-                                <option value="595" data-iso="py">🇵🇾 Paraguai (+595)</option>
-                                <option value="598" data-iso="uy">🇺🇾 Uruguai (+598)</option>
-                                <option value="81" data-iso="jp">🇯🇵 Japão (+81)</option>
-                                <option value="244" data-iso="ao">🇦🇴 Angola (+244)</option>
-                                <option value="258" data-iso="mz">🇲🇿 Moçambique (+258)</option>
-                            </select>
-                        </div>
+                        <select id="selectPaisChat" onchange="aoMudarPais('chat')"
+                            class="bg-white border border-stone-300 px-2 py-1.5 rounded-sm text-xs font-mono text-stone-800 focus:outline-none focus:border-stone-900">
+                            <option value="55" data-iso="br" selected>BR (+55)</option>
+                            <option value="1" data-iso="us">US (+1)</option>
+                            <option value="351" data-iso="pt">PT (+351)</option>
+                            <option value="34" data-iso="es">ES (+34)</option>
+                            <option value="54" data-iso="ar">AR (+54)</option>
+                            <option value="595" data-iso="py">PY (+595)</option>
+                            <option value="598" data-iso="uy">UY (+598)</option>
+                            <option value="44" data-iso="gb">UK (+44)</option>
+                        </select>
 
-                        <!-- Campo de Número -->
                         <div class="relative flex-1">
-                            <input type="tel" id="inputChatNumero" placeholder="Ex: (79) 99999-9999" required
+                            <input type="tel" id="inputChatNumero" placeholder="(79) 99999-9999" required
                                 oninput="aoDigitarNumeroVerificar('chat')"
-                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-mono">
-                            <span id="badgeStatusNumeroChat" class="absolute right-3 top-2.5 text-[11px] hidden"></span>
+                                class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 transition font-mono">
+                            <span id="badgeStatusNumeroChat" class="absolute right-3 top-2 text-[11px] font-mono hidden"></span>
                         </div>
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-1">O código do país selecionado na bandeira é aplicado
-                        automaticamente.</p>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                    <label class="block text-xs font-medium text-stone-700 mb-1">
                         Nome de Identificação (Opcional)
                     </label>
                     <input type="text" id="inputChatNome" placeholder="Ex: Cliente Novo, Carlos..."
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition">
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                    <label class="block text-xs font-medium text-stone-700 mb-1">
                         Mensagem Inicial (Opcional)
                     </label>
                     <textarea id="inputChatMensagemInicial"
                         placeholder="Digite uma mensagem inicial para enviar na abertura..." rows="2"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition resize-none custom-scrollbar"></textarea>
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 resize-none custom-scrollbar"></textarea>
                 </div>
 
-                <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                <div class="pt-2 flex justify-end gap-2 border-t border-stone-200">
                     <button type="button" onclick="fecharModalNovaConversa()"
-                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">Cancelar</button>
+                        class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">Cancelar</button>
                     <button type="submit" id="btnSubmitNovoChat"
-                        class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
-                        <span>💬</span>
+                        class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-xs font-semibold uppercase tracking-wider transition shadow-xs">
                         <span>Iniciar Atendimento</span>
                     </button>
                 </div>
@@ -1169,82 +983,54 @@
 
             <!-- Tab 2: Novo Contato -->
             <form id="formNovoContato" onsubmit="submeterNovoContato(event)"
-                class="hidden p-4 sm:p-5 space-y-3.5 flex-1 overflow-y-auto custom-scrollbar">
+                class="hidden p-4 space-y-3 flex-1 overflow-y-auto custom-scrollbar">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                        Nome do Contato <span class="text-rose-500">*</span>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">
+                        Nome do Contato <span class="text-rose-600">*</span>
                     </label>
                     <input type="text" id="inputContatoNome" placeholder="Ex: Maria Oliveira" required
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition">
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                        Número de Telefone / WhatsApp <span class="text-rose-500">*</span>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">
+                        Número de Telefone / WhatsApp <span class="text-rose-600">*</span>
                     </label>
                     <div class="flex items-center gap-2">
-                        <!-- Flag Selector (apenas a bandeira com chevron ↕) -->
-                        <div class="relative flex-shrink-0 group" title="Clique para trocar de país">
-                            <div
-                                class="flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 px-3 py-2.5 rounded-xl transition cursor-pointer shadow-xs">
-                                <img id="flagDisplayContato" src="https://flagcdn.com/w40/br.png" alt="Brasil (+55)"
-                                    class="w-5 h-3.5 object-cover rounded-sm select-none">
-                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                </svg>
-                            </div>
-                            <select id="selectPaisContato" onchange="aoMudarPais('contato')"
-                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer bg-white text-slate-800 text-xs">
-                                <option value="55" data-iso="br" selected>🇧🇷 Brasil (+55)</option>
-                                <option value="1" data-iso="us">🇺🇸 Estados Unidos (+1)</option>
-                                <option value="351" data-iso="pt">🇵🇹 Portugal (+351)</option>
-                                <option value="34" data-iso="es">🇪🇸 Espanha (+34)</option>
-                                <option value="54" data-iso="ar">🇦🇷 Argentina (+54)</option>
-                                <option value="1" data-iso="ca">🇨🇦 Canadá (+1)</option>
-                                <option value="52" data-iso="mx">🇲🇽 México (+52)</option>
-                                <option value="44" data-iso="gb">🇬🇧 Reino Unido (+44)</option>
-                                <option value="39" data-iso="it">🇮🇹 Itália (+39)</option>
-                                <option value="33" data-iso="fr">🇫🇷 França (+33)</option>
-                                <option value="49" data-iso="de">🇩🇪 Alemanha (+49)</option>
-                                <option value="56" data-iso="cl">🇨🇱 Chile (+56)</option>
-                                <option value="57" data-iso="co">🇨🇴 Colômbia (+57)</option>
-                                <option value="595" data-iso="py">🇵🇾 Paraguai (+595)</option>
-                                <option value="598" data-iso="uy">🇺🇾 Uruguai (+598)</option>
-                                <option value="81" data-iso="jp">🇯🇵 Japão (+81)</option>
-                                <option value="244" data-iso="ao">🇦🇴 Angola (+244)</option>
-                                <option value="258" data-iso="mz">🇲🇿 Moçambique (+258)</option>
-                            </select>
-                        </div>
+                        <select id="selectPaisContato" onchange="aoMudarPais('contato')"
+                            class="bg-white border border-stone-300 px-2 py-1.5 rounded-sm text-xs font-mono text-stone-800 focus:outline-none focus:border-stone-900">
+                            <option value="55" data-iso="br" selected>BR (+55)</option>
+                            <option value="1" data-iso="us">US (+1)</option>
+                            <option value="351" data-iso="pt">PT (+351)</option>
+                            <option value="34" data-iso="es">ES (+34)</option>
+                            <option value="54" data-iso="ar">AR (+54)</option>
+                            <option value="595" data-iso="py">PY (+595)</option>
+                            <option value="598" data-iso="uy">UY (+598)</option>
+                            <option value="44" data-iso="gb">UK (+44)</option>
+                        </select>
 
-                        <!-- Campo de Número -->
                         <div class="relative flex-1">
-                            <input type="tel" id="inputContatoNumero" placeholder="Ex: (79) 99999-9999" required
+                            <input type="tel" id="inputContatoNumero" placeholder="(79) 99999-9999" required
                                 oninput="aoDigitarNumeroVerificar('contato')"
-                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-mono">
-                            <span id="badgeStatusNumeroContato"
-                                class="absolute right-3 top-2.5 text-[11px] hidden"></span>
+                                class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 font-mono">
+                            <span id="badgeStatusNumeroContato" class="absolute right-3 top-2 text-[11px] font-mono hidden"></span>
                         </div>
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-1">O código do país selecionado na bandeira é aplicado
-                        automaticamente.</p>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                    <label class="block text-xs font-medium text-stone-700 mb-1">
                         Mensagem de Boas-Vindas (Opcional)
                     </label>
                     <textarea id="inputContatoMensagemInicial" placeholder="Ex: Olá, tudo bem? Somos da Favo de Mel..." rows="2"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition resize-none custom-scrollbar"></textarea>
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 resize-none custom-scrollbar"></textarea>
                 </div>
 
-                <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                <div class="pt-2 flex justify-end gap-2 border-t border-stone-200">
                     <button type="button" onclick="fecharModalNovaConversa()"
-                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">Cancelar</button>
+                        class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">Cancelar</button>
                     <button type="submit" id="btnSubmitNovoContato"
-                        class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
-                        <span>👤</span>
+                        class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-xs font-semibold uppercase tracking-wider transition shadow-xs">
                         <span>Salvar Contato</span>
                     </button>
                 </div>
@@ -1252,59 +1038,55 @@
 
             <!-- Tab 3: Novo Grupo -->
             <form id="formNovoGrupo" onsubmit="submeterNovoGrupo(event)"
-                class="hidden p-4 sm:p-5 space-y-3.5 flex-1 overflow-y-auto custom-scrollbar">
+                class="hidden p-4 space-y-3 flex-1 overflow-y-auto custom-scrollbar">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                        Nome do Grupo (Assunto) <span class="text-rose-500">*</span>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">
+                        Nome do Grupo (Assunto) <span class="text-rose-600">*</span>
                     </label>
-                    <input type="text" id="inputGrupoNome" placeholder="Ex: Clientes Favo de Mel, Pedidos Especiais..." required
-                        maxlength="100"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition">
+                    <input type="text" id="inputGrupoNome" placeholder="Ex: Clientes Favo de Mel" required maxlength="100"
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                        Participantes (Números com DDD) <span class="text-rose-500">*</span>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">
+                        Participantes (Números com DDD) <span class="text-rose-600">*</span>
                     </label>
                     <textarea id="inputGrupoParticipantes"
-                        placeholder="Digite os números separados por vírgula ou em linhas separadas.&#10;Ex:&#10;79991054091&#10;79981159556"
+                        placeholder="79991054091, 79981159556"
                         rows="3" required
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-mono custom-scrollbar"></textarea>
-                    <p class="text-[10px] text-slate-400 mt-1">Ao menos um participante deve ser informado.</p>
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 font-mono custom-scrollbar"></textarea>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                    <label class="block text-xs font-medium text-stone-700 mb-1">
                         Descrição do Grupo (Opcional)
                     </label>
-                    <input type="text" id="inputGrupoDescricao" placeholder="Breve descrição dos objetivos do grupo..."
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition">
+                    <input type="text" id="inputGrupoDescricao" placeholder="Objetivo do grupo..."
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                    <label class="block text-xs font-medium text-stone-700 mb-1">
                         Primeira Mensagem do Grupo (Opcional)
                     </label>
                     <textarea id="inputGrupoMensagemInicial" placeholder="Ex: Sejam todos bem-vindos ao grupo!" rows="2"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition resize-none custom-scrollbar"></textarea>
+                        class="w-full bg-stone-50/50 border border-stone-300 rounded-sm px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 resize-none custom-scrollbar"></textarea>
                 </div>
 
-                <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                <div class="pt-2 flex justify-end gap-2 border-t border-stone-200">
                     <button type="button" onclick="fecharModalNovaConversa()"
-                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">Cancelar</button>
+                        class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition">Cancelar</button>
                     <button type="submit" id="btnSubmitNovoGrupo"
-                        class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
-                        <span>👥</span>
+                        class="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-xs font-semibold uppercase tracking-wider transition shadow-xs">
                         <span>Criar Grupo no WhatsApp</span>
                     </button>
                 </div>
             </form>
-
         </div>
     </div>
 
     <!-- Toast Notifications Container -->
-    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none font-mono"></div>
 
     <script>
         let conversaAtivaId = null;
@@ -1386,7 +1168,7 @@
             somAtivo = !somAtivo;
             localStorage.setItem('vip_som_ativo', somAtivo);
             atualizarIconeSom();
-            mostrarToast(somAtivo ? 'Alerta sonoro ativado (🔊)' : 'Alerta sonoro silenciado (🔇)', somAtivo ? 'sucesso' : 'info');
+            mostrarToast(somAtivo ? 'Alerta sonoro ativado' : 'Alerta sonoro silenciado', 'info');
             if (somAtivo) tocarSomNotificacao();
         }
 
@@ -1395,13 +1177,11 @@
             const icon = document.getElementById('iconSom');
             if (btn && icon) {
                 if (somAtivo) {
-                    icon.textContent = '🔊';
-                    btn.title = 'Alerta Sonoro Ativo (Clique para silenciar)';
-                    btn.classList.add('text-emerald-400');
+                    icon.innerHTML = '<svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"/></svg>';
+                    btn.title = 'Alerta sonoro ativo';
                 } else {
-                    icon.textContent = '🔇';
-                    btn.title = 'Alerta Sonoro Silenciado (Clique para ativar)';
-                    btn.classList.remove('text-emerald-400');
+                    icon.innerHTML = '<svg class="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>';
+                    btn.title = 'Alerta sonoro silenciado';
                 }
             }
         }
@@ -1459,13 +1239,11 @@
             const icon = document.getElementById('iconNotif');
             if (btn && icon) {
                 if ("Notification" in window && Notification.permission === 'granted') {
-                    icon.textContent = '🔔';
-                    btn.title = 'Notificações do Navegador Ativas';
-                    btn.classList.add('text-emerald-400');
+                    icon.innerHTML = '<svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>';
+                    btn.title = 'Notificações ativas';
                 } else {
-                    icon.textContent = '🔕';
-                    btn.title = 'Clique para ativar notificações no Navegador';
-                    btn.classList.remove('text-emerald-400');
+                    icon.innerHTML = '<svg class="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.73 21a2 2 0 01-3.46 0M18.63 13A17.89 17.89 0 0118 8m-6-5a4 4 0 00-4 4v1.5M3 3l18 18"/></svg>';
+                    btn.title = 'Notificações inativas';
                 }
             }
         }
@@ -1476,20 +1254,20 @@
         const socket = io();
 
         socket.on('connect', () => {
-            console.log('⚡ [Socket.io] Conectado ao servidor de eventos em tempo real.');
+            console.log('[Socket.io] Conectado ao servidor de eventos em tempo real.');
             const badge = document.getElementById('badgeSocket');
             if (badge) {
-                badge.className = 'hidden sm:flex items-center gap-1.5 text-[11px] font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20 text-emerald-400';
-                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span>Tempo Real</span>';
+                badge.className = 'hidden sm:flex items-center gap-1.5 text-[11px] font-mono font-medium bg-stone-50 px-2 py-1 rounded-sm border border-stone-200 text-stone-700';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span><span>Tempo Real</span>';
             }
         });
 
         socket.on('disconnect', () => {
-            console.warn('⚠️ [Socket.io] Conexão em tempo real desconectada.');
+            console.warn('[Socket.io] Conexão em tempo real desconectada.');
             const badge = document.getElementById('badgeSocket');
             if (badge) {
-                badge.className = 'hidden sm:flex items-center gap-1.5 text-[11px] font-semibold bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/20 text-amber-400';
-                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span>Reconectando...</span>';
+                badge.className = 'hidden sm:flex items-center gap-1.5 text-[11px] font-mono font-medium bg-stone-50 px-2 py-1 rounded-sm border border-amber-300 text-amber-800';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-sm bg-stone-1000"></span><span>Reconectando...</span>';
             }
         });
 
@@ -1539,7 +1317,7 @@
                 }
 
                 if (!ehConversaAtiva) {
-                    mostrarToast(`💬 ${nomeContato || 'Cliente'}: ${mensagem.texto.substring(0, 35)}...`, 'info');
+                    mostrarToast(`${nomeContato || 'Cliente'}: ${mensagem.texto.substring(0, 40)}...`, 'info');
                 }
             }
 
@@ -1551,12 +1329,12 @@
                 const badge = document.getElementById('badgeStatus');
                 const alerta = document.getElementById('alertaConexao');
                 if (data.status === 'open') {
-                    badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-emerald-500/10 text-emerald-400 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-emerald-500/20 shadow-sm';
-                    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span class="hidden sm:inline">WhatsApp Conectado</span><span class="sm:hidden">Conectado</span>';
+                    badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] font-mono font-medium bg-white px-2.5 py-1 rounded-sm border border-stone-200 shadow-xs text-stone-800 hover:bg-stone-50 transition cursor-pointer';
+                    badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0"></span><span>WhatsApp Conectado</span>';
                     if (alerta) alerta.classList.add('hidden');
                 } else if (data.status === 'qrcode' || data.status === 'close') {
-                    badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-rose-950 text-rose-300 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-rose-800 shadow-sm animate-pulse';
-                    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span><span class="hidden sm:inline">WhatsApp Desconectado</span><span class="sm:hidden">Desconectado</span>';
+                    badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] font-mono font-medium bg-rose-50 text-rose-800 px-2.5 py-1 rounded-sm border border-rose-200 shadow-xs hover:bg-rose-100 transition cursor-pointer';
+                    badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-600 flex-shrink-0"></span><span>WhatsApp Desconectado</span>';
                     if (alerta) alerta.classList.remove('hidden');
                 }
             }
@@ -1605,7 +1383,7 @@
             const isApagada = msg.apagada === true;
             const tipo = msg.tipo || 'texto';
             const autor = isAtendente ? (msg.atendenteNome ? `Atendente (${msg.atendenteNome})` : 'Atendente') : (nomeContato || 'Cliente');
-            const bgClass = isAtendente ? 'bg-[#d9fdd3] text-slate-900 rounded-2xl rounded-tr-xs border border-[#c1f5b8] shadow-xs' : 'bg-white text-slate-900 rounded-2xl rounded-tl-xs border border-slate-200/80 shadow-xs';
+            const bgClass = isAtendente ? 'bg-[#d9fdd3] text-slate-900 rounded-sm rounded-tr-xs border border-[#c1f5b8] shadow-xs' : 'bg-white text-slate-900 rounded-sm rounded-tl-xs border border-slate-200/80 shadow-xs';
             const autorColor = isAtendente ? 'text-emerald-800 font-bold' : 'text-slate-600 font-bold';
             const horaColor = isAtendente ? 'text-slate-500' : 'text-slate-400';
 
@@ -1627,25 +1405,25 @@
                 conteudoCorpo = `
                     <div class="space-y-1.5 min-w-[210px] sm:min-w-[240px]">
                         <div class="flex items-center gap-2 text-[11px] font-semibold text-slate-700">
-                            <span>🎙️ Mensagem de Voz</span>
+                            <span class="font-mono text-[10px] uppercase font-semibold text-stone-600">Áudio de Voz</span>
                         </div>
-                        ${srcAudio ? `<audio controls class="w-full h-8 rounded-lg outline-none" src="${srcAudio}"></audio>` : `<p class="text-xs text-slate-400 italic">🎙️ [Áudio recebido]</p>`}
-                        ${msg.texto && !msg.texto.includes('[🎙️ Mensagem de Voz]') ? `<p class="text-xs whitespace-pre-wrap leading-relaxed mt-1 text-slate-800">${formatarTextoMarkdown(msg.texto)}</p>` : ''}
+                        ${srcAudio ? `<audio controls class="w-full h-8 rounded-lg outline-none" src="${srcAudio}"></audio>` : `<p class="text-xs text-stone-400 font-mono italic">[Áudio recebido]</p>`}
+                        ${msg.texto && !msg.texto.includes('[🎙️ Mensagem de Voz]') && !msg.texto.includes('[Áudio de Voz]') ? `<p class="text-xs whitespace-pre-wrap leading-relaxed mt-1 text-slate-800">${formatarTextoMarkdown(msg.texto)}</p>` : ''}
                     </div>
                 `;
-            } else if (tipo === 'figurinha' || msg.texto === '[🎨 Figurinha]') {
+            } else if (tipo === 'figurinha' || msg.texto === '[🎨 Figurinha]' || msg.texto === '[Figurinha]') {
                 const srcSticker = resolverSrcMidia(msg.mediaBase64, msg.mediaUrl, msg.mimetype || 'image/webp');
                 conteudoCorpo = `
                     <div class="space-y-1">
-                        ${srcSticker ? `<img src="${srcSticker}" onclick="abrirModalZoom(this.src)" class="max-w-[120px] max-h-32 object-contain cursor-pointer hover:opacity-90 transition">` : `<p class="text-xs font-semibold text-slate-700">🎨 [Figurinha]</p>`}
+                        ${srcSticker ? `<img src="${srcSticker}" onclick="abrirModalZoom(this.src)" class="max-w-[120px] max-h-32 object-contain cursor-pointer hover:opacity-90 transition">` : `<p class="text-xs font-mono font-medium text-stone-700">[Figurinha]</p>`}
                     </div>
                 `;
             } else if (tipo === 'video' || msg.mediaUrl?.match(/\.(mp4|webm|mkv|avi|mov)/i)) {
                 const srcVideo = resolverSrcMidia(msg.mediaBase64, msg.mediaUrl, msg.mimetype || 'video/mp4');
                 conteudoCorpo = `
                     <div class="space-y-1.5 max-w-xs">
-                        ${srcVideo ? `<video controls class="rounded-xl w-full max-h-60 object-cover border border-slate-200 shadow-xs" src="${srcVideo}"></video>` : `<p class="text-xs text-slate-400 italic">🎥 [Vídeo recebido]</p>`}
-                        ${msg.texto && msg.texto !== '[🎥 Vídeo]' && msg.texto !== '[🎥 Vídeo enviado]' ? `<p class="text-xs whitespace-pre-wrap leading-relaxed text-slate-800">${formatarTextoMarkdown(msg.texto)}</p>` : ''}
+                        ${srcVideo ? `<video controls class="rounded-sm w-full max-h-60 object-cover border border-slate-200 shadow-xs" src="${srcVideo}"></video>` : `<p class="text-xs text-stone-400 font-mono italic">[Vídeo recebido]</p>`}
+                        ${msg.texto && !msg.texto.includes('[Vídeo]') ? `<p class="text-xs whitespace-pre-wrap leading-relaxed text-slate-800">${formatarTextoMarkdown(msg.texto)}</p>` : ''}
                     </div>
                 `;
             } else if (tipo === 'imagem' || msg.mediaUrl?.match(/\.(jpeg|jpg|gif|png|webp)/i)) {
@@ -1653,23 +1431,23 @@
                 conteudoCorpo = `
                     <div class="space-y-1.5">
                         ${srcImg ? `<img src="${srcImg}" onclick="abrirModalZoom(this.src)" 
-                             class="rounded-xl max-w-xs max-h-60 object-cover cursor-pointer hover:opacity-90 transition border border-slate-200 shadow-xs">` : `<p class="text-xs text-slate-400 italic">🖼️ [Imagem recebida]</p>`}
-                        ${msg.texto && msg.texto !== '[🖼️ Imagem]' && msg.texto !== '[🖼️ Imagem enviada]' ? `<p class="text-xs whitespace-pre-wrap leading-relaxed text-slate-800">${formatarTextoMarkdown(msg.texto)}</p>` : ''}
+                             class="rounded-sm max-w-xs max-h-60 object-cover cursor-pointer hover:opacity-90 transition border border-slate-200 shadow-xs">` : `<p class="text-xs text-stone-400 font-mono italic">[Imagem recebida]</p>`}
+                        ${msg.texto && !msg.texto.includes('[Imagem]') ? `<p class="text-xs whitespace-pre-wrap leading-relaxed text-slate-800">${formatarTextoMarkdown(msg.texto)}</p>` : ''}
                     </div>
                 `;
             } else if (tipo === 'documento') {
                 const srcDoc = resolverSrcMidia(msg.mediaBase64, msg.mediaUrl, msg.mimetype || 'application/pdf');
                 conteudoCorpo = `
                     <div class="space-y-1.5 min-w-[200px]">
-                        <div class="flex items-center gap-2.5 p-2 bg-slate-50 rounded-xl border border-slate-200">
-                            <span class="text-2xl">📄</span>
+                        <div class="flex items-center gap-2.5 p-2 bg-slate-50 rounded-sm border border-slate-200">
+                            <div class="w-8 h-8 rounded-sm bg-white border border-stone-200 flex items-center justify-center text-[10px] font-mono font-bold text-stone-700 flex-shrink-0">DOC</div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-xs font-bold text-slate-800 truncate">${msg.fileName || 'documento.pdf'}</p>
                                 <span class="text-[10px] text-slate-500">Documento / Anexo</span>
                             </div>
-                            ${srcDoc ? `<a href="${srcDoc}" download="${msg.fileName || 'documento'}" class="p-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-xs font-semibold" title="Baixar">⬇️</a>` : '<span class="text-[10px] text-slate-400 italic">Anexo</span>'}
+                            ${srcDoc ? `<a href="${srcDoc}" download="${msg.fileName || 'documento'}" class="px-2 py-1 bg-stone-900 text-stone-100 hover:bg-stone-800 rounded-sm text-[11px] font-mono font-semibold transition" title="Baixar">Baixar</a>` : '<span class="text-[10px] text-slate-400 italic">Anexo</span>'}
                         </div>
-                        ${msg.texto && !msg.texto.startsWith('[📄') ? `<p class="text-xs whitespace-pre-wrap leading-relaxed text-slate-800">${formatarTextoMarkdown(msg.texto)}</p>` : ''}
+                        ${msg.texto && !msg.texto.startsWith('[📄') && !msg.texto.startsWith('[Documento') ? `<p class="text-xs whitespace-pre-wrap leading-relaxed text-slate-800">${formatarTextoMarkdown(msg.texto)}</p>` : ''}
                     </div>
                 `;
             } else {
@@ -1765,11 +1543,11 @@
             let preview = msg.texto || '';
             if (msg.tipo && msg.tipo !== 'texto') {
                 const icones = {
-                    audio: '🎙️ Mensagem de Voz',
-                    imagem: '🖼️ Imagem',
-                    video: '🎥 Vídeo',
-                    documento: `📄 ${msg.fileName || 'Documento'}`,
-                    figurinha: '🎨 Figurinha'
+                    audio: 'Áudio de Voz',
+                    imagem: 'Imagem',
+                    video: 'Vídeo',
+                    documento: msg.fileName || 'Documento',
+                    figurinha: 'Figurinha'
                 };
                 preview = msg.texto && !msg.texto.startsWith('[') ? `${icones[msg.tipo] || msg.tipo}: ${msg.texto}` : (icones[msg.tipo] || msg.tipo);
             }
@@ -1821,7 +1599,7 @@
 
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.classList.add('ring-2', 'ring-emerald-400', 'bg-emerald-500/10', 'rounded-xl', 'transition-all', 'duration-500');
+                el.classList.add('ring-2', 'ring-emerald-400', 'bg-emerald-500/10', 'rounded-sm', 'transition-all', 'duration-500');
                 setTimeout(() => {
                     el.classList.remove('ring-2', 'ring-emerald-400', 'bg-emerald-500/10');
                 }, 1800);
@@ -2073,17 +1851,17 @@
                 const container = document.getElementById('previewAnexoContainer');
                 if (isImage) {
                     container.innerHTML = `
-                        <img src="${base64}" class="max-h-44 rounded-xl object-contain shadow-sm mb-2 border border-slate-200">
+                        <img src="${base64}" class="max-h-44 rounded-sm object-contain shadow-sm mb-2 border border-slate-200">
                         <span class="text-xs text-slate-500 font-semibold">${fileName} (${(file.size / 1024).toFixed(1)} KB)</span>
                     `;
                 } else if (isVideo) {
                     container.innerHTML = `
-                        <video src="${base64}" controls class="max-h-44 rounded-xl object-contain shadow-sm mb-2 border border-slate-200"></video>
+                        <video src="${base64}" controls class="max-h-44 rounded-sm object-contain shadow-sm mb-2 border border-slate-200"></video>
                         <span class="text-xs text-slate-500 font-semibold">${fileName} (${(file.size / 1024).toFixed(1)} KB)</span>
                     `;
                 } else {
                     container.innerHTML = `
-                        <div class="text-4xl mb-2">📄</div>
+                        <div class="text-xs font-mono font-bold text-stone-500 mb-2 uppercase">Arquivo Selecionado</div>
                         <span class="text-xs text-slate-800 font-bold truncate max-w-xs">${fileName}</span>
                         <span class="text-[11px] text-slate-500 mt-1">${(file.size / 1024).toFixed(1)} KB</span>
                     `;
@@ -2215,14 +1993,14 @@
                     input.value = result.sugestao;
                     autoAjustarAlturaTextarea(input);
                     input.focus();
-                    mostrarToast('✨ Resposta sugerida pela IA! Revise e envie.', 'sucesso');
+                    mostrarToast('Resposta sugerida pela IA. Revise antes de enviar.', 'sucesso');
                 } else {
                     mostrarToast(result.message || 'Não foi possível gerar sugestão.', 'erro');
                 }
             } catch (err) {
                 mostrarToast('Erro ao consultar IA Gemini.', 'erro');
             } finally {
-                btnIcon.textContent = '✨';
+                btnIcon.textContent = 'IA';
             }
         }
 
@@ -2288,7 +2066,7 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
 
-                mostrarToast('Histórico baixado em TXT com sucesso! 📄', 'sucesso');
+                mostrarToast('Histórico exportado em TXT com sucesso.', 'sucesso');
             } catch (err) {
                 console.error('Erro ao exportar TXT:', err);
                 mostrarToast('Falha ao baixar o histórico em TXT.', 'erro');
@@ -2312,7 +2090,7 @@
                 if (result.success) {
                     conversaAtivaDados.modo_atendimento = result.modo;
                     atualizarBadgeModo(result.modo);
-                    mostrarToast(`Modo alterado para: ${result.modo === 'copiloto' ? '🤖 Copiloto IA (Sugestões Ativas)' : '👤 Atendimento 100% Humano'}`, 'sucesso');
+                    mostrarToast(`Modo alterado para: ${result.modo === 'copiloto' ? 'Copiloto IA' : 'Atendimento Humano'}`, 'sucesso');
                 }
             } catch (err) {
                 mostrarToast('Erro ao alternar modo de atendimento.', 'erro');
@@ -2357,22 +2135,19 @@
 
         function mostrarToast(mensagem, tipo = 'sucesso') {
             const container = document.getElementById('toastContainer');
+            if (!container) return;
             const toast = document.createElement('div');
 
-            const cores = {
-                sucesso: 'bg-emerald-600 text-white border-emerald-500',
-                erro: 'bg-rose-600 text-white border-rose-500',
-                info: 'bg-slate-900 text-white border-slate-800'
-            };
+            const dotCor = tipo === 'sucesso' ? 'bg-emerald-600' : tipo === 'erro' ? 'bg-rose-600' : 'bg-stone-700';
 
-            toast.className = `${cores[tipo] || cores.info} border px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 text-xs font-semibold transition-all transform duration-300 pointer-events-auto max-w-sm translate-y-2 opacity-0`;
-            toast.innerHTML = `<span>${tipo === 'sucesso' ? '✅' : tipo === 'erro' ? '❌' : 'ℹ️'}</span><span>${mensagem}</span>`;
+            toast.className = 'border border-stone-300 bg-white text-stone-900 px-3 py-2 rounded-sm shadow-md flex items-center gap-2 text-xs font-mono font-medium transition-all transform duration-200 pointer-events-auto max-w-sm translate-y-2 opacity-0';
+            toast.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotCor} flex-shrink-0"></span><span>${mensagem}</span>`;
 
             container.appendChild(toast);
             setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
+                setTimeout(() => toast.remove(), 250);
             }, 3500);
         }
 
@@ -2547,7 +2322,7 @@
                     const numeroLimpo = conversa.id_cliente.split('@')[0];
 
                     document.getElementById('chatHeaderNome').textContent = conversa.nome_contato || 'Cliente';
-                    document.getElementById('chatHeaderNumero').textContent = `📱 ${numeroLimpo}`;
+                    document.getElementById('chatHeaderNumero').textContent = numeroLimpo;
                     document.getElementById('chatHeaderAvatar').textContent = (conversa.nome_contato || 'C').charAt(0).toUpperCase();
                     document.getElementById('btnAbrirWhatsappDirect').href = `https://wa.me/${numeroLimpo}`;
 
@@ -2685,7 +2460,7 @@
                 if (result.success) {
                     if (result.status === 'open') {
                         if (badge) {
-                            badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-emerald-500/10 text-emerald-400 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-emerald-500/20 shadow-sm cursor-default';
+                            badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-emerald-500/10 text-emerald-400 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-emerald-500/20 shadow-sm cursor-default';
                             badge.title = 'WhatsApp Conectado e Operando';
                             badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span class="hidden sm:inline">WhatsApp Conectado</span><span class="sm:hidden">Conectado</span>';
                         }
@@ -2696,7 +2471,7 @@
                             cardBadge.textContent = 'Conectado (Online)';
                         }
                         if (cardQr) {
-                            cardQr.innerHTML = '<span class="text-emerald-400 font-semibold">✅ Conexão ativa e sincronizada com seu número.</span>';
+                            cardQr.innerHTML = '<span class="text-stone-700 font-mono text-xs">Conexão ativa e sincronizada.</span>';
                         }
 
                         // Se o modal estava aberto aguardando conexão, comemora e fecha
@@ -2704,14 +2479,14 @@
                             document.getElementById('qrCodeModalLoading')?.classList.add('hidden');
                             document.getElementById('qrCodeModalImagemContainer')?.classList.add('hidden');
                             document.getElementById('qrCodeModalConectado')?.classList.remove('hidden');
-                            mostrarToast('🎉 WhatsApp Conectado com Sucesso!', 'sucesso');
+                            mostrarToast('WhatsApp conectado com sucesso.', 'sucesso');
                             setTimeout(() => fecharModalQrCode(), 2000);
                         }
                     } else if (result.status === 'qrcode' || result.status === 'connecting' || result.status === 'close') {
                         if (badge) {
-                            badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-rose-950 text-rose-300 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-rose-800 shadow-sm animate-pulse cursor-pointer hover:bg-rose-900 transition';
+                            badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-rose-950 text-rose-300 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-rose-800 shadow-sm animate-pulse cursor-pointer hover:bg-rose-900 transition';
                             badge.title = 'WhatsApp Desconectado! Clique para ler o QR Code';
-                            badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span><span class="hidden sm:inline">WhatsApp Desconectado (Ler QR)</span><span class="sm:hidden">Ler QR</span>';
+                            badge.innerHTML = '<span class="w-2 h-2 rounded-sm bg-stone-1000"></span><span class="hidden sm:inline">WhatsApp Desconectado (Ler QR)</span><span class="sm:hidden">Ler QR</span>';
                         }
                         if (alerta) alerta.classList.remove('hidden');
 
@@ -2735,11 +2510,11 @@
                             if (cardQr) {
                                 cardQr.innerHTML = `
                                     <div class="flex flex-col items-center gap-2 p-2">
-                                        <div class="p-2 bg-white rounded-xl shadow-md border border-slate-200">
+                                        <div class="p-2 bg-white rounded-sm shadow-md border border-slate-200">
                                             <img src="${srcImg}" alt="QR Code WhatsApp" class="w-48 h-48 object-contain">
                                         </div>
-                                        <button type="button" onclick="abrirModalQrCode()" class="mt-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm">
-                                            📱 Abrir em Tela Maior
+                                        <button type="button" onclick="abrirModalQrCode()" class="mt-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-xs font-bold transition shadow-sm">
+                                            Abrir em Tela Maior
                                         </button>
                                     </div>
                                 `;
@@ -2747,14 +2522,14 @@
                         }
                     } else {
                         if (badge) {
-                            badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-amber-50 text-amber-800 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-amber-200 shadow-sm';
-                            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Status: ${result.status}</span>`;
+                            badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-amber-50 text-amber-800 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-amber-200 shadow-sm';
+                            badge.innerHTML = `<span class="w-2 h-2 rounded-sm bg-stone-1000"></span><span>Status: ${result.status}</span>`;
                         }
                     }
                 } else {
                     if (badge) {
-                        badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-slate-100 text-slate-600 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-slate-200 shadow-sm';
-                        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span><span>Evolution Offline</span>';
+                        badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-slate-100 text-slate-600 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-slate-200 shadow-sm';
+                        badge.innerHTML = '<span class="w-2 h-2 rounded-sm bg-stone-1000"></span><span>Evolution Offline</span>';
                     }
                 }
             } catch (err) {
@@ -2808,7 +2583,7 @@
 
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<span>🔄</span><span>Atualizar QR Code</span>';
+                btn.innerHTML = '<span>Atualizar QR Code</span>';
             }
         }
 
@@ -2872,8 +2647,8 @@
             const formContato = document.getElementById('formNovoContato');
             const formGrupo = document.getElementById('formNovoGrupo');
 
-            const classesAtiva = 'tab-btn-nova-conversa flex-1 py-2 px-3 text-xs font-bold rounded-t-xl transition border-b-2 flex items-center justify-center gap-1.5 border-emerald-600 text-emerald-700 bg-emerald-50';
-            const classesInativa = 'tab-btn-nova-conversa flex-1 py-2 px-3 text-xs font-bold rounded-t-xl transition border-b-2 flex items-center justify-center gap-1.5 border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50';
+            const classesAtiva = 'tab-btn-nova-conversa flex-1 py-1.5 px-3 text-xs font-semibold rounded-t-sm transition border-b-2 border-stone-900 text-stone-900 bg-white';
+            const classesInativa = 'tab-btn-nova-conversa flex-1 py-1.5 px-3 text-xs font-semibold rounded-t-sm transition border-b-2 border-transparent text-stone-500 hover:text-stone-800';
 
             tabBtnNumero.className = aba === 'numero' ? classesAtiva : classesInativa;
             tabBtnContato.className = aba === 'contato' ? classesAtiva : classesInativa;
@@ -3026,7 +2801,7 @@
                 mostrarToast('Falha na comunicação ao iniciar conversa.', 'erro');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<span>💬</span><span>Iniciar Atendimento</span>';
+                btn.innerHTML = '<span>Iniciar Atendimento</span>';
             }
         }
 
@@ -3069,7 +2844,7 @@
                 mostrarToast('Falha na comunicação ao cadastrar contato.', 'erro');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<span>👤</span><span>Salvar Contato</span>';
+                btn.innerHTML = '<span>Salvar Contato</span>';
             }
         }
 
@@ -3136,11 +2911,11 @@
 
             const resetBtn = (btn) => {
                 if (!btn) return;
-                btn.className = 'flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-500 hover:text-slate-800 hover:bg-slate-100';
+                btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900 hover:bg-stone-200/60';
             };
             const activeBtn = (btn, colorClass) => {
                 if (!btn) return;
-                btn.className = `flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${colorClass} text-white shadow-sm`;
+                btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition bg-stone-900 text-stone-100 shadow-xs';
             };
 
             resetBtn(btnAtendimento);
@@ -3193,14 +2968,14 @@
                     if (filtroSelect) {
                         const valAtual = filtroSelect.value;
                         filtroSelect.innerHTML = '<option value="">Todas as Categorias</option>' + 
-                            categoriasCache.map(c => `<option value="${c.id}">${c.icone || '📁'} ${c.nome}</option>`).join('');
+                            categoriasCache.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
                         filtroSelect.value = valAtual;
                     }
 
                     const prodCatSelect = document.getElementById('prodEditCategoria');
                     if (prodCatSelect) {
                         prodCatSelect.innerHTML = '<option value="">Selecione uma categoria...</option>' + 
-                            categoriasCache.map(c => `<option value="${c.id}">${c.icone || '📁'} ${c.nome}</option>`).join('');
+                            categoriasCache.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
                     }
                 }
             } catch (err) {
@@ -3221,11 +2996,11 @@
                     catalogoProdutosCache = result.data;
                     renderizarProdutosCatalogo(catalogoProdutosCache);
                 } else {
-                    if (grid) grid.innerHTML = '<div class="col-span-full text-center py-12 text-rose-400 text-xs">❌ Não foi possível carregar os produtos.</div>';
+                    if (grid) grid.innerHTML = '<div class="col-span-full text-center py-12 text-rose-400 text-xs">Não foi possível carregar os produtos.</div>';
                 }
             } catch (err) {
                 console.error('Erro ao buscar produtos:', err);
-                if (grid) grid.innerHTML = '<div class="col-span-full text-center py-12 text-rose-400 text-xs">❌ Erro de conexão com o banco de dados.</div>';
+                if (grid) grid.innerHTML = '<div class="col-span-full text-center py-12 text-rose-400 text-xs">Erro de conexão com o banco de dados.</div>';
             }
         }
 
@@ -3246,14 +3021,14 @@
                 const precoNum = parseFloat(prod.preco) || 0;
                 const precoFormatado = precoNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const cat = categoriasCache.find(c => String(c.id) === String(prod.categoria_id));
-                const nomeCat = cat ? `${cat.icone || '🍯'} ${cat.nome}` : `Categoria #${prod.categoria_id}`;
+                const nomeCat = cat ? cat.nome : `Categoria #${prod.categoria_id}`;
                 const ativo = prod.ativo !== false;
 
                 return `
-                    <div class="bg-white border ${ativo ? 'border-slate-200' : 'border-rose-200 opacity-60'} rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-xs hover:border-amber-400 transition">
+                    <div class="bg-white border ${ativo ? 'border-slate-200' : 'border-rose-200 opacity-60'} rounded-sm p-4 flex flex-col justify-between gap-3 shadow-xs hover:border-amber-400 transition">
                         <div class="space-y-2">
                             <div class="flex items-center justify-between gap-2">
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 truncate">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-stone-100 text-amber-800 border border-amber-200 truncate">
                                     ${nomeCat}
                                 </span>
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${ativo ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}">
@@ -3271,13 +3046,13 @@
                             </div>
                             <div class="flex items-center gap-1.5">
                                 <button type="button" onclick="abrirModalEditarProduto('${prod.id}')"
-                                    class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition flex items-center gap-1 shadow-xs">
-                                    <span>✏️</span>
+                                    class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-sm text-xs font-semibold transition flex items-center gap-1 shadow-xs">
+                                    
                                     <span>Editar</span>
                                 </button>
                                 <button type="button" onclick="excluirProduto('${prod.id}', '${escapeHtml(prod.nome).replace(/'/g, "\\'")}')"
-                                    class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-xs font-semibold transition" title="Excluir produto">
-                                    <span>🗑️</span>
+                                    class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-sm text-xs font-semibold transition" title="Excluir produto">
+                                    
                                 </button>
                             </div>
                         </div>
@@ -3305,7 +3080,7 @@
             document.getElementById('formProduto').reset();
             document.getElementById('prodEditId').value = '';
             document.getElementById('prodEditAtivo').checked = true;
-            document.getElementById('tituloModalProduto').textContent = '🍯 Novo Produto';
+            document.getElementById('tituloModalProduto').textContent = 'Novo Produto';
             document.getElementById('btnSalvarProduto').textContent = 'Cadastrar Produto';
             document.getElementById('modalProduto').classList.remove('hidden');
             setTimeout(() => document.getElementById('prodEditNome')?.focus(), 80);
@@ -3322,7 +3097,7 @@
             document.getElementById('prodEditDescricao').value = prod.descricao || '';
             document.getElementById('prodEditAtivo').checked = prod.ativo !== false;
 
-            document.getElementById('tituloModalProduto').textContent = '✏️ Editar Produto';
+            document.getElementById('tituloModalProduto').textContent = 'Editar Produto';
             document.getElementById('btnSalvarProduto').textContent = 'Salvar Alterações';
             document.getElementById('modalProduto').classList.remove('hidden');
         }
@@ -3406,7 +3181,7 @@
             event.preventDefault();
             const btn = document.getElementById('btnSalvarCategoria');
             const id = document.getElementById('catEditId').value.trim();
-            const icone = document.getElementById('catEditIcone').value.trim() || '🍯';
+            const icone = '';
             const nome = document.getElementById('catEditNome').value.trim();
             const descricao = document.getElementById('catEditDescricao').value.trim();
 
@@ -3472,10 +3247,10 @@
                     badge.textContent = 'Pausado';
                 }
                 if (textoBtn) textoBtn.textContent = '▶️ Retomar Bot Geral';
-                if (btn) btn.className = 'px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs';
+                if (btn) btn.className = 'px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-sm text-xs transition flex items-center gap-2 shadow-xs';
                 if (icone) {
-                    icone.className = 'w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center text-2xl shadow-inner';
-                    icone.textContent = '⏸️';
+                    icone.className = 'w-11 h-11 rounded-sm bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center text-2xl shadow-inner';
+                    
                 }
             } else {
                 if (badge) {
@@ -3483,10 +3258,10 @@
                     badge.textContent = 'Ativo';
                 }
                 if (textoBtn) textoBtn.textContent = '⏸️ Pausar Bot Geral';
-                if (btn) btn.className = 'px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs';
+                if (btn) btn.className = 'px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-sm text-xs font-bold transition flex items-center gap-2 shadow-xs';
                 if (icone) {
-                    icone.className = 'w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center text-2xl shadow-inner';
-                    icone.textContent = '🤖';
+                    icone.className = 'w-11 h-11 rounded-sm bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center text-2xl shadow-inner';
+                    
                 }
             }
         }
@@ -3589,7 +3364,7 @@
                     totalSoma += subtotal;
 
                     return `
-                        <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                        <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-sm text-xs">
                             <div>
                                 <span class="font-bold text-slate-800 block">${escapeHtml(item.nome)}</span>
                                 <span class="text-slate-500 text-[11px]">${qtd}x ${preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>

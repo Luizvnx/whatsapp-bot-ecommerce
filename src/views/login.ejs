@@ -1,74 +1,94 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-slate-100">
+<html lang="pt-BR" class="h-full bg-stone-100">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Favo de Mel</title>
+    <title>Favo de Mel — Autenticação</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        serif: ['"Newsreader"', 'Georgia', 'serif'],
+                        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace']
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fdf8ee',
+                            100: '#f7ebce',
+                            500: '#d97706',
+                            600: '#b45309',
+                            700: '#92400e',
+                            800: '#78350f',
+                            900: '#451a03'
+                        }
+                    }
+                }
+            }
         }
-    </style>
+    </script>
 </head>
 
-<body class="h-full bg-slate-100 text-slate-800 flex items-center justify-center p-4 relative overflow-hidden">
-    <!-- Background Decorator Spheres -->
-    <div class="absolute -top-32 -left-32 w-96 h-96 bg-amber-300/30 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-emerald-300/30 rounded-full blur-3xl pointer-events-none"></div>
-
-    <div class="w-full max-w-md relative z-10">
-        <!-- Logo & Branding Header -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 shadow-lg shadow-amber-500/20 mb-4 border border-amber-300">
-                <span class="text-3xl">🍯</span>
+<body class="h-full bg-[#f6f5f3] text-stone-900 font-sans flex items-center justify-center p-4 antialiased">
+    <div class="w-full max-w-sm">
+        <!-- Brand Header -->
+        <div class="mb-8 text-center">
+            <div class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-stone-900 text-amber-500 mb-3 border border-stone-800 shadow-sm">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" stroke-linejoin="round"/>
+                    <path d="M12 11l8-4.5M12 11v9M12 11L4 6.5"/>
+                </svg>
             </div>
-            <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">Favo de Mel</h1>
-            <p class="text-xs text-slate-500 mt-1 font-medium">Painel de Atendimento e Vendas WhatsApp</p>
+            <h1 class="text-2xl font-serif font-semibold tracking-tight text-stone-900">Favo de Mel</h1>
+            <p class="text-xs text-stone-500 font-mono mt-1 tracking-wider uppercase">Terminal de Atendimento & Gestão</p>
         </div>
 
         <!-- Login Card -->
-        <div class="bg-white/95 backdrop-blur-xl border border-slate-200/90 p-8 rounded-3xl shadow-xl shadow-slate-200/50">
-            <h2 class="text-lg font-bold text-slate-800 mb-6 text-center">Acesse a sua conta</h2>
+        <div class="bg-white border border-stone-200/90 rounded-md shadow-xs p-7">
+            <div class="mb-5 pb-4 border-b border-stone-100 flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-stone-700">Acesso Restrito</span>
+                <span class="text-[11px] font-mono text-stone-400">v2.4.0</span>
+            </div>
 
             <% if (typeof error !== 'undefined' && error) { %>
-                <div class="mb-6 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-xs text-rose-600 font-semibold animate-shake">
-                    <span class="text-base">⚠️</span>
-                    <span><%= error %></span>
+                <div class="mb-5 p-3 bg-stone-50 border-l-2 border-rose-600 text-stone-800 text-xs">
+                    <p class="font-medium text-rose-700"><%= error %></p>
                 </div>
             <% } %>
 
-            <form action="/login" method="POST" class="space-y-5">
+            <form action="/login" method="POST" class="space-y-4">
                 <div>
-                    <label for="email" class="block text-xs font-bold text-slate-700 mb-2">Usuário ou E-mail</label>
-                    <div class="relative">
-                        <input type="text" id="email" name="email" required placeholder="admin ou admin@favodemel.com"
-                            class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition">
-                    </div>
+                    <label for="email" class="block text-xs font-medium text-stone-700 mb-1.5">Usuário ou E-mail</label>
+                    <input type="text" id="email" name="email" required placeholder="admin"
+                        class="w-full px-3 py-2 bg-stone-50/50 border border-stone-300 rounded-sm text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 transition-colors">
                 </div>
 
                 <div>
-                    <label for="password" class="block text-xs font-bold text-slate-700 mb-2">Senha</label>
-                    <div class="relative">
-                        <input type="password" id="password" name="password" required placeholder="••••••••"
-                            class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="password" class="block text-xs font-medium text-stone-700">Senha</label>
                     </div>
+                    <input type="password" id="password" name="password" required placeholder="••••••••"
+                        class="w-full px-3 py-2 bg-stone-50/50 border border-stone-300 rounded-sm text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 transition-colors">
                 </div>
 
-                <button type="submit"
-                    class="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-xl text-sm shadow-md shadow-amber-500/25 active:scale-[0.98] transition duration-200 flex items-center justify-center gap-2 cursor-pointer">
-                    <span>Entrar no Painel</span>
-                    <span class="text-lg">➔</span>
-                </button>
+                <div class="pt-2">
+                    <button type="submit"
+                        class="w-full py-2.5 px-4 bg-stone-900 hover:bg-stone-800 text-stone-100 text-xs font-semibold tracking-wide uppercase rounded-sm shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2">
+                        <span>Entrar no Painel</span>
+                    </button>
+                </div>
             </form>
+        </div>
 
-            <div class="mt-6 pt-6 border-t border-slate-100 text-center">
-                <p class="text-[11px] text-slate-400 font-medium">Favo de Mel &copy; 2026 - Gestão de Pedidos e Atendimento</p>
-            </div>
+        <!-- Footer System Meta -->
+        <div class="mt-6 text-center">
+            <p class="text-[11px] font-mono text-stone-400">Favo de Mel &middot; Sistema Operacional de Vendas</p>
         </div>
     </div>
 </body>

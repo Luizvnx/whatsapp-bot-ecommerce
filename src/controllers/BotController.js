@@ -44,7 +44,7 @@ class BotController {
         cacheBotPausado = Boolean(pausado);
         ultimaChecagemConfig = Date.now();
         await DatabaseService.salvarConfig('bot_global_status', { pausado: cacheBotPausado });
-        console.log(`[BotController] Automação Global ${cacheBotPausado ? '🛑 PAUSADA' : '🟢 ATIVADA'}`);
+        console.log(`[BotController] Automação Global ${cacheBotPausado ? 'PAUSADA' : 'ATIVADA'}`);
         return cacheBotPausado;
     }
 
