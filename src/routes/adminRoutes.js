@@ -877,16 +877,16 @@ router.get('/instance-status', async (req, res) => {
         let status = stateData?.instance?.state || 'desconhecido';
         let qrCodeBase64 = null;
 
-        if (status === 'close' || status === 'connecting') {
+        if (status !== 'open') {
             const qrResponse = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
                 headers: { 'apikey': apikey },
-                signal: AbortSignal.timeout(5000)
+                signal: AbortSignal.timeout(6000)
             });
             
             if (qrResponse.ok) {
                 const qrData = await qrResponse.json();
-                if (qrData?.base64) {
-                    qrCodeBase64 = qrData.base64;
+                qrCodeBase64 = qrData?.base64 || qrData?.qrcode?.base64 || qrData?.code || null;
+                if (qrCodeBase64) {
                     status = 'qrcode'; 
                 }
             }
