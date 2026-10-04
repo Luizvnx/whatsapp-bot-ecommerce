@@ -2,21 +2,25 @@ const { Pool } = require('pg');
 const config = require('../config');
 
 // 1. Criamos a configuração inteligente com a regra do SSL
-const dbConfig = config.database.url
-    ? { 
-        connectionString: config.database.url,
-        // Ativa SSL automaticamente se a URL for da nuvem (rlwy.net ou railway.app)
-        ssl: (config.database.url.includes('rlwy.net') || config.database.url.includes('railway')) 
-             ? { rejectUnauthorized: false } 
-             : false
-      } 
-    : {
-        host: config.database.host,
-        user: config.database.user,
-        password: config.database.pass,
-        database: config.database.name,
-        port: config.database.port
-    };
+const dbConfig = {
+    max: 5,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+    ...(config.database.url
+        ? { 
+            connectionString: config.database.url,
+            ssl: (config.database.url.includes('rlwy.net') || config.database.url.includes('railway')) 
+                 ? { rejectUnauthorized: false } 
+                 : false
+          } 
+        : {
+            host: config.database.host,
+            user: config.database.user,
+            password: config.database.pass,
+            database: config.database.name,
+            port: config.database.port
+        })
+};
     
 class DatabaseService {
     // 2. CORREÇÃO: Passamos a variável dbConfig diretamente, sem repetir código
@@ -48,13 +52,89 @@ class DatabaseService {
             ON CONFLICT (chave) DO NOTHING;
         `;
 
+        const sqlCatalogo = `
+            CREATE TABLE IF NOT EXISTS tb_categorias (
+                id VARCHAR(50) PRIMARY KEY,
+                nome VARCHAR(150) NOT NULL,
+                descricao TEXT,
+                icone VARCHAR(20) DEFAULT '🍯',
+                ordem INT DEFAULT 1,
+                ativo BOOLEAN DEFAULT TRUE,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS tb_produtos (
+                id SERIAL PRIMARY KEY,
+                categoria_id VARCHAR(50) NOT NULL REFERENCES tb_categorias(id) ON DELETE CASCADE,
+                nome VARCHAR(150) NOT NULL,
+                preco NUMERIC(10,2) NOT NULL,
+                descricao TEXT,
+                estoque INT DEFAULT 999,
+                ativo BOOLEAN DEFAULT TRUE,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_tb_produtos_categoria ON tb_produtos(categoria_id);
+            CREATE INDEX IF NOT EXISTS idx_tb_produtos_ativo ON tb_produtos(ativo);
+        `;
+
+        const sqlUsuarios = `
+            CREATE TABLE IF NOT EXISTS tb_usuarios (
+                id SERIAL PRIMARY KEY,
+                login VARCHAR(100) UNIQUE NOT NULL,
+                email VARCHAR(150) UNIQUE NOT NULL,
+                nome VARCHAR(100) NOT NULL,
+                senha VARCHAR(255) NOT NULL,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            INSERT INTO tb_usuarios (login, email, nome, senha)
+            VALUES ('admin', 'admin@favodemel.com', 'Favo de Mel', 'admin')
+            ON CONFLICT (login) DO NOTHING;
+        `;
+
         try {
             await this.executar(sqlSessoes);
             await this.executar(sqlConfig);
+            await this.executar(sqlCatalogo);
+            await this.executar(sqlUsuarios);
+            await this.semearCatalogoSeVazio();
             console.log('📦 Banco de Dados pronto para uso.');
         } catch (error) {
             console.error('❌ Erro ao inicializar tabelas:', error.message);
             throw error;
+        }
+    }
+
+    /**
+     * Semeia categorias e produtos a partir do catalogo.json se as tabelas estiverem vazias
+     */
+    static async semearCatalogoSeVazio() {
+        try {
+            const check = await this.executar('SELECT count(*) FROM tb_categorias');
+            if (parseInt(check.rows[0].count, 10) === 0) {
+                console.log('🌱 [SEED] Semeando catálogo no banco de dados pela primeira vez...');
+                const catalogoPadrao = require('../data/catalogo.json');
+                
+                let ordem = 1;
+                for (const [catId, catObj] of Object.entries(catalogoPadrao.categorias || {})) {
+                    await this.executar(
+                        `INSERT INTO tb_categorias (id, nome, descricao, ordem, ativo) VALUES ($1, $2, $3, $4, true) ON CONFLICT (id) DO NOTHING`,
+                        [catId, catObj.nome, catObj.descricao || '', ordem++]
+                    );
+
+                    for (const [, prodObj] of Object.entries(catObj.produtos || {})) {
+                        await this.executar(
+                            `INSERT INTO tb_produtos (categoria_id, nome, preco, descricao, estoque, ativo) VALUES ($1, $2, $3, $4, 999, true)`,
+                            [catId, prodObj.nome, prodObj.preco, prodObj.descricao || '']
+                        );
+                    }
+                }
+                console.log('✅ [SEED] Catálogo semeado com sucesso no banco de dados.');
+            }
+        } catch (err) {
+            console.warn('⚠️ [SEED] Aviso ao semear catálogo:', err.message);
         }
     }
 

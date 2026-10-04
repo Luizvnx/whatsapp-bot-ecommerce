@@ -1,45 +1,41 @@
 const GeminiService = require('../services/GeminiService');
-const EvolutionService = require('../services/EvolutionService');
-const mensagens = require('../data/mensagens.json');
 
 class IaStage {
     static async executar(msg, texto, sessao) {
-        
-        if (texto === '#' || texto === 'sair') {
-            sessao.etapa = 'inicio';
-            sessao.historicoIa = [];
+        const t = (texto || '').toLowerCase().trim();
+
+        if (t === '#' || t === 'sair' || t === 'voltar' || t === 'menu') {
+            sessao.etapa = 'menu_principal';
             const InicioStage = require('./InicioStage');
             return await InicioStage.executar(msg, '', sessao);
         }
 
-        if (texto === '0' || texto.includes('atendente') || texto.includes('humano')) {
-            await msg.reply(mensagens.erros.transferenciaHumano);
-            sessao.etapa = 'em_atendimento_humano';
-            
-            const numeroLoja = process.env.NUMERO_DA_LOJA; 
-            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ALERTA IA*\nO cliente pediu atendimento humano enquanto falava com a IA!${msg.linkAlerta}`);
-            return;
+        if (t === '1') {
+            sessao.etapa = 'aguardando_categoria';
+            const mensagens = require('../data/mensagens.json');
+            return await msg.reply(mensagens.produtos.escolhaCategoria);
         }
-
-        //await msg.reply(mensagens.ia.carregando);
 
         if (!Array.isArray(sessao.historicoIa)) {
             sessao.historicoIa = [];
         }
 
-        const retornoGemini = await GeminiService.perguntar(texto, sessao.historicoIa);
-        sessao.historicoIa = retornoGemini.historicoAtualizado;
+        const retorno = await GeminiService.perguntar(texto, sessao.historicoIa);
 
-        // Mantém 10 mensagens"
-        if (sessao.historicoIa.length > 10) {
-            let histCortado = sessao.historicoIa.slice(-10);
-            if (histCortado.length > 0 && histCortado[0].role === 'model') {
-                histCortado.shift();
-            }
-            sessao.historicoIa = histCortado;
+        sessao.historicoIa.push({ role: 'user', parts: [{ text: texto }] });
+        sessao.historicoIa.push({ role: 'model', parts: [{ text: retorno.resposta }] });
+
+        if (sessao.historicoIa.length > 14) {
+            sessao.historicoIa = sessao.historicoIa.slice(-14);
         }
 
-        await msg.reply(`${retornoGemini.resposta}\n\n# - Voltar ao menu principal`);
+        if (retorno.transferirHumano) {
+            sessao.etapa = 'em_atendimento_humano';
+            await msg.reply(retorno.resposta);
+            return;
+        }
+
+        await msg.reply(`${retorno.resposta}\n\n👉 _Digite *1* para comprar produtos ou *#* para ver o menu principal._`);
     }
 }
 

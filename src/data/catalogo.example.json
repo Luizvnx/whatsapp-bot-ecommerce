@@ -1,30 +1,33 @@
 {
     "categorias": {
         "1": {
-            "nome": "🍯 Méis, Própolis",
+            "nome": "🍯 Méis & Acessórios",
+            "descricao": "Méis nobres e acessórios especiais da colmeia",
             "produtos": {
-                "1": { "nome": "Mel de Jataí (70ml)", "preco": 100.00 }
+                "1": { "nome": "Mel de Uruçú (Nativa)", "preco": 85.00, "descricao": "Mel puro de abelha nativa sem ferrão Uruçu. Raro, medicinal e com acidez equilibrada." },
+                "2": { "nome": "Meleira com Mel", "preco": 60.00, "descricao": "Elegante meleira em vidro de alta qualidade acompanhada com mel puro." }
             }
         },
         "2": {
-            "nome": "🍯 Própolis e Geleia Real",
+            "nome": "🌿 Cuidados Naturais e Própolis",
+            "descricao": "Cosméticos naturais, terapêuticos e derivados de própolis e cera",
             "produtos": {
-                "1": { "nome": "Geleia Real (in natura)", "preco": 53.00 },
-                "2": { "nome": "Geleia Real (em cápsula)", "preco": 51.00 }
+                "1": { "nome": "Pomada de Própolis (20g)", "preco": 45.00, "descricao": "Pomada natural de própolis puro. Ação cicatrizante, anti-inflamatória e protetora." },
+                "2": { "nome": "Hidratante Labial", "preco": 12.00, "descricao": "Hidratação duradoura para seus lábios à base de cera pura de abelha e mel." },
+                "3": { "nome": "Cone Hindu", "preco": 15.00, "descricao": "Confeccionado artesanalmente com cera de abelhas para limpeza energética e desobstrução." },
+                "4": { "nome": "Pasta de Cera de Abelha", "preco": 19.00, "descricao": "Tratamento hidratante natural à base de cera de abelhas." }
             }
         },
         "3": {
-            "nome": "🛡️ Deliciais Artesanais",
+            "nome": "🕯️ Artesanais, Cera & Bebidas",
+            "descricao": "Hidromel, velas aromáticas e insumos apícolas",
             "produtos": {
-                "1": { "nome": "Molho de Maracujá com Mel", "preco": 18.00 },
-                "2": { "nome": "Molho de Mel com Pimenta", "preco": 17.00 }
-            }
-        },
-        "4": {
-            "nome": "🍷 Bebidas Artesanais",
-            "produtos": {
-                "1": { "nome": "Hidromel Tradicional (500ml)", "preco": 57.00 },
-                "2": { "nome": "Hidromel Tradicional (250ml)", "preco": 28.00 }
+                "1": { "nome": "Hidromel Tradicional (250ml)", "preco": 25.00, "descricao": "Bebida artesanal milenar à base de mel puro, água mineral e levedura." },
+                "2": { "nome": "Vela Artesanal", "preco": 12.00, "descricao": "Vela 100% natural à base de pura cera de abelhas com suave aroma de mel." },
+                "3": { "nome": "Aromatizador", "preco": 10.00, "descricao": "Aromatizador artesanal que traz o aconchego e perfume da natureza." },
+                "4": { "nome": "Desmoldante Culinário", "preco": 15.00, "descricao": "Desmoldante culinário natural e atóxico à base de cera de abelhas, ideal para bolos." },
+                "5": { "nome": "Cera Alveolada", "preco": 100.00, "descricao": "Cera pura alveolada das abelhas para apicultura, artesanato nobre e pomadas." },
+                "6": { "nome": "Formão para Apicultura", "preco": 85.00, "descricao": "Formão reforçado em aço para apicultores realizarem o manejo de colmeias." }
             }
         }
     }

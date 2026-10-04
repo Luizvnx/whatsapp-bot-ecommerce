@@ -4,9 +4,11 @@ services:
     container_name: bot_node
     build: .
     restart: always
+    ports:
+      - "8080:8080"
     depends_on:
       - api
-      - postgres # Agora ele depende apenas do Postgres e da API
+      - postgres
     networks:
       - evolution-net
     env_file:
@@ -32,14 +34,14 @@ services:
   # --- 3. A MEMÓRIA: Banco de Dados PostgreSQL ---
   postgres:
     container_name: evolution_postgres
-    image: postgres:13
+    image: postgres:15-alpine
     restart: always
-    ports:                 
-      - "5432:5432"        
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: typebot
-      POSTGRES_DB: evolution_db
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-typebot}
+      POSTGRES_DB: ${DB_NAME:-evolution_db}
     volumes:
       - pg_data:/var/lib/postgresql/data
     networks:
@@ -50,13 +52,16 @@ services:
     image: redis:alpine
     restart: always
     ports:
-      - "6380:6379"
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - evolution-net
 
 volumes:
   evolution_instances:
   pg_data:
+  redis_data:
 
 networks:
   evolution-net:

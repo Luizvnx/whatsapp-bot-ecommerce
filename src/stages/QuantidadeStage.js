@@ -1,60 +1,69 @@
 const mensagens = require('../data/mensagens.json');
-const EvolutionService = require('../services/EvolutionService');
-const numeroLoja = process.env.NUMERO_DA_LOJA;
 
 class QuantidadeStage {
     static async executar(msg, texto, sessao) {
-        
-        if (texto === '0') {
-            await msg.reply(mensagens.erros.transferenciaHumano);
-            sessao.etapa = 'em_atendimento_humano';
-            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\nO cliente pediu ajuda!${msg.linkAlerta}`);
+        const t = (texto || '').trim();
+
+        if (t === '#' || t.toLowerCase() === 'voltar' || t.toLowerCase() === 'menu') {
+            const InicioStage = require('./InicioStage');
+            return await InicioStage.executar(msg, '', sessao);
+        }
+
+        const qtd = parseInt(t.replace(/\D/g, ''), 10);
+
+        if (isNaN(qtd) || qtd <= 0) {
+            sessao.errosConsecutivos = (sessao.errosConsecutivos || 0) + 1;
+            if (sessao.errosConsecutivos >= 3) {
+                await msg.reply("🔇 Não entendi a quantidade. Vou chamar um atendente para continuar seu pedido. Aguarde um instante! 🐝");
+                sessao.etapa = 'em_atendimento_humano';
+                return;
+            }
+            await msg.reply(mensagens.produtos.quantidadeInvalida);
             return;
         }
 
-        // Valida se o cliente digitou um número válido (ex: não digitou "dois" ou "abc")
-        const quantidade = parseInt(texto);
-        
-        if (isNaN(quantidade) || quantidade <= 0) {
-            await msg.reply(mensagens.carrinho.quantidadeInvalida);
+        sessao.errosConsecutivos = 0;
+        const produto = sessao.produtoTemporario;
+
+        if (!produto) {
+            sessao.etapa = 'aguardando_categoria';
+            await msg.reply("⚠️ Nenhum produto selecionado. Por favor, escolha uma categoria para ver os itens:");
+            await msg.reply(mensagens.produtos.escolhaCategoria);
             return;
         }
 
-        if (!sessao.carrinho) {
+        if (!Array.isArray(sessao.carrinho)) {
             sessao.carrinho = [];
         }
 
-        // 2. Segurança: Verificar se existe um produto temporário na memória
-        if (!sessao.produtoTemporario) {
-            await msg.reply("❌ Ops, houve um erro ao recuperar o produto. Por favor, escolha o produto novamente.");
-            sessao.etapa = 'catalogo'; // Volta para o catálogo por segurança
-            return;
+        // Verifica se já existe o mesmo item no carrinho para somar a quantidade
+        const itemExistente = sessao.carrinho.find(i => i.nome === produto.nome);
+        if (itemExistente) {
+            itemExistente.quantidade += qtd;
+        } else {
+            sessao.carrinho.push({
+                nome: produto.nome,
+                preco: produto.preco,
+                quantidade: qtd
+            });
         }
 
-        // Adiciona o produto e a quantidade no carrinho
-        sessao.carrinho.push({
-            nome: sessao.produtoTemporario.nome,
-            preco: sessao.produtoTemporario.preco,
-            quantidade: quantidade
-        });
-
-        // Limpa a memória temporária
         sessao.produtoTemporario = null;
 
-        // Calcula o Subtotal do carrinho
-        let subtotal = 0;
-        let resumoCarrinho = `✅ Adicionado ao carrinho!\n\n🛒 *Seu Carrinho Atual:*\n`;
-        
-        sessao.carrinho.forEach((item) => {
-            const totalItem = item.preco * item.quantidade;
-            subtotal += totalItem;
-            resumoCarrinho += `- ${item.quantidade}x ${item.nome} (R$ ${totalItem.toFixed(2).replace('.', ',')})\n`;
+        // Monta o resumo visual do carrinho
+        let subtotalTotal = 0;
+        let resumo = `🛒 *Carrinho Atualizado com Sucesso!*\n\n`;
+
+        sessao.carrinho.forEach(item => {
+            const itemTotal = item.preco * item.quantidade;
+            subtotalTotal += itemTotal;
+            resumo += `• *${item.quantidade}x* ${item.nome} - R$ ${itemTotal.toFixed(2).replace('.', ',')}\n`;
         });
 
-        resumoCarrinho += `\n💰 *Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}*`;
-        resumoCarrinho += mensagens.carrinho.opcoes;
+        resumo += `\n💰 *Total do Pedido: R$ ${subtotalTotal.toFixed(2).replace('.', ',')}*`;
+        resumo += mensagens.carrinho.opcoes;
 
-        await msg.reply(resumoCarrinho);
+        await msg.reply(resumo);
         sessao.etapa = 'carrinho_opcoes';
     }
 }

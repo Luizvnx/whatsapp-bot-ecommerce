@@ -1,62 +1,45 @@
-const catalogo = require('../data/catalogo.json');
+const CatalogoService = require('../services/CatalogoService');
 const mensagens = require('../data/mensagens.json');
-const EvolutionService = require('../services/EvolutionService');
 
 class CategoriaStage {
     static async executar(msg, texto, sessao) {
-        
-        // 1. Desvio da IA (Opção 6)
-        if (texto === '6') {
-            await msg.reply(mensagens.ia.saudacao);
-            sessao.etapa = 'conversando_com_ia';
-            return; 
+        const t = (texto || '').toLowerCase().trim();
+
+        if (t === '#' || t === 'voltar' || t === 'menu') {
+            const InicioStage = require('./InicioStage');
+            return await InicioStage.executar(msg, '', sessao);
         }
 
-        // 2. Desvio do Atendente Humano (Opção 0)
-        if (texto === '0') {
-            await msg.reply(mensagens.erros.transferenciaHumano);
-            sessao.etapa = 'em_atendimento_humano';
-            
-            const numeroLoja = '557988125726'; 
-            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\n\nO cliente solicitou atendimento humano!\n👉 Clique aqui para falar com ele: https://wa.me/${msg.from}`);
+        const catalogo = await CatalogoService.obterCatalogo();
+        const categoriaEscolhida = catalogo.categorias[t];
+
+        if (!categoriaEscolhida) {
+            sessao.errosConsecutivos = (sessao.errosConsecutivos || 0) + 1;
+            if (sessao.errosConsecutivos >= 3) {
+                await msg.reply("🔇 Não consegui identificar a categoria. Vou te transferir para um atendente humano. Aguarde um instante! 🐝");
+                sessao.etapa = 'em_atendimento_humano';
+                return;
+            }
+
+            const categoriasDisponiveis = Object.entries(catalogo.categorias || {})
+                .map(([num, c]) => `*${num}* para ${c.nome}`)
+                .join(', ');
+
+            await msg.reply(`⚠️ Categoria não encontrada. Digite ${categoriasDisponiveis}, ou *#* para voltar ao menu.`);
             return;
         }
 
-        const categoriaEscolhida = catalogo.categorias[texto];
-
-        // 3. Retorno antecipado se o cliente digitar algo que não existe
-        if (!categoriaEscolhida) {
-            sessao.errosConsecutivos = (sessao.errosConsecutivos || 0) + 1;
-            
-            if (sessao.errosConsecutivos >= 2) {
-                await msg.reply(mensagens.erros.transferenciaHumano);
-                sessao.etapa = 'em_atendimento_humano';
-                
-                // Manda o alerta porque o cliente errou 2 vezes e o bot pausou
-                const numeroLoja = '557988125726'; 
-                await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\nO cliente pediu ajuda!${msg.linkAlerta}`);
-                
-                sessao.errosConsecutivos = 0; 
-            } else {
-                await msg.reply(mensagens.erros.opcaoInvalida);
-            }
-            return; 
-        }
-
-        // 4. O "Caminho Feliz" (Exibe os produtos)
         sessao.errosConsecutivos = 0;
-        sessao.categoriaSelecionada = texto; 
+        sessao.categoriaSelecionada = t;
 
-        // (O envio de cards nativos foi movido para o ProdutoStage)
-        let submenu = `*${categoriaEscolhida.nome}*\n\n${mensagens.categoria.escolhaProduto}`;
+        let submenu = `*${categoriaEscolhida.nome}*\n_${categoriaEscolhida.descricao || ''}_\n\n`;
         
         for (const [chave, produto] of Object.entries(categoriaEscolhida.produtos || {})) {
             const precoFormatado = produto.preco.toFixed(2).replace('.', ',');
-            submenu += `*${chave}️⃣ - ${produto.nome}* - R$ ${precoFormatado}\n`;
+            submenu += `*${chave}️⃣* - *${produto.nome}* - R$ ${precoFormatado}\n`;
         }
 
-        submenu += mensagens.geral.atendente;
-        submenu += mensagens.geral.voltarMenu;
+        submenu += `\n👉 *Digite o número do produto* que deseja escolher, ou *#* para voltar ao menu principal.`;
 
         await msg.reply(submenu);
         sessao.etapa = 'aguardando_produto';

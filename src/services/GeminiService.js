@@ -1,76 +1,108 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const axios = require('axios');
 
 class GeminiService {
+    static get apiKey() {
+        return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
+    }
+
+    /**
+     * Responde dúvidas sobre a Favo de Mel utilizando a API do Gemini via REST
+     */
     static async perguntar(mensagemCliente, historicoCliente = []) {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        
-        let historicoLimpo = (historicoCliente || []).map(msg => ({
-            role: msg.role === 'model' ? 'model' : 'user',
-            parts: [{ text: (msg.parts && msg.parts[0]?.text) ? msg.parts[0].text : '' }]
-        })).filter(m => m.parts[0].text.trim().length > 0);
-
-        // Se a última mensagem do histórico já for do usuário (ou a própria mensagem), remove para não conflitar com chat.sendMessage
-        if (historicoLimpo.length > 0 && historicoLimpo[historicoLimpo.length - 1].role === 'user') {
-            historicoLimpo.pop();
+        const key = this.apiKey;
+        if (!key) {
+            console.warn('⚠️ GEMINI_API_KEY não configurada no .env');
+            return {
+                resposta: "Desculpe, nosso assistente virtual está temporariamente indisponível. Para falar com a equipe, por favor aguarde um momento! 🐝",
+                transferirHumano: true
+            };
         }
 
-        // Garante que o histórico para o Gemini comece com role 'user' se houver mensagens
-        if (historicoLimpo.length > 0 && historicoLimpo[0].role === 'model') {
-            historicoLimpo.shift();
-        }
+        const systemInstruction = `Você é a Assistente Virtual Inteligente da loja Favo de Mel (Aracaju/SE).
+Sua personalidade: Simpática, acolhedora, objetiva e apaixonada por abelhas e produtos naturais. Use emojis com moderação (🐝🍯🌼).
 
-        console.log(`🧠 [DEBUG IA] Enviando ${historicoLimpo.length} mensagens de contexto para o Gemini.`);
+CONHECIMENTO DA FAVO DE MEL:
+- Loja física: Av. Deputado Pedro Valadares, 690, loja 8, Garden's Gallery - Bairro Jardins, Aracaju/SE (próximo ao Shopping Jardins).
+- Horário: Segunda a Sexta, das 8h às 18h.
+- Produtos:
+  * Méis de Abelhas Nativas sem Ferrão (Mel de Jataí R$ 100, Moça Branca R$ 90, Uruçu R$ 80 - ricos em propriedades medicinais e com sabor floral único).
+  * Mel com Favo de Cera 700g (R$ 70), Mel de Melato de Bracatinga (R$ 60 - escuro, sabor amadeirado, não cristaliza facilmente), Mel Puro Tradicional 1400g (R$ 67).
+  * Própolis Verde e Vermelha (extratos concentrados R$ 30).
+  * Geleia Real pura in natura (R$ 53) e em cápsulas (R$ 51).
+  * Bebidas e Delícias: Hidromel tradicional (R$ 57 / R$ 28), Melomel de frutas (R$ 28), Molhos artesanais de maracujá, mostarda ou pimenta com mel (R$ 17 a R$ 25).
+  * Cera de abelha bruta e alveolada para apicultura e artesanato.
+- Serviços Especializados:
+  * Captura e Resgate Seguro de Abelhas (remoção ecológica de enxames de residências e empresas para preservação em apiário).
+  * Consultoria Apícola e Manejo (capacitação para novos e experientes criadores).
+- Dica de ouro sobre mel: A cristalização é um fenômeno natural do mel 100% puro e cru, provando que ele não foi superaquecido ou adulterado!
 
-        const instrucaoMestra = `Você é o assistente virtual da loja Favo De Mel (Aracaju, próximo ao Shopping Jardins).
-        Personalidade: Simpático, acolhedor e objetivo. Use emojis 🐝🍯.
-        Catálogo: Mel Silvestre, Própolis, Hidromel, Cera e serviços de captura de abelhas, venda de enxames de abelhas Jataí, Mandaçaia, Uruçú e Canudo.
-        A venda de exames aconpanha orientações de cuidados e manejo para garantir a saúde das abelhas.
+DIRETRIZES DE RESPOSTA:
+1. Responda de forma direta e concisa (máximo de 3 a 4 parágrafos curtos).
+2. Se o cliente perguntar o preço ou como comprar, informe o valor e diga para digitar *1* para ver o catálogo e fazer o pedido.
+3. Se for uma dúvida que você NÃO saiba responder com certeza (ex: frete para um CEP específico, pedidos de desconto em atacado, parcerias comerciais, reclamações ou assuntos fora do tema):
+   RESPONDA OBRIGATORIAMENTE contendo a frase:
+   "Essa é uma solicitação específica que vou encaminhar para nossos atendentes humanos. Por favor, aguarde só um momento que já vamos te responder por aqui! 🐝🍯"
+4. NUNCA invente informações que você não tem certeza.`;
 
-        👉 REGRA ABSOLUTA DE MEMÓRIA: 
-        Você POSSUI MEMÓRIA TOTAL DESTA CONVERSA. O histórico do que o cliente já disse é enviado para você a cada requisição. 
-        Se o cliente perguntar o próprio nome, o que ele disse antes, ou suas preferências, LEIA O HISTÓRICO E RESPONDA. 
-        É ESTRITAMENTE PROIBIDO dizer frases como "não tenho memória", "não tenho acesso a dados" ou "não guardo histórico". Você guarda sim!
-        
-        DIRETRIZ GLOBAL (A mais importante): 
-        NUNCA invente ou detalhe preços, prazos, formas de pagamento, promoções, horários ou endereços. Para QUALQUER uma dessas dúvidas, responda educadamente a pergunta de forma genérica e instrua o cliente a procurar os detalhes exatos acessando o nosso catálogo (diga para ele digitar # e voltar ao Menu Principal) sem ser repatitivo e de forma humanizada.
+        // Monta o histórico recente
+        const historicoRecente = (historicoCliente || []).slice(-8);
+        const contents = [];
 
-        REGRA DE COMPORTAMENTO IMPORTANTE: 
-        O cliente JÁ FOI cumprimentado pelo menu anterior. Portanto, NUNCA inicie suas respostas com saudações (como "Olá", "Oi", "Bom dia", "Tudo bem"). Vá direto ao ponto e responda a dúvida de forma acolhedora, mas sem repetir saudações.
-
-        Informações base:
-        - Pagamento: Pix, Cartão e Boleto.
-        - Entrega: Imediata (Placas e colmeias levam 2 a 3 dias).
-        - Produtos: 100% naturais, sustentáveis e de apicultores locais.
-        - Atendimento humano: Disponível a qualquer momento, basta digitar 0.
-        - Localização: Aracaju, Avenida Deputado Pedro Valadares, 690 sala 8 garden's gallery, próximo ao Shopping Jardins.
-        - Horário de atendimento: Segunda a Sexta, das 8h às 18h.`;
-
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
-            systemInstruction: instrucaoMestra
+        historicoRecente.forEach(item => {
+            const role = item.role === 'model' ? 'model' : 'user';
+            const texto = (item.parts && item.parts[0]?.text) ? item.parts[0].text : (item.text || '');
+            if (texto.trim()) {
+                contents.push({ role, parts: [{ text: texto }] });
+            }
         });
 
-        try {
-            const chat = model.startChat({ history: historicoLimpo });
-            const result = await chat.sendMessage(mensagemCliente);
+        contents.push({
+            role: 'user',
+            parts: [{ text: mensagemCliente }]
+        });
 
-            const historicoSujo = await chat.getHistory();
-            const novoHistoricoLimpo = historicoSujo.map(msg => ({
-                role: msg.role,
-                parts: [{ text: msg.parts[0].text }]
-            }));
+        const modelos = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+        let respostaTexto = '';
 
+        for (const model of modelos) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+                const response = await axios.post(url, {
+                    system_instruction: {
+                        parts: [{ text: systemInstruction }]
+                    },
+                    contents,
+                    generationConfig: {
+                        temperature: 0.6,
+                        maxOutputTokens: 600
+                    }
+                }, { timeout: 12000 });
+
+                const cand = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (cand) {
+                    respostaTexto = cand.trim();
+                    break;
+                }
+            } catch (err) {
+                console.warn(`[GeminiService] Falha no modelo ${model}, tentando fallback...`);
+            }
+        }
+
+        if (!respostaTexto) {
             return {
-                resposta: result.response.text(),
-                historicoAtualizado: novoHistoricoLimpo
-            };
-        } catch (erro) {
-            console.error('❌ Erro Gemini:', erro);
-            return { 
-                resposta: "Desculpe, tive um pequeno problema aqui na colmeia! 🐝 Tente perguntar de novo.", 
-                historicoAtualizado: historicoCliente 
+                resposta: "Estou com uma pequena instabilidade para consultar as informações no momento. Vou transferir para nossa equipe te atender em instantes! 🐝",
+                transferirHumano: true
             };
         }
+
+        const transferirHumano = respostaTexto.includes('encaminhar para nossos atendentes humanos') ||
+                                 respostaTexto.includes('solicitação específica que vou encaminhar') ||
+                                 respostaTexto.includes('aguarde só um momento que já vamos te responder');
+
+        return {
+            resposta: respostaTexto,
+            transferirHumano
+        };
     }
 }
 

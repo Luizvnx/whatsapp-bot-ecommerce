@@ -5,10 +5,14 @@ const mensagens = require('../data/mensagens.json');
 
 const estagios = {
     'inicio': require('../stages/InicioStage'),
+    'menu_principal': require('../stages/MenuPrincipalStage'),
     'aguardando_categoria': require('../stages/CategoriaStage'),
     'aguardando_produto': require('../stages/ProdutoStage'),
     'aguardando_quantidade': require('../stages/QuantidadeStage'),
     'carrinho_opcoes': require('../stages/CarrinhoStage'),
+    'aguardando_dados_entrega': require('../stages/EntregaStage'),
+    'resgate_aguardando': require('../stages/ResgateStage'),
+    'consultoria_aguardando': require('../stages/ConsultoriaStage'),
     'conversando_com_ia': require('../stages/IaStage'),
     'em_atendimento_humano': require('../stages/HumanoStage')
 };
@@ -191,7 +195,6 @@ class BotController {
             textoBruto: (textoBruto || '').trim(),
             texto: (textoBruto || '').toLowerCase().trim(),
             reply: async (t) => {
-                // Registra a resposta do bot no histórico da conversa
                 if (sessao) {
                     if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
                     sessao.historicoIa.push({
@@ -202,7 +205,16 @@ class BotController {
                         sessao.historicoIa = sessao.historicoIa.slice(-30);
                     }
                 }
-                return await EvolutionService.enviarMensagemText(numeroCliente, t);
+                const resp = await EvolutionService.enviarMensagemText(numeroCliente, t);
+                try {
+                    await SessaoService.adicionarMensagem(numeroReal, 'atendente', t, 'Bot Favo de Mel', {
+                        tipo: 'texto',
+                        atendenteNome: 'Bot Favo de Mel'
+                    });
+                } catch (e) {
+                    console.error('[BotController] Erro ao registrar mensagem do bot:', e.message);
+                }
+                return resp;
             }
         };
     }

@@ -1,41 +1,34 @@
 {
     "geral": {
         "voltarMenu": "\n*#️⃣ - Voltar ao menu principal*",
-        "atendente": "\n*0️⃣ - Falar com atendente*"
+        "ajudaHumana": "Se precisar de ajuda humana em qualquer momento, digite */humano*."
     },
     "inicio": {
-        "boasVindas": "> Olá! 🐝 Bem-vindo(a) à *Favo De Mel*! 🍯\n\nSou seu assistente virtual. Para um atendimento rápido e sem filas, escolha uma categoria abaixo:\n\n"
+        "boasVindas": "🐝 *Olá! Bem-vindo(a) à Favo de Mel!* 🍯\n\nSomos especialistas em produtos puros da colmeia, resgate ecológico de abelhas e consultoria apícola em Aracaju.\n\nComo posso te ajudar hoje? *Digite o número da opção:*\n\n*1️⃣* - 🍯 *Comprar Mel e Produtos da Colmeia*\n*2️⃣* - 🐝 *Captura e Resgate de Abelhas*\n*3️⃣* - 👨‍🌾 *Consultoria e Manejo Apícola*\n*4️⃣* - ❓ *Tirar Dúvidas sobre Nossos Produtos/Serviços*"
+    },
+    "produtos": {
+        "escolhaCategoria": "🍯 *Produtos da Colmeia - Favo de Mel*\n\nEscolha uma categoria para ver os itens disponíveis:\n\n*1️⃣* - 🍯 *Méis Especiais e Tradicionais* (Jataí, Uruçu, Favo, Puro...)\n*2️⃣* - 🌿 *Própolis e Geleia Real* (Extratos, in natura e cápsulas)\n*3️⃣* - 🍷 *Bebidas & Artesanais* (Hidromel, Molhos com Mel, Cera...)\n\n👉 *Digite o número da categoria* ou *#* para voltar ao menu.",
+        "pedeQuantidade": "Quantas unidades desse produto você gostaria? *(Digite apenas o número, ex: 1, 2, 3...)*",
+        "quantidadeInvalida": "⚠️ Por favor, digite apenas um número inteiro válido maior que zero (ex: 1, 2)."
     },
     "carrinho": {
-        "pedeQuantidade": "Quantas unidades desse produto você deseja? (Digite apenas o número, ex: 1, 2, 3...)",
-        "quantidadeInvalida": "⚠️ Por favor, digite apenas um número válido maior que zero.",
-        "opcoes": "\nO que deseja fazer agora?\n\n*1️⃣ - Adicionar mais produtos*\n*2️⃣ - Finalizar pedido*\n\n*0️⃣ - Falar com atendente*"
-    },
-    "categoria": {
-        "escolhaProduto": "Selecione o produto desejado:\n\n"
-    },
-    "ia": {
-        "saudacao": "Olá! Sou a IA da Favo De Mel 🐝. O que gostaria de saber? \nPara voltar ao menu, digite *#*",
-        "carregando": "⏳ _Consultando os pergaminhos da colmeia..._",
-        "erro": "Desculpe, tive um pequeno problema aqui na colmeia! 🐝 Tente perguntar de novo ou digite *#* para voltar ao menu."
-    },
-    "erros": {
-        "opcaoInvalida": "⚠️ Opção inválida. Digite o número correspondente, 6 para a IA ou 0 para falar com um atendente.",
-        "transferenciaHumano": "🔇 Pausando o robô para atendimento humano. (Digite */bot* para reativar).",
-        "sessaoExpirada": "⏳ Sua sessão expirou devido à inatividade. Vamos começar de novo! 🐝\n\nDigite qualquer coisa para ver o menu.",
-        "botReativado": "🔄 Bot reativado! Vamos continuar... 🐝"
+        "opcoes": "\nO que deseja fazer agora?\n\n*1️⃣* - Adicionar mais produtos\n*2️⃣* - Finalizar pedido\n*#️⃣* - Voltar ao menu principal",
+        "pedidoVazio": "🛒 Seu carrinho está vazio no momento. Digite *1* para escolher produtos ou *#* para ver o menu."
     },
     "finalizacao": {
-        "resumoPedido": "Aqui está o resumo do seu pedido:\n\n",
-        "confirmacao": "Deseja confirmar seu pedido? (Digite *1* para confirmar ou *2* para cancelar)",
-        "pedidoConfirmado": "✅ Pedido confirmado! Obrigado por escolher a Favo De Mel! 🍯\n\nSe precisar de algo mais, é só chamar!",
-        "pedidoCancelado": "❌ Pedido cancelado. Se quiser começar de novo, é só digitar qualquer coisa para ver o menu."
+        "dadosEntrega": "🎉 *Excelente escolha!*\n\nPara organizarmos a entrega do seu pedido com todo o carinho, por favor envie em uma mensagem:\n\n1. Seu *Nome Completo*\n2. *Endereço de Entrega* (Rua, Número, Bairro, Cidade)\n3. Forma de pagamento preferida (*Pix* ou *Cartão*)\n\nNossa equipe já foi notificada e vai te enviar a confirmação em instantes! 🍯🐝"
     },
-    "atendente": {
-        "mensagem": "🔇 Transferindo para um atendente humano... Por favor, aguarde um momento. (Digite */bot* para reativar o atendimento automático)."
+    "resgate": {
+        "apresentacao": "🐝 *Serviço de Captura e Resgate de Abelhas - Favo de Mel*\n\nRealizamos a remoção técnica e o resgate seguro de enxames de abelhas (com e sem ferrão) de forma segura e ecológica, destinando-as para preservação em apiário!\n\nPara avaliarmos o resgate e passarmos o orçamento, por favor nos informe:\n📍 *Onde o enxame está localizado?* (Ex: forro da casa, árvore, parede, caixa d'água)\n📍 *Qual a cidade e o bairro?*\n📸 *Se puder, envie uma foto ou vídeo curto do local.*\n\nNossa equipe técnica já recebeu a sua solicitação e vai te responder por aqui em instantes! 🐝"
     },
-    "alerta": {
-        "pedidoVazio": "⚠️ Seu carrinho está vazio. Adicione pelo menos um produto para finalizar seu pedido.",
-        "quantidadeInvalida": "⚠️ Quantidade inválida. Por favor, digite um número válido maior que zero."
+    "consultoria": {
+        "apresentacao": "👨‍🌾 *Consultoria e Manejo Apícola - Favo de Mel*\n\nOferecemos assessoria técnica para implantação de apiários, manejo produtivo, divisão de enxames e capacitação em apicultura e meliponicultura.\n\nPor favor, nos informe brevemente:\n📌 Você já cria abelhas ou deseja começar do zero?\n📌 Qual cidade/região fica sua propriedade?\n\nNosso consultor apícola entrará em contato por aqui para agendar seu atendimento especializado!"
+    },
+    "ia": {
+        "saudacao": "Olá! Sou a assistente virtual da Favo de Mel 🐝. Como posso te ajudar?\nPode me perguntar sobre nossos méis, benefícios do própolis, resgate de abelhas ou nosso endereço.\n\n*(Digite # a qualquer momento para ver o menu de opções)*"
+    },
+    "erros": {
+        "opcaoInvalida": "⚠️ Opção não reconhecida. Por favor, digite o número correspondente à opção desejada ou *#* para voltar ao menu principal.",
+        "transferenciaHumano": "🔇 Transferindo para um de nossos especialistas. Por favor, aguarde um momento que já vamos te responder por aqui! 🐝🍯"
     }
 }

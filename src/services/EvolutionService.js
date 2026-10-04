@@ -1,117 +1,335 @@
-require('dotenv').config(); // 1. O config deve vir antes de tudo para carregar as variáveis
 const axios = require('axios');
-
-/**
- * Envia um produto individual do catálogo nativo do WhatsApp Business
- * @param {string} numeroCliente - Número do destinatário (sem o @s.whatsapp.net)
- * @param {string} productId - ID do produto gerado pelo WhatsApp
- * @param {string} textoIntroducao - Mensagem opcional de texto que acompanha o card do produto
- */
-
-// 2. Buscamos as configurações das variáveis de ambiente da Railway
-const evolutionUrl = process.env.EVOLUTION_URL;
-const instanceName = process.env.EVOLUTION_INSTANCE_NAME || 'FavoDeMel';
-const apiKey = process.env.EVOLUTION_API_KEY;
+const config = require('../config');
 
 class EvolutionService {
-    static async enviarMensagemText(numero, texto) {
-        // 3. Montamos a URL dinâmica usando a variável da nuvem
-        const url = `${evolutionUrl}/message/sendText/${instanceName}`;
+    static get baseUrl() {
+        return (process.env.EVOLUTION_URL || config.evolution.url || 'https://evolution-api-production-d166.up.railway.app').replace(/\/$/, '');
+    }
+
+    static get instanceName() {
+        return process.env.EVOLUTION_INSTANCE_NAME || config.evolution.instance || 'ViP';
+    }
+
+    static get apiKey() {
+        return process.env.EVOLUTION_API_KEY || config.evolution.apiKey || '176E007EAA4B-4D08-8DFE-5F77AF6E8E09';
+    }
+
+    /**
+     * Envia uma mensagem de texto simples para um número (com suporte a resposta/citação)
+     */
+    static async enviarMensagemText(numero, texto, quoted = null) {
+        const url = `${this.baseUrl}/message/sendText/${this.instanceName}`;
+
+        const payload = {
+            number: numero,
+            text: texto
+        };
+
+        if (quoted && (quoted.id || quoted.whatsappMessageId)) {
+            const quotedId = quoted.whatsappMessageId || quoted.id;
+            const quotedObj = {
+                key: {
+                    id: quotedId,
+                    ...(quoted.remoteJid ? { remoteJid: quoted.remoteJid } : {}),
+                    ...(quoted.fromMe !== undefined ? { fromMe: quoted.fromMe } : {})
+                },
+                message: {
+                    conversation: quoted.texto || 'Mensagem'
+                }
+            };
+            payload.quoted = quotedObj;
+            payload.options = { quoted: quotedObj };
+        }
 
         try {
-            await axios.post(url, {
-                number: numero,
-                text: texto
-            }, {
+            const response = await axios.post(url, payload, {
                 headers: {
-                    'apikey': apiKey,
+                    'apikey': this.apiKey,
                     'Content-Type': 'application/json'
                 }
             });
-            console.log(`✅ Mensagem enviada para ${numero}`);
+            console.log(`✅ Mensagem enviada via Evolution para ${numero}${quoted ? ' (com citação)' : ''}`);
+            return response.data;
         } catch (erro) {
             console.error('[Erro Evolution] Falha ao enviar mensagem:', erro.response ? erro.response.data : erro.message);
-        }
-    }
-
-    static async gerenciarEtiqueta(numero, labelId, acao = 'add') {
-        if (!labelId) {
-            console.error(`⚠️ [Aviso] Tentativa de ${acao} etiqueta, mas labelId está undefined.`);
-            return;
-        }
-
-        const url = `${evolutionUrl}/label/handleLabel/${instanceName}`;
-        try {
-            await axios.post(url, {
-                number: numero,
-                labelId: String(labelId),
-                action: acao
-            }, {
-                headers: {
-                    'apikey': apiKey,
-                    'Content-Type': 'application/json'
-                }
-            });
-            console.log(`🏷️ Etiqueta ${labelId} ${acao === 'add' ? 'adicionada' : 'removida'} para ${numero}`);
-        } catch (erro) {
-            console.error(`[Erro Evolution] Falha ao ${acao} etiqueta ${labelId} para ${numero}:`, erro.response ? erro.response.data : erro.message);
-        }
-    }
-
-    static async enviarProdutoNativo(numeroCliente, productIdOrUrl, textoIntroducao = "Veja este produto:") {
-        try {
-            // Como a versão atual da Evolution API não possui o endpoint /message/sendProduct,
-            // a solução recomendada é enviar a URL do catálogo. O WhatsApp do cliente
-            // irá gerar automaticamente um "Card Preview" igual ao do catálogo nativo.
-            
-            let productUrl = String(productIdOrUrl).trim();
-            
-            // Se o usuário tiver cadastrado apenas o ID (ex: 6609979085680039), reconstruímos o link
-            if (!productUrl.includes('wa.me')) {
-                const numeroLoja = process.env.NUMERO_DA_LOJA || process.env.EVOLUTION_BUSINESS_NUMBER || '557988125726';
-                productUrl = `https://wa.me/p/${productUrl}/${numeroLoja}`;
-            }
-
-            const textoComLink = `${textoIntroducao}\n\n🛒 Acesse o produto aqui:\n${productUrl}`;
-            
-            // Reutiliza a função de texto que agora tem linkPreview: true
-            await this.enviarMensagemText(numeroCliente, textoComLink);
-            
-            return { status: 'success', method: 'link_preview' };
-        } catch (error) {
-            console.error(`❌ Erro ao enviar produto para ${numeroCliente}:`, error?.response?.data || error.message);
-            throw error;
+            throw erro;
         }
     }
 
     /**
-     * Envia um botão para o cliente abrir a vitrine completa do catálogo no WhatsApp
-     * @param {string} numeroCliente - Número do destinatário
-     * @param {string} textoMensagem - Texto do corpo da mensagem
-     * @param {string} textoBotao - Texto que aparece no botão (Ex: "Ver Catálogo")
+     * Auxiliar para remover o prefixo Data URI ("data:image/png;base64,") deixando apenas o Base64 puro
      */
-    static async enviarCatalogoCompleto(numeroCliente, textoMensagem = "Confira nossos produtos disponíveis!", textoBotao = "Ver Catálogo") {
-        try {
-            const url = `${evolutionUrl}/message/sendCatalog/${instanceName}`;
+    static limparBase64(base64String) {
+        if (!base64String || typeof base64String !== 'string') return base64String;
+        if (base64String.includes(';base64,')) {
+            return base64String.split(';base64,')[1];
+        }
+        if (base64String.startsWith('data:')) {
+            return base64String.split(',')[1];
+        }
+        return base64String;
+    }
 
-            const payload = {
-                number: numeroCliente,
-                title: textoMensagem,
-                buttonText: textoBotao,
-                delay: 1000
+    /**
+     * Envia um áudio (gravação de voz) para o WhatsApp (com suporte a resposta/citação)
+     */
+    static async enviarAudio(numero, base64Audio, quoted = null) {
+        const url = `${this.baseUrl}/message/sendWhatsAppAudio/${this.instanceName}`;
+        const audioPuro = this.limparBase64(base64Audio);
+
+        const payload = {
+            number: numero,
+            audio: audioPuro,
+            encoding: true
+        };
+
+        if (quoted && (quoted.id || quoted.whatsappMessageId)) {
+            const quotedId = quoted.whatsappMessageId || quoted.id;
+            const quotedObj = {
+                key: {
+                    id: quotedId,
+                    ...(quoted.remoteJid ? { remoteJid: quoted.remoteJid } : {}),
+                    ...(quoted.fromMe !== undefined ? { fromMe: quoted.fromMe } : {})
+                },
+                message: {
+                    conversation: quoted.texto || 'Mensagem'
+                }
             };
+            payload.quoted = quotedObj;
+            payload.options = { quoted: quotedObj };
+        }
 
+        try {
             const response = await axios.post(url, payload, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': apiKey
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
                 }
             });
+            console.log(`🎙️ Áudio enviado via Evolution para ${numero}${quoted ? ' (com citação)' : ''}`);
+            return response.data;
+        } catch (erro) {
+            console.error('[Erro Evolution] Falha ao enviar áudio:', erro.response ? erro.response.data : erro.message);
+            throw erro;
+        }
+    }
 
+    /**
+     * Envia uma mídia (imagem, documento, PDF, etc.) para o WhatsApp (com suporte a resposta/citação)
+     */
+    static async enviarMidia(numero, { media, mediatype, mimetype, fileName, caption = '', quoted = null }) {
+        const url = `${this.baseUrl}/message/sendMedia/${this.instanceName}`;
+        const mediaPura = this.limparBase64(media);
+
+        const payload = {
+            number: numero,
+            mediatype: mediatype || 'image',
+            mimetype: mimetype || 'image/jpeg',
+            caption: caption || '',
+            media: mediaPura,
+            fileName: fileName || (mediatype === 'document' ? 'documento.pdf' : mediatype === 'video' ? 'video.mp4' : 'imagem.jpg')
+        };
+
+        if (quoted && (quoted.id || quoted.whatsappMessageId)) {
+            const quotedId = quoted.whatsappMessageId || quoted.id;
+            const quotedObj = {
+                key: {
+                    id: quotedId,
+                    ...(quoted.remoteJid ? { remoteJid: quoted.remoteJid } : {}),
+                    ...(quoted.fromMe !== undefined ? { fromMe: quoted.fromMe } : {})
+                },
+                message: {
+                    conversation: quoted.texto || 'Mensagem'
+                }
+            };
+            payload.quoted = quotedObj;
+            payload.options = { quoted: quotedObj };
+        }
+
+        try {
+            const response = await axios.post(url, payload, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log(`📎 Mídia (${mediatype}) enviada via Evolution para ${numero}${quoted ? ' (com citação)' : ''}`);
+            return response.data;
+        } catch (erro) {
+            console.error('[Erro Evolution] Falha ao enviar mídia:', erro.response ? erro.response.data : erro.message);
+            throw erro;
+        }
+    }
+
+    /**
+     * Obtém o status atual da conexão com a instância da Evolution API
+     */
+    static async obterStatusInstancia() {
+        const url = `${this.baseUrl}/instance/connectionState/${this.instanceName}`;
+        try {
+            const response = await axios.get(url, {
+                headers: { 'apikey': this.apiKey },
+                timeout: 5000
+            });
             return response.data;
         } catch (error) {
-            console.error(`❌ Erro ao enviar catálogo completo para ${numeroCliente}:`, error?.response?.data || error.message);
-            throw error;
+            console.error('[Erro Evolution] Falha ao consultar status:', error.message);
+            return null;
+        }
+    }
+
+    /**
+     * Obtém o conteúdo em Base64 de uma mensagem de mídia da Evolution API (fallback)
+     */
+    static async obterBase64DeMidia(data) {
+        if (!data?.key || !data?.message) return null;
+        const url = `${this.baseUrl}/chat/getBase64FromMediaMessage/${this.instanceName}`;
+
+        try {
+            const response = await axios.post(url, {
+                message: {
+                    key: data.key,
+                    message: data.message
+                },
+                convertToMp3: false
+            }, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 8000
+            });
+
+            return response.data?.base64 || response.data?.mediaBase64 || null;
+        } catch (error) {
+            console.error('[Erro Evolution] Falha ao obter base64 da mídia:', error.response ? error.response.data : error.message);
+            return null;
+        }
+    }
+
+    /**
+     * Verifica se um número possui conta ativa no WhatsApp
+     */
+    static async verificarNumeroWhatsApp(numero) {
+        const url = `${this.baseUrl}/chat/whatsappNumbers/${this.instanceName}`;
+        const numeroLimpo = numero.replace(/\D/g, '');
+
+        try {
+            const response = await axios.post(url, {
+                numbers: [numeroLimpo]
+            }, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 8000
+            });
+
+            if (Array.isArray(response.data) && response.data.length > 0) {
+                const info = response.data[0];
+                return {
+                    existe: Boolean(info.exists),
+                    jid: info.jid || `${numeroLimpo}@s.whatsapp.net`,
+                    numero: info.number || numeroLimpo
+                };
+            }
+            return { existe: true, jid: `${numeroLimpo}@s.whatsapp.net`, numero: numeroLimpo };
+        } catch (error) {
+            console.warn('[EvolutionService] Falha ao verificar número no WhatsApp (usando fallback):', error.message);
+            return { existe: true, jid: `${numeroLimpo}@s.whatsapp.net`, numero: numeroLimpo };
+        }
+    }
+
+    /**
+     * Cria um novo grupo no WhatsApp via Evolution API
+     */
+    static async criarGrupo(nomeGrupo, participantes = [], descricao = '') {
+        const url = `${this.baseUrl}/group/create/${this.instanceName}`;
+
+        const participantesFormatados = participantes.map(p => {
+            const limpo = p.replace(/\D/g, '');
+            return limpo.includes('@') ? limpo : `${limpo}@s.whatsapp.net`;
+        });
+
+        try {
+            const response = await axios.post(url, {
+                subject: nomeGrupo,
+                participants: participantesFormatados,
+                description: descricao || undefined
+            }, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 15000
+            });
+
+            console.log(`👥 Grupo criado com sucesso: ${nomeGrupo} (${response.data?.id})`);
+            return response.data;
+        } catch (error) {
+            console.error('[EvolutionService] Falha ao criar grupo:', error.response?.data || error.message);
+            throw new Error(error.response?.data?.response?.message?.[0] || error.response?.data?.message || 'Falha ao criar grupo no WhatsApp.');
+        }
+    }
+
+    /**
+     * Exclui uma mensagem para todos no WhatsApp via Evolution API
+     */
+    static async apagarMensagemParaTodos(remoteJid, messageId, fromMe = true, participant = null) {
+        if (!remoteJid || !messageId) {
+            throw new Error('remoteJid e messageId são obrigatórios para apagar a mensagem.');
+        }
+
+        let jidFormatado = String(remoteJid).trim();
+        if (!jidFormatado.includes('@')) {
+            jidFormatado = `${jidFormatado.replace(/\D/g, '')}@s.whatsapp.net`;
+        } else if (jidFormatado.includes(':')) {
+            const [user, domain] = jidFormatado.split('@');
+            jidFormatado = `${user.split(':')[0]}@${domain}`;
+        }
+
+        const url = `${this.baseUrl}/chat/deleteMessageForEveryone/${this.instanceName}`;
+        const payload = {
+            id: messageId,
+            remoteJid: jidFormatado,
+            fromMe: Boolean(fromMe)
+        };
+        if (participant) {
+            payload.participant = participant;
+        }
+
+        const headers = {
+            'apikey': this.apiKey,
+            'Content-Type': 'application/json'
+        };
+
+        try {
+            // 1. Tenta DELETE no endpoint padrão v2
+            const response = await axios.delete(url, { headers, data: payload });
+            console.log(`🗑️ Mensagem ${messageId} apagada para todos via Evolution (DELETE).`);
+            return response.data;
+        } catch (erroDelete) {
+            // 2. Fallback para POST caso a versão instalada espere método POST
+            if (erroDelete.response && (erroDelete.response.status === 405 || erroDelete.response.status === 404)) {
+                try {
+                    const responsePost = await axios.post(url, payload, { headers });
+                    console.log(`🗑️ Mensagem ${messageId} apagada para todos via Evolution (POST fallback).`);
+                    return responsePost.data;
+                } catch (erroPost) {
+                    // 3. Fallback para rota legada /message/delete
+                    try {
+                        const altUrl = `${this.baseUrl}/message/delete/${this.instanceName}`;
+                        const responseAlt = await axios.delete(altUrl, { headers, data: payload });
+                        console.log(`🗑️ Mensagem ${messageId} apagada para todos via Evolution (/message/delete fallback).`);
+                        return responseAlt.data;
+                    } catch (erroAlt) {
+                        console.error('[Erro Evolution] Falha nos fallbacks de exclusão:', erroDelete.response?.data || erroDelete.message);
+                        throw erroDelete;
+                    }
+                }
+            }
+            console.error('[Erro Evolution] Falha ao apagar mensagem para todos:', erroDelete.response ? erroDelete.response.data : erroDelete.message);
+            throw erroDelete;
         }
     }
 }

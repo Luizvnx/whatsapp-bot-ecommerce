@@ -13,8 +13,8 @@ RUN npm install --production
 # Copia todo o resto do código para dentro do container
 COPY . .
 
-# Expõe a porta que o seu servidor Express usa (porta 3000 do .env)
-EXPOSE 3000
+# Expõe a porta que o seu servidor Express usa (padrão 8080)
+EXPOSE 8080
 
-# Comando para iniciar o cérebro do bot
-CMD ["node", "app.js"]
+# Comando para iniciar o cérebro do bot com otimização de memória
+CMD ["node", "--max-old-space-size=128", "--optimize-for-size", "app.js"]

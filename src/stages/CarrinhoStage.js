@@ -1,34 +1,45 @@
-const catalogo = require('../data/catalogo.json');
 const mensagens = require('../data/mensagens.json');
-const EvolutionService = require('../services/EvolutionService');
-const numeroLoja = process.env.NUMERO_DA_LOJA;
 
 class CarrinhoStage {
     static async executar(msg, texto, sessao) {
-        
-        if (texto === '0') {
-            await msg.reply(mensagens.erros.transferenciaHumano);
-            sessao.etapa = 'em_atendimento_humano';
-            await EvolutionService.enviarMensagemText(numeroLoja, `🚨 *ATENÇÃO VENDEDOR*\nO cliente pediu ajuda!${msg.linkAlerta}`);
+        const t = (texto || '').toLowerCase().trim();
+
+        if (t === '#' || t === 'voltar' || t === 'menu') {
+            const InicioStage = require('./InicioStage');
+            return await InicioStage.executar(msg, '', sessao);
         }
 
-        if (texto === '1') {
-            let menu = `Ótimo! Escolha outra categoria para adicionar mais produtos:\n\n`;
-            for (const [chave, categoria] of Object.entries(catalogo.categorias)) {
-                menu += `*${chave}️⃣ - ${categoria.nome}*\n`;
-            }
-            await msg.reply(menu);
+        // Opção 1: Adicionar mais produtos
+        if (t === '1' || t.includes('adicionar') || t.includes('mais')) {
             sessao.etapa = 'aguardando_categoria';
+            await msg.reply(mensagens.produtos.escolhaCategoria);
             return;
         }
 
-        if (texto === '2') {
-            await msg.reply(`🎉 Perfeito! Seu pedido está sendo processado para pagamento.`);
-            sessao.etapa = 'aguardando_pagamento';
+        // Opção 2: Finalizar pedido
+        if (t === '2' || t.includes('finalizar') || t.includes('fechar') || t.includes('pedir') || t.includes('pagar')) {
+            if (!sessao.carrinho || sessao.carrinho.length === 0) {
+                await msg.reply(mensagens.carrinho.pedidoVazio);
+                sessao.etapa = 'aguardando_categoria';
+                return;
+            }
+
+            let total = 0;
+            let itens = '';
+            sessao.carrinho.forEach(item => {
+                const sub = item.preco * item.quantidade;
+                total += sub;
+                itens += `- ${item.quantidade}x ${item.nome} (R$ ${sub.toFixed(2).replace('.', ',')})\n`;
+            });
+
+            const msgFinalizacao = `📦 *Resumo Final do seu Pedido:*\n\n${itens}\n💰 *Valor Total: R$ ${total.toFixed(2).replace('.', ',')}*\n\n${mensagens.finalizacao.dadosEntrega}`;
+            
+            await msg.reply(msgFinalizacao);
+            sessao.etapa = 'aguardando_dados_entrega';
             return;
         }
 
-        await msg.reply("⚠️ Opção inválida." + mensagens.carrinho.opcoes);
+        await msg.reply("Opção inválida. Digite *1* para adicionar mais itens ao carrinho, *2* para finalizar seu pedido ou *#* para voltar ao menu.");
     }
 }
 
