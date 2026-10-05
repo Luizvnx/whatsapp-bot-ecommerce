@@ -313,7 +313,8 @@ class WebhookController {
 
             const infoMsg = await extrairDadosMensagem(data.message, data);
             const isFromMe = Boolean(data.key.fromMe);
-            const nomeContato = data.pushName || 'Cliente';
+            const rawPushName = (data.pushName && typeof data.pushName === 'string') ? data.pushName.trim() : null;
+            const nomeContato = (!isFromMe && SessionService.isNomeContatoValido(rawPushName)) ? rawPushName : null;
 
             if (!infoMsg.texto) return;
 
@@ -328,10 +329,10 @@ class WebhookController {
                     autor = 'Atendente';
                     remetenteCitado = 'atendente';
                 } else if (infoQuoted.participant && (infoQuoted.participant.includes(numeroReal.split('@')[0]) || infoQuoted.participant.includes('@lid'))) {
-                    autor = nomeContato || 'Cliente';
+                    autor = nomeContato || SessionService.formatarNumeroWhatsapp(numeroReal);
                     remetenteCitado = 'cliente';
                 } else {
-                    autor = isFromMe ? (nomeContato || 'Cliente') : 'Atendente';
+                    autor = isFromMe ? (nomeContato || SessionService.formatarNumeroWhatsapp(numeroReal)) : 'Atendente';
                     remetenteCitado = isFromMe ? 'cliente' : 'atendente';
                 }
 
@@ -347,7 +348,7 @@ class WebhookController {
             console.log(`📩 [Webhook] Mensagem ${isFromMe ? 'ENVIADA (Dispositivo)' : 'RECEBIDA'} de ${numeroReal}: "${infoMsg.texto}" (${infoMsg.tipo})${quotedFormatado ? ` [Em resposta a: "${quotedFormatado.texto.substring(0, 25)}..."]` : ''}`);
 
             const remetente = isFromMe ? 'atendente' : 'cliente';
-            await SessionService.adicionarMensagem(numeroReal, remetente, infoMsg.texto, isFromMe ? null : nomeContato, {
+            await SessionService.adicionarMensagem(numeroReal, remetente, infoMsg.texto, nomeContato, {
                 tipo: infoMsg.tipo,
                 mediaUrl: infoMsg.mediaUrl,
                 mediaBase64: infoMsg.mediaBase64,

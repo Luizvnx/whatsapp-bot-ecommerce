@@ -70,7 +70,7 @@ router.get('/conversas', async (req, res) => {
             return {
                 id_cliente: row.id_cliente,
                 numeroLimpo: row.id_cliente.split('@')[0],
-                nome_contato: row.nome_contato || dados.nome_contato || 'Cliente',
+                nome_contato: SessionService.isNomeContatoValido(row.nome_contato) ? row.nome_contato.trim() : (SessionService.isNomeContatoValido(dados.nome_contato) ? dados.nome_contato.trim() : SessionService.formatarNumeroWhatsapp(row.id_cliente)),
                 modo_atendimento: dados.modo_atendimento || 'humano',
                 ultima_msg: row.ultima_msg,
                 preview: previewTexto,
@@ -82,6 +82,22 @@ router.get('/conversas', async (req, res) => {
     } catch (err) {
         console.error('❌ Erro ao buscar lista de conversas:', err);
         res.status(500).json({ success: false, message: "Erro interno no BD" });
+    }
+});
+
+
+// 3.0. ROTA PARA ATUALIZAR NOME DO CONTATO EXPLICITAMENTE
+router.post('/conversa/:id_cliente/atualizar-nome', async (req, res) => {
+    try {
+        const { id_cliente } = req.params;
+        const { nome } = req.body;
+        if (!id_cliente) return res.status(400).json({ success: false, message: 'ID do cliente obrigatório.' });
+
+        const conversaAtualizada = await SessionService.atualizarNomeContato(id_cliente, nome);
+        res.json({ success: true, nome_contato: conversaAtualizada.nome_contato });
+    } catch (err) {
+        console.error('❌ Erro ao atualizar nome do contato:', err);
+        res.status(500).json({ success: false, message: 'Erro ao atualizar nome do contato.' });
     }
 });
 
@@ -110,7 +126,7 @@ router.get('/conversa/:id_cliente/exportar-txt', async (req, res) => {
         }
 
         const conversa = await SessionService.obterConversa(id_cliente);
-        const nome = conversa.nome_contato || 'Cliente';
+        const nome = SessionService.isNomeContatoValido(conversa.nome_contato) ? conversa.nome_contato.trim() : SessionService.formatarNumeroWhatsapp(id_cliente);
         const numero = id_cliente.split('@')[0];
         const mensagens = Array.isArray(conversa.historicoMensagens) ? conversa.historicoMensagens : [];
 

@@ -83,7 +83,23 @@ class EvolutionService {
             console.log(`📋 Menu de Lista interativo enviado via Evolution para ${numeroLimpo}`);
             return response.data;
         } catch (erro) {
-            console.warn('[EvolutionService] Falha ao enviar lista interativa (usando fallback de texto):', erro.response?.data || erro.message);
+            console.warn('[EvolutionService] Falha ao enviar lista interativa:', erro.response?.data || erro.message);
+            // Se a versão da API falhar com sendList (ex: bug 'this.isZero'), converte automaticamente para botões interativos
+            if (Array.isArray(sections) && sections[0]?.rows?.length > 0) {
+                console.log(`[EvolutionService] Convertendo lista para botões interativos automaticamente...`);
+                const botoesDeLista = sections[0].rows.slice(0, 3).map(r => ({
+                    id: r.rowId || r.id,
+                    text: r.title || r.text
+                }));
+                try {
+                    return await this.enviarBotoes(numeroLimpo, {
+                        title: title,
+                        description: description,
+                        footer: footerText,
+                        buttons: botoesDeLista
+                    }, fallbackText);
+                } catch (_) {}
+            }
             if (fallbackText) {
                 return await this.enviarMensagemText(numeroLimpo, fallbackText);
             }
@@ -98,18 +114,19 @@ class EvolutionService {
         const url = `${this.baseUrl}/message/sendButtons/${this.instanceName}`;
         const numeroLimpo = (numero || '').replace(/\D/g, '');
 
+        // Evolution API v2 aceita no máximo 3 botões do tipo 'reply' com campo displayText
+        const botoesFormatados = (buttons || []).slice(0, 3).map((b, idx) => ({
+            displayText: (b.text || b.displayText || b.titulo || `Opção ${idx + 1}`).substring(0, 24),
+            id: String(b.id || idx + 1),
+            type: 'reply'
+        }));
+
         const payload = {
             number: numeroLimpo,
             title: title || '',
             description: description || '',
             footer: footer || 'Apiário Favo de Mel',
-            buttons: (buttons || []).map((b, idx) => ({
-                buttonId: String(b.id || idx + 1),
-                buttonText: {
-                    displayText: b.text || b.titulo || `Opção ${idx + 1}`
-                },
-                type: 1
-            }))
+            buttons: botoesFormatados
         };
 
         try {

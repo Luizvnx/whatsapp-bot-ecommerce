@@ -109,6 +109,11 @@ class BotController {
                 return; 
             }
 
+            // Atualiza o nome do contato se veio um pushName legítimo do WhatsApp
+            if (info.nomeCliente && SessaoService.isNomeContatoValido(info.nomeCliente)) {
+                sessao.nome_contato = info.nomeCliente.trim();
+            }
+
             // 3. REGISTRA A MENSAGEM DO CLIENTE NO HISTÓRICO (para exibição no Dashboard e contexto de IA)
             if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
             sessao.historicoIa.push({
@@ -186,10 +191,12 @@ class BotController {
         
         const numeroCliente = numeroReal.split('@')[0];
         const isLid = numeroCliente.length > 13;
-        const nomeCliente = data.pushName || 'um Cliente';
+        const rawPushName = (data.pushName && typeof data.pushName === 'string') ? data.pushName.trim() : null;
+        const nomeCliente = SessaoService.isNomeContatoValido(rawPushName) ? rawPushName : null;
+        const nomeParaExibir = nomeCliente || SessaoService.formatarNumeroWhatsapp(numeroReal);
         
         const linkAlerta = isLid 
-            ? `\n👉 *Aviso:* Número oculto pelo WhatsApp. Procure pela conversa de *${nomeCliente}* no seu aplicativo.`
+            ? `\n👉 *Aviso:* Número oculto pelo WhatsApp. Procure pela conversa de *${nomeParaExibir}* no seu aplicativo.`
             : `\n👉 Link: https://wa.me/${numeroCliente}`;
 
         const textoBruto = this.processarTextoProfundo(data.message);
@@ -224,7 +231,7 @@ class BotController {
                     } catch (_) {}
                 }
                 try {
-                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', t, 'Bot Favo de Mel', {
+                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', t, null, {
                         tipo: 'texto',
                         atendenteNome: 'Bot Favo de Mel',
                         messageId: msgId,
@@ -252,7 +259,7 @@ class BotController {
                 const resp = await EvolutionService.enviarLista(numeroCliente, options, fallbackText);
                 const msgId = resp?.key?.id || null;
                 try {
-                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', textParaHistorico, 'Bot Favo de Mel', {
+                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', textParaHistorico, null, {
                         tipo: 'texto',
                         atendenteNome: 'Bot Favo de Mel',
                         messageId: msgId,
@@ -278,7 +285,7 @@ class BotController {
                 const resp = await EvolutionService.enviarBotoes(numeroCliente, options, fallbackText);
                 const msgId = resp?.key?.id || null;
                 try {
-                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', textParaHistorico, 'Bot Favo de Mel', {
+                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', textParaHistorico, null, {
                         tipo: 'texto',
                         atendenteNome: 'Bot Favo de Mel',
                         messageId: msgId,
@@ -325,7 +332,7 @@ class BotController {
                 }
                 try {
                     const isBase64 = typeof media === 'string' && (media.startsWith('data:') || media.length > 500);
-                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', caption, 'Bot Favo de Mel', {
+                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', caption, null, {
                         tipo: 'imagem',
                         mediaUrl: isBase64 ? null : media,
                         mediaBase64: isBase64 ? media : null,

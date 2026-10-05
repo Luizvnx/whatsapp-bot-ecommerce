@@ -35,6 +35,62 @@ class SessionService {
     }
 
     /**
+     * Formata o número de telefone para um padrão legível e amigável (ex: (79) 98856-2587)
+     */
+    static formatarNumeroWhatsapp(idOuNumero) {
+        if (!idOuNumero) return 'Cliente';
+        const digits = String(idOuNumero).split('@')[0].split(':')[0].replace(/\D/g, '');
+        if (digits.length === 13 && digits.startsWith('55')) {
+            const ddd = digits.substring(2, 4);
+            const p1 = digits.substring(4, 9);
+            const p2 = digits.substring(9);
+            return `(${ddd}) ${p1}-${p2}`;
+        }
+        if (digits.length === 12 && digits.startsWith('55')) {
+            const ddd = digits.substring(2, 4);
+            const p1 = digits.substring(4, 8);
+            const p2 = digits.substring(8);
+            return `(${ddd}) ${p1}-${p2}`;
+        }
+        if (digits.length === 11) {
+            const ddd = digits.substring(0, 2);
+            const p1 = digits.substring(2, 7);
+            const p2 = digits.substring(7);
+            return `(${ddd}) ${p1}-${p2}`;
+        }
+        return digits ? `+${digits}` : 'Cliente';
+    }
+
+    /**
+     * Valida se uma string é um nome real e legítimo do cliente
+     */
+    static isNomeContatoValido(nome) {
+        if (!nome || typeof nome !== 'string') return false;
+        const n = nome.trim().toLowerCase();
+        if (!n || n === 'undefined' || n === 'null') return false;
+        if (n === 'cliente' || n === 'um cliente' || n === 'você' || n === 'voce') return false;
+        if (n.includes('bot favo') || n === 'favo de mel' || n.includes('atendente') || n.includes('favo de mel')) return false;
+        // Rejeita strings que não possuem pelo menos uma letra (ex: números puros, pontuação)
+        const letras = n.replace(/[^a-zA-ZáàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ]/g, '');
+        if (letras.length === 0) return false;
+        return true;
+    }
+
+    /**
+     * Atualiza explicitamente o nome de um contato (usado pelo painel ou sincronização)
+     */
+    static async atualizarNomeContato(numeroCliente, novoNome) {
+        const idCanonico = this.normalizarId(numeroCliente);
+        return await this.enfileirar(idCanonico, async () => {
+            const conversa = await this.obterConversa(idCanonico);
+            const nomeFinal = this.isNomeContatoValido(novoNome) ? novoNome.trim() : this.formatarNumeroWhatsapp(idCanonico);
+            conversa.nome_contato = nomeFinal;
+            await this.salvarConversa(idCanonico, conversa);
+            return conversa;
+        });
+    }
+
+    /**
      * Obtém ou inicializa a conversa de um cliente
      */
     static async obterConversa(numeroCliente) {
@@ -62,7 +118,11 @@ class SessionService {
             const row = result.rows[0];
             let dados = typeof row.dados_sessao === 'string' ? JSON.parse(row.dados_sessao) : (row.dados_sessao || {});
             dados.id_cliente = idCanonico;
-            dados.nome_contato = row.nome_contato || dados.nome_contato || 'Cliente';
+            
+            let nomeFinal = this.isNomeContatoValido(row.nome_contato) 
+                ? row.nome_contato.trim() 
+                : (this.isNomeContatoValido(dados.nome_contato) ? dados.nome_contato.trim() : this.formatarNumeroWhatsapp(idCanonico));
+            dados.nome_contato = nomeFinal;
             
             // Retrocompatibilidade para conversas anteriores
             if (!Array.isArray(dados.historicoMensagens)) {
@@ -89,7 +149,7 @@ class SessionService {
 
         const conversaInicial = {
             id_cliente: idCanonico,
-            nome_contato: 'Cliente',
+            nome_contato: this.formatarNumeroWhatsapp(idCanonico),
             historicoMensagens: [],
             criadoEm: new Date().toISOString()
         };
@@ -104,6 +164,12 @@ class SessionService {
     static async salvarConversa(numeroCliente, dadosConversa) {
         const idCanonico = this.normalizarId(numeroCliente);
         dadosConversa.id_cliente = idCanonico;
+        
+        const nomeParaSalvar = this.isNomeContatoValido(dadosConversa.nome_contato)
+            ? dadosConversa.nome_contato.trim()
+            : this.formatarNumeroWhatsapp(idCanonico);
+        dadosConversa.nome_contato = nomeParaSalvar;
+
         this.cacheConversas.set(idCanonico, { dados: dadosConversa, timestamp: Date.now() });
 
         const sql = `
@@ -111,14 +177,33 @@ class SessionService {
             VALUES ($1, $2, 'atendimento', $3, CURRENT_TIMESTAMP)
             ON CONFLICT (id_cliente) 
             DO UPDATE SET 
-                nome_contato = CASE WHEN EXCLUDED.nome_contato IS NOT NULL AND EXCLUDED.nome_contato != 'Cliente' THEN EXCLUDED.nome_contato ELSE tb_bot_sessoes.nome_contato END,
+                nome_contato = CASE 
+                    -- 1. Se o novo nome é um nome legítimo com letras reais (não é bot nem genérico)
+                    WHEN EXCLUDED.nome_contato IS NOT NULL 
+                         AND EXCLUDED.nome_contato != 'Cliente' 
+                         AND EXCLUDED.nome_contato NOT ILIKE '%bot favo%'
+                         AND EXCLUDED.nome_contato NOT ILIKE '%favo de mel%'
+                         AND EXCLUDED.nome_contato ~ '[a-zA-ZáàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ]'
+                    THEN EXCLUDED.nome_contato 
+
+                    -- 2. Se o registro atual no banco já possui um nome legítimo com letras, preserva ele
+                    WHEN tb_bot_sessoes.nome_contato IS NOT NULL 
+                         AND tb_bot_sessoes.nome_contato != 'Cliente' 
+                         AND tb_bot_sessoes.nome_contato NOT ILIKE '%bot favo%'
+                         AND tb_bot_sessoes.nome_contato NOT ILIKE '%favo de mel%'
+                         AND tb_bot_sessoes.nome_contato ~ '[a-zA-ZáàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ]'
+                    THEN tb_bot_sessoes.nome_contato
+
+                    -- 3. Caso contrário, adota o novo nome (que é o telefone formatado amigável)
+                    ELSE EXCLUDED.nome_contato 
+                END,
                 dados_sessao = EXCLUDED.dados_sessao,
                 ultima_msg = CURRENT_TIMESTAMP;
         `;
         
         await DatabaseService.executar(sql, [
             idCanonico, 
-            dadosConversa.nome_contato || 'Cliente',
+            nomeParaSalvar,
             JSON.stringify(dadosConversa)
         ]);
     }
@@ -132,8 +217,8 @@ class SessionService {
 
         return await this.enfileirar(idCanonico, async () => {
             const conversa = await this.obterConversa(idCanonico);
-            if (nomeContato && nomeContato !== 'Cliente') {
-                conversa.nome_contato = nomeContato;
+            if (this.isNomeContatoValido(nomeContato)) {
+                conversa.nome_contato = nomeContato.trim();
             }
 
             if (!Array.isArray(conversa.historicoMensagens)) {

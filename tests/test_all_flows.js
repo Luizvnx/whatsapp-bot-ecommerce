@@ -241,28 +241,26 @@ async function runTests() {
             }
         };
 
-        // 7.1 InicioStage deve disparar replyList com 4 opções
+        // 7.1 InicioStage deve disparar replyButtons com opções rápidas
         await InicioStage.executar(msgInterativa, '', sessao);
-        assert(listaRecebida, 'replyList deve ser chamado no InicioStage');
-        assert.strictEqual(listaRecebida.payload.buttonText, 'Ver Opções 🍯');
-        assert.strictEqual(listaRecebida.payload.sections[0].rows.length, 4);
-        assert.strictEqual(listaRecebida.payload.sections[0].rows[0].rowId, '1');
+        assert(botoesRecebidos, 'replyButtons deve ser chamado no InicioStage');
+        assert.strictEqual(botoesRecebidos.payload.buttons.length, 3);
+        assert.strictEqual(botoesRecebidos.payload.buttons[0].id, '1');
 
-        // 7.2 MenuPrincipalStage (opção 1) deve disparar replyList com categorias
-        listaRecebida = null;
+        // 7.2 MenuPrincipalStage (opção 1) deve disparar replyButtons com categorias
+        botoesRecebidos = null;
         await MenuPrincipalStage.executar(msgInterativa, '1', sessao);
-        assert(listaRecebida, 'replyList deve ser chamado nas Categorias');
-        assert.strictEqual(listaRecebida.payload.buttonText, 'Ver Categorias 🍯');
-        assert(listaRecebida.payload.sections[0].rows.length > 0);
+        assert(botoesRecebidos, 'replyButtons deve ser chamado nas Categorias');
+        assert(botoesRecebidos.payload.buttons.length > 0);
 
-        // 7.3 CategoriaStage (categoria 1) deve disparar replyList com produtos
-        listaRecebida = null;
+        // 7.3 CategoriaStage (categoria 1) deve disparar replyButtons com produtos
+        botoesRecebidos = null;
         await CategoriaStage.executar(msgInterativa, '1', sessao);
-        assert(listaRecebida, 'replyList deve ser chamado nos Produtos');
-        assert.strictEqual(listaRecebida.payload.buttonText, 'Ver Produtos 🍯');
-        assert(listaRecebida.payload.sections[0].rows.length > 0);
+        assert(botoesRecebidos, 'replyButtons deve ser chamado nos Produtos');
+        assert(botoesRecebidos.payload.buttons.length > 0);
 
         // 7.4 QuantidadeStage deve disparar replyButtons com 3 ações
+        botoesRecebidos = null;
         sessao.carrinho = [];
         sessao.produtoTemporario = { nome: 'Mel Silvestre 500g', preco: 35.0 };
         await QuantidadeStage.executar(msgInterativa, '2', sessao);
@@ -272,7 +270,7 @@ async function runTests() {
         assert.strictEqual(botoesRecebidos.payload.buttons[1].id, '2');
         assert.strictEqual(botoesRecebidos.payload.buttons[2].id, '#');
 
-        console.log('✅ Teste 7: Menus de lista e botões interativos (replyList & replyButtons) OK');
+        console.log('✅ Teste 7: Menus e botões interativos (replyButtons) OK');
         passCount++;
     }
 

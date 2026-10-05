@@ -30,22 +30,17 @@ class MenuPrincipalStage {
             }
             msgCategorias += "\n👉 *Digite o número da categoria* ou *#* para voltar ao menu principal.";
 
-            if (typeof msg.replyList === 'function' && rows.length > 0) {
-                await msg.replyList({
+            const botoesCategorias = Object.entries(catalogo.categorias || {}).slice(0, 3).map(([chave, cat]) => ({
+                id: chave,
+                text: `${chave}. ${cat.nome}`.substring(0, 20)
+            }));
+
+            if (typeof msg.replyButtons === 'function' && botoesCategorias.length > 0) {
+                await msg.replyButtons({
                     title: "🍯 Categorias de Produtos",
-                    description: "Toque no botão abaixo para escolher uma categoria do catálogo:",
-                    buttonText: "Ver Categorias 🍯",
-                    footerText: "Apiário Favo de Mel",
-                    sections: [
-                        {
-                            title: "Categorias da Colmeia",
-                            rows: rows.map(r => ({
-                                ...r,
-                                title: r.title.substring(0, 24),
-                                description: (r.description || '').substring(0, 72)
-                            }))
-                        }
-                    ]
+                    description: msgCategorias,
+                    footer: "Apiário Favo de Mel",
+                    buttons: botoesCategorias
                 }, msgCategorias);
             } else {
                 await msg.reply(msgCategorias);
