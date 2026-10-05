@@ -4,7 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Favo de Mel — Autenticação</title>
+    <title>Apiário Favo de Mel — Autenticação</title>
+
+    <!-- Favicon & PWA -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#b45309">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Favo de Mel">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,14 +50,11 @@
 <body class="h-full bg-[#f6f5f3] text-stone-900 font-sans flex items-center justify-center p-4 antialiased">
     <div class="w-full max-w-sm">
         <!-- Brand Header -->
-        <div class="mb-8 text-center">
-            <div class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-stone-900 text-amber-500 mb-3 border border-stone-800 shadow-sm">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" stroke-linejoin="round"/>
-                    <path d="M12 11l8-4.5M12 11v9M12 11L4 6.5"/>
-                </svg>
+        <div class="mb-6 text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white mb-3 border border-stone-200 shadow-sm p-1">
+                <img src="/logo.png" alt="Apiário Favo de Mel" class="w-full h-full object-contain">
             </div>
-            <h1 class="text-2xl font-serif font-semibold tracking-tight text-stone-900">Favo de Mel</h1>
+            <h1 class="text-2xl font-serif font-semibold tracking-tight text-stone-900">Apiário Favo de Mel</h1>
             <p class="text-xs text-stone-500 font-mono mt-1 tracking-wider uppercase">Terminal de Atendimento & Gestão</p>
         </div>
 
@@ -88,9 +97,19 @@
 
         <!-- Footer System Meta -->
         <div class="mt-6 text-center">
-            <p class="text-[11px] font-mono text-stone-400">Favo de Mel &middot; Sistema Operacional de Vendas</p>
+            <p class="text-[11px] font-mono text-stone-400">Apiário Favo de Mel &middot; Sistema Operacional de Vendas</p>
         </div>
     </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('🐝 [PWA] Service Worker registrado no login:', reg.scope))
+                    .catch(err => console.warn('⚠️ [PWA] Erro ao registrar Service Worker:', err));
+            });
+        }
+    </script>
 </body>
 
 </html>

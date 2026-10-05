@@ -4,15 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Favo de Mel | Painel de Atendimento ao Vivo</title>
+    <title>Apiário Favo de Mel | Painel de Atendimento ao Vivo</title>
 
-    <!-- Favicon -->
+    <!-- Favicon & PWA -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="manifest" href="/site.webmanifest">
-    <meta name="theme-color" content="#f6f5f3">
+    <meta name="theme-color" content="#b45309">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Favo de Mel">
 
     <!-- Socket.io & Tailwind -->
     <script src="/socket.io/socket.io.js"></script>
@@ -79,16 +82,13 @@
     <header class="bg-white border-b border-stone-200 sticky top-0 z-30 flex-shrink-0 shadow-xs">
         <div class="max-w-7xl mx-auto px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2">
             <!-- Brand Logo -->
-            <div class="flex items-center gap-2 flex-shrink-0">
-                <div class="w-8 h-8 rounded-full bg-stone-900 text-amber-400 flex items-center justify-center border border-stone-800 shadow-xs flex-shrink-0">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" stroke-linejoin="round"/>
-                        <path d="M12 11l8-4.5M12 11v9M12 11L4 6.5"/>
-                    </svg>
+            <div class="flex items-center gap-2.5 flex-shrink-0">
+                <div class="w-9 h-9 rounded-full bg-white border border-stone-200/90 shadow-xs flex items-center justify-center overflow-hidden flex-shrink-0 p-0.5">
+                    <img src="/logo.png" alt="Apiário Favo de Mel" class="w-full h-full object-contain">
                 </div>
                 <div class="hidden xs:block">
-                    <h1 class="text-sm sm:text-base font-bold text-stone-900 leading-none">Favo de Mel</h1>
-                    <p class="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mt-0.5 hidden sm:block">Terminal Operacional</p>
+                    <h1 class="text-sm sm:text-base font-bold text-stone-900 leading-none">Apiário Favo de Mel</h1>
+                    <p class="text-[10px] uppercase tracking-wider text-amber-800 font-semibold mt-0.5 hidden sm:block">Painel de Atendimento</p>
                 </div>
             </div>
 
@@ -122,6 +122,15 @@
                     class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-[#25D366] text-white shadow-xs hover:bg-[#20bd5a] transition cursor-pointer flex-shrink-0">
                     <span id="badgeStatusDot" class="w-2 h-2 rounded-full bg-white flex-shrink-0"></span>
                     <span id="badgeStatusText">WhatsApp Conectado</span>
+                </button>
+
+                <!-- Install PWA Button (Visível quando instalável) -->
+                <button id="btnInstalarApp" onclick="instalarPWA()" title="Instalar aplicativo Favo de Mel no celular ou computador"
+                    class="hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition cursor-pointer flex-shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    <span class="hidden sm:inline">Instalar App</span>
                 </button>
 
                 <!-- Sound Alert Toggle Button -->
@@ -3612,6 +3621,41 @@
 
         setInterval(carregarListaConversas, 15000);
         setInterval(monitorarInstancia, 30000);
+
+        // ==========================================
+        // 12. PWA: SERVICE WORKER & INSTALAÇÃO
+        // ==========================================
+        let deferredPrompt = null;
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('🐝 [PWA] Service Worker ativo:', reg.scope))
+                    .catch(err => console.warn('⚠️ [PWA] Erro no Service Worker:', err));
+            });
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btnInstalar = document.getElementById('btnInstalarApp');
+            if (btnInstalar) {
+                btnInstalar.classList.remove('hidden');
+                btnInstalar.classList.add('inline-flex');
+            }
+        });
+
+        async function instalarPWA() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log('[PWA] Decisão de instalação:', outcome);
+            deferredPrompt = null;
+            const btnInstalar = document.getElementById('btnInstalarApp');
+            if (btnInstalar) {
+                btnInstalar.classList.add('hidden');
+                btnInstalar.classList.remove('inline-flex');
+            }
+        }
     </script>
 </body>
 
