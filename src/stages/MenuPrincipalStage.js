@@ -8,6 +8,11 @@ class MenuPrincipalStage {
     static async executar(msg, texto, sessao) {
         const t = (texto || '').toLowerCase().trim();
 
+        if (t === '#' || t === 'menu' || t === 'voltar' || t === 'inicio') {
+            const InicioStage = require('./InicioStage');
+            return await InicioStage.executar(msg, '', sessao);
+        }
+
         if (t === '1' || t.includes('mel') || t.includes('comprar') || t.includes('produto') || t.includes('catalogo')) {
             sessao.etapa = 'aguardando_categoria';
             const CatalogoService = require('../services/CatalogoService');

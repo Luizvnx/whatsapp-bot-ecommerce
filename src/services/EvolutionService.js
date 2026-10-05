@@ -241,6 +241,34 @@ class EvolutionService {
     }
 
     /**
+     * Gerencia etiquetas de um contato na Evolution API (com fallback silencioso)
+     */
+    static async gerenciarEtiqueta(numero, labelId, action = 'add') {
+        const url = `${this.baseUrl}/chat/handleLabels/${this.instanceName}`;
+        const numeroLimpo = (numero || '').replace(/\D/g, '');
+        if (!numeroLimpo || !labelId) return null;
+
+        try {
+            const response = await axios.post(url, {
+                number: numeroLimpo,
+                labelId: String(labelId),
+                action: action // 'add' ou 'remove'
+            }, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 5000
+            });
+            return response.data;
+        } catch (error) {
+            // Falhas de etiqueta são tratadas silenciosamente sem interromper o fluxo do robô
+            console.warn(`[EvolutionService] Aviso ao gerenciar etiqueta ${labelId} (${action}) para ${numeroLimpo}:`, error.message);
+            return null;
+        }
+    }
+
+    /**
      * Cria um novo grupo no WhatsApp via Evolution API
      */
     static async criarGrupo(nomeGrupo, participantes = [], descricao = '') {

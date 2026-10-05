@@ -122,22 +122,30 @@ class BotController {
             // 4. Valida expiração da sessão ANTES dos bloqueios de atendimento
             if (SessaoService.verificarExpiracao(sessao)) {
                 await info.reply(mensagens.erros.sessaoExpirada);
-                await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => {});
-                await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => {});
+                if (typeof EvolutionService.gerenciarEtiqueta === 'function') {
+                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => {});
+                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => {});
+                }
                 return;
             }
 
             // 5. Se o cliente estiver em atendimento humano, permite apenas comandos de reativação (/bot, /voltar, menu)
             if (sessao.etapa === 'em_atendimento_humano') {
-                if (info.texto === '/bot' || info.texto === '/voltar' || info.texto === 'menu') {
-                    sessao.etapa = 'inicio';
+                const comandosRetorno = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', 'catalogo', 'catálogo', '0', 'inicio', 'início'];
+                if (comandosRetorno.includes(info.texto)) {
+                    sessao.etapa = 'menu_principal';
                     sessao.errosConsecutivos = 0;
-                    sessao.carrinho = [];
-                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => {});
-                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => {});
-                    await info.reply("🤖 *Atendimento automático reativado!*\nDigite qualquer coisa para ver o catálogo. 🍯");
-                    await estagios['inicio'].executar(info, info.texto, sessao);
-                    return;
+                    sessao.categoriaSelecionada = null;
+                    sessao.produtoSelecionado = null;
+
+                    await SessaoService.alternarModoAtendimento(numeroReal, 'bot').catch(() => {});
+                    if (typeof EvolutionService.gerenciarEtiqueta === 'function') {
+                        await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => {});
+                        await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => {});
+                    }
+
+                    const InicioStage = require('../stages/InicioStage');
+                    return await InicioStage.executar(info, '', sessao);
                 }
                 // Silêncio total do robô durante atendimento humano
                 return;
@@ -322,15 +330,19 @@ class BotController {
     static async _processarComandosCliente(info, sessao) {
         const { texto, numeroCliente, reply } = info;
 
-        if (texto === '/bot' || texto === '/menu' || texto === 'menu') {
-            sessao.etapa = 'inicio';
+        const comandosGlobaisMenu = ['/bot', 'bot', '/menu', 'menu', '#', 'voltar', '/voltar', 'inicio', 'início'];
+        if (comandosGlobaisMenu.includes(texto)) {
+            sessao.etapa = 'menu_principal';
             sessao.errosConsecutivos = 0;
-            sessao.carrinho = []; 
+            sessao.categoriaSelecionada = null;
+            sessao.produtoSelecionado = null;
             
-            await EvolutionService.gerenciarEtiqueta(numeroCliente, '7', 'remove').catch(() => {});
-            await EvolutionService.gerenciarEtiqueta(numeroCliente, '8', 'add').catch(() => {});
+            if (typeof EvolutionService.gerenciarEtiqueta === 'function') {
+                await EvolutionService.gerenciarEtiqueta(numeroCliente, '7', 'remove').catch(() => {});
+                await EvolutionService.gerenciarEtiqueta(numeroCliente, '8', 'add').catch(() => {});
+            }
 
-            await estagios['inicio'].executar(info, texto, sessao);
+            await estagios['inicio'].executar(info, '', sessao);
             return true; 
         }
 

@@ -1,11 +1,13 @@
 class HumanoStage {
     static async executar(msg, texto, sessao) {
         const t = (texto || '').toLowerCase().trim();
-        if (t === '/voltar' || t === '/bot' || t === 'menu' || t === '#') {
+        const comandos = ['/voltar', '/bot', 'bot', 'menu', '/menu', '#', 'voltar', '0', 'catalogo', 'catálogo', 'inicio', 'início'];
+        if (comandos.includes(t)) {
             sessao.etapa = 'menu_principal';
             sessao.errosConsecutivos = 0;
+            sessao.categoriaSelecionada = null;
+            sessao.produtoSelecionado = null;
             const InicioStage = require('./InicioStage');
-            await msg.reply("🤖 *Atendimento automático reativado!* 🐝");
             return await InicioStage.executar(msg, '', sessao);
         }
     }

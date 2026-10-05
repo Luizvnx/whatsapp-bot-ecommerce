@@ -381,7 +381,8 @@ class WebhookController {
             // Se o atendimento estiver 100% humano no momento:
             if (modoAtual === 'humano') {
                 // Cliente pode reativar o bot a qualquer momento digitando /bot, menu ou #
-                if (textoCliente === '/bot' || textoCliente === 'menu' || textoCliente === '#') {
+                const comandosReativar = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', 'catalogo', 'catálogo', '0', 'inicio', 'início'];
+                if (comandosReativar.includes(textoCliente)) {
                     await SessionService.alternarModoAtendimento(numeroReal, 'bot');
                     data.message = { conversation: infoMsg.texto };
                     await BotController.processarMensagem(data);
