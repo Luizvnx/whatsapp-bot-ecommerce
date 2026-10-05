@@ -39,6 +39,14 @@ function criarMsgMock() {
             respostas.push(t);
             return { key: { id: 'MOCK_ID' } };
         },
+        replyButtons: async (options, fallbackText) => {
+            respostas.push(fallbackText || options.description || options.title);
+            return { key: { id: 'MOCK_ID' } };
+        },
+        replyList: async (options, fallbackText) => {
+            respostas.push(fallbackText || options.description || options.title);
+            return { key: { id: 'MOCK_ID' } };
+        },
         replyMedia: async (media, t) => {
             respostas.push(t);
             return { key: { id: 'MOCK_ID' } };
@@ -253,6 +261,52 @@ async function runTests() {
         assert(textoRecebido && (textoRecebido.includes('R$') || textoRecebido.includes('Mel')), 'Produtos devem ser listados');
 
         console.log('✅ Teste 7: Menus e navegação 100% estável via texto numerado OK');
+        passCount++;
+    }
+
+    // ----------------------------------------------------
+    // TESTE 8: Menus Interativos Nativos e Parsing de Cliques (Evolution 2.4+)
+    // ----------------------------------------------------
+    {
+        const sessao = {};
+        let listaRecebida = null;
+        let botoesRecebidos = null;
+
+        const msgInterativa = {
+            reply: async () => ({ key: { id: 'MOCK_REPLY' } }),
+            replyList: async (options, fallback) => {
+                listaRecebida = options;
+                return { key: { id: 'MOCK_LIST' } };
+            },
+            replyButtons: async (options, fallback) => {
+                botoesRecebidos = options;
+                return { key: { id: 'MOCK_BUTTONS' } };
+            }
+        };
+
+        // 8.1 InicioStage deve disparar replyList com seções e botões
+        await InicioStage.executar(msgInterativa, '', sessao);
+        assert(listaRecebida, 'InicioStage deve usar replyList quando suportado');
+        assert.strictEqual(listaRecebida.buttonText, 'Ver Opções 🍯');
+        assert.strictEqual(listaRecebida.sections[0].rows.length, 4, 'Menu deve ter 4 opções interativas');
+
+        // 8.2 Simulação de clique do cliente no botão (formato nativeFlowResponseMessage da Evolution 2.4)
+        const mockWebhookMessage = {
+            interactiveResponseMessage: {
+                nativeFlowResponseMessage: {
+                    name: 'quick_reply',
+                    paramsJson: JSON.stringify({ id: '1' })
+                }
+            }
+        };
+        const idExtraido = BotController.processarTextoProfundo(mockWebhookMessage);
+        assert.strictEqual(idExtraido, '1', 'BotController deve extrair corretamente o ID do clique no botão');
+
+        // 8.3 MenuPrincipalStage com id '1' deve disparar botões de categorias
+        await MenuPrincipalStage.executar(msgInterativa, idExtraido, sessao);
+        assert(botoesRecebidos || listaRecebida, 'MenuPrincipalStage deve enviar botões ou lista');
+
+        console.log('✅ Teste 8: Menus Interativos Nativos e Parsing de Cliques (Evolution 2.4+) OK');
         passCount++;
     }
 

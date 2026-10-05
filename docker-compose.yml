@@ -17,7 +17,7 @@ services:
   # --- 2. O MOTOR DE WHATSAPP: Evolution API ---
   api:
     container_name: evolution_api
-    image: evoapicloud/evolution-api:v2.3.7
+    image: evoapicloud/evolution-api:2.4.0-rc2
     restart: always
     ports:
       - "8081:8080"

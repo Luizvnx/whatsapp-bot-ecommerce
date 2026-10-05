@@ -57,7 +57,8 @@ class BotController {
                || msg.viewOnceMessageV2?.message 
                || msg.documentWithCaptionMessage?.message;
         }
-        return (
+
+        let texto = (
             msg?.conversation ||
             msg?.extendedTextMessage?.text ||
             msg?.imageMessage?.caption ||
@@ -66,10 +67,24 @@ class BotController {
             msg?.buttonsResponseMessage?.selectedButtonId ||
             msg?.buttonsResponseMessage?.selectedDisplayText ||
             msg?.templateButtonReplyMessage?.selectedId ||
+            msg?.templateButtonReplyMessage?.selectedDisplayText ||
             msg?.listResponseMessage?.singleSelectReply?.selectedRowId ||
+            msg?.listResponseMessage?.title ||
             msg?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson ||
+            msg?.interactiveResponseMessage?.body?.text ||
             ''
         );
+
+        if (typeof texto === 'string' && texto.trim().startsWith('{') && texto.trim().endsWith('}')) {
+            try {
+                const parsed = JSON.parse(texto);
+                if (parsed.id) return String(parsed.id);
+                if (parsed.rowId) return String(parsed.rowId);
+                if (parsed.selectedId) return String(parsed.selectedId);
+                if (parsed.displayText) return String(parsed.displayText);
+            } catch (_) {}
+        }
+        return texto;
     }
 
     static processarNumeroProfundo(key, data) {

@@ -176,3 +176,8 @@ Thumbs.db
 # Graphify Knowledge Graph
 graphify-out/
 
+# Backups com credenciais de sessão
+backups/
+backups
+
+

@@ -26,14 +26,28 @@ class ProdutoStage {
         const catalogo = await CatalogoService.obterCatalogo();
         const catId = sessao.categoriaSelecionada || '1';
         const categoria = catalogo.categorias[catId];
-        let produtoEscolhido = categoria?.produtos?.[t];
+        
+        let chave = t;
+        const match = t.match(/^(\d+)/);
+        if (match) chave = match[1];
+
+        let produtoEscolhido = categoria?.produtos?.[chave] || categoria?.produtos?.[t];
 
         // Se não achou na categoria atual, tenta procurar pelo número ou nome em qualquer categoria
         if (!produtoEscolhido) {
             for (const c of Object.values(catalogo.categorias || {})) {
-                if (c.produtos && c.produtos[t]) {
-                    produtoEscolhido = c.produtos[t];
+                if (c.produtos && (c.produtos[chave] || c.produtos[t])) {
+                    produtoEscolhido = c.produtos[chave] || c.produtos[t];
                     break;
+                }
+                if (c.produtos) {
+                    const porNome = Object.values(c.produtos).find(p => 
+                        p.nome.toLowerCase().includes(t) || t.includes(p.nome.toLowerCase())
+                    );
+                    if (porNome) {
+                        produtoEscolhido = porNome;
+                        break;
+                    }
                 }
             }
         }

@@ -11,7 +11,21 @@ class CategoriaStage {
         }
 
         const catalogo = await CatalogoService.obterCatalogo();
-        const categoriaEscolhida = catalogo.categorias[t];
+        
+        let chave = t;
+        if (!catalogo.categorias[chave]) {
+            const match = t.match(/^(\d+)/);
+            if (match && catalogo.categorias[match[1]]) {
+                chave = match[1];
+            } else {
+                const encontrada = Object.entries(catalogo.categorias || {}).find(([k, c]) => 
+                    c.nome.toLowerCase().includes(t) || t.includes(c.nome.toLowerCase())
+                );
+                if (encontrada) chave = encontrada[0];
+            }
+        }
+
+        const categoriaEscolhida = catalogo.categorias[chave];
 
         if (!categoriaEscolhida) {
             sessao.errosConsecutivos = (sessao.errosConsecutivos || 0) + 1;
@@ -30,24 +44,35 @@ class CategoriaStage {
         }
 
         sessao.errosConsecutivos = 0;
-        sessao.categoriaSelecionada = t;
+        sessao.categoriaSelecionada = chave;
 
         let submenu = `*${categoriaEscolhida.nome}*\n_${categoriaEscolhida.descricao || ''}_\n\n`;
         const rows = [];
         
-        for (const [chave, produto] of Object.entries(categoriaEscolhida.produtos || {})) {
+        for (const [chaveProd, produto] of Object.entries(categoriaEscolhida.produtos || {})) {
             const precoFormatado = produto.preco.toFixed(2).replace('.', ',');
-            submenu += `*${chave}️⃣* - *${produto.nome}* - R$ ${precoFormatado}\n`;
+            submenu += `*${chaveProd}️⃣* - *${produto.nome}* - R$ ${precoFormatado}\n`;
             rows.push({
-                title: `${chave}. ${produto.nome}`.substring(0, 24),
+                title: `${chaveProd}. ${produto.nome}`.substring(0, 24),
                 description: `R$ ${precoFormatado}${produto.descricao ? ' - ' + produto.descricao : ''}`.substring(0, 72),
-                rowId: chave
+                rowId: chaveProd
             });
         }
 
         submenu += `\n👉 *Digite o número do produto* que deseja escolher, *0* para trocar de categoria, ou *#* para voltar ao menu principal.`;
 
-        await msg.reply(submenu);
+        if (typeof msg.replyList === 'function' && rows.length > 0) {
+            await msg.replyList({
+                title: `🍯 ${categoriaEscolhida.nome}`,
+                description: `${categoriaEscolhida.descricao || 'Selecione um produto abaixo:'}`,
+                buttonText: "Ver Produtos 🍯",
+                footerText: "Apiário Favo de Mel",
+                sections: [{ title: categoriaEscolhida.nome, rows }]
+            }, submenu);
+        } else {
+            await msg.reply(submenu);
+        }
+
         sessao.etapa = 'aguardando_produto';
     }
 }

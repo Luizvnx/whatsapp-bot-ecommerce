@@ -193,7 +193,7 @@ version: '3.3'
 services:
   api:
     container_name: evolution_api
-    image: evoapicloud/evolution-api:v2.3.1
+    image: evoapicloud/evolution-api:2.4.0-rc2
     restart: always
     ports:
       - 8081:8080
