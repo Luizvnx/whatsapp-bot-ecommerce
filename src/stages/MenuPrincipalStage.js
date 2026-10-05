@@ -17,12 +17,39 @@ class MenuPrincipalStage {
             sessao.etapa = 'aguardando_categoria';
             const CatalogoService = require('../services/CatalogoService');
             const catalogo = await CatalogoService.obterCatalogo();
-            let msgCategorias = `🍯 *Produtos da Colmeia - Favo de Mel*\n\nEscolha uma categoria para ver os itens disponíveis:\n\n`;
+            
+            let msgCategorias = "🍯 *Produtos da Colmeia - Favo de Mel*\n\nEscolha uma categoria para ver os itens disponíveis:\n\n";
+            const rows = [];
             for (const [chave, cat] of Object.entries(catalogo.categorias || {})) {
                 msgCategorias += `*${chave}️⃣* - ${cat.nome}\n`;
+                rows.push({
+                    title: `${chave}. ${cat.nome}`,
+                    description: cat.descricao ? cat.descricao.substring(0, 60) : `Ver produtos de ${cat.nome}`,
+                    rowId: chave
+                });
             }
-            msgCategorias += `\n👉 *Digite o número da categoria* ou *#* para voltar ao menu principal.`;
-            await msg.reply(msgCategorias);
+            msgCategorias += "\n👉 *Digite o número da categoria* ou *#* para voltar ao menu principal.";
+
+            if (typeof msg.replyList === 'function' && rows.length > 0) {
+                await msg.replyList({
+                    title: "🍯 Categorias de Produtos",
+                    description: "Toque no botão abaixo para escolher uma categoria do catálogo:",
+                    buttonText: "Ver Categorias 🍯",
+                    footerText: "Apiário Favo de Mel",
+                    sections: [
+                        {
+                            title: "Categorias da Colmeia",
+                            rows: rows.map(r => ({
+                                ...r,
+                                title: r.title.substring(0, 24),
+                                description: (r.description || '').substring(0, 72)
+                            }))
+                        }
+                    ]
+                }, msgCategorias);
+            } else {
+                await msg.reply(msgCategorias);
+            }
             return;
         }
 

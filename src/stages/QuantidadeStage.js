@@ -63,7 +63,20 @@ class QuantidadeStage {
         resumo += `\n💰 *Total do Pedido: R$ ${subtotalTotal.toFixed(2).replace('.', ',')}*`;
         resumo += mensagens.carrinho.opcoes;
 
-        await msg.reply(resumo);
+        if (typeof msg.replyButtons === 'function') {
+            await msg.replyButtons({
+                title: "🛒 Carrinho Favo de Mel",
+                description: resumo,
+                footer: "Apiário Favo de Mel",
+                buttons: [
+                    { id: "1", text: "🛒 Adicionar Mais" },
+                    { id: "2", text: "✅ Finalizar Pedido" },
+                    { id: "#", text: "🏠 Menu Principal" }
+                ]
+            }, resumo);
+        } else {
+            await msg.reply(resumo);
+        }
         sessao.etapa = 'carrinho_opcoes';
     }
 }

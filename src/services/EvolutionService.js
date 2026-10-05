@@ -57,6 +57,81 @@ class EvolutionService {
     }
 
     /**
+     * Envia um Menu de Lista clicável (List Message) com fallback automático para texto simples
+     */
+    static async enviarLista(numero, { title, description, buttonText, footerText, sections }, fallbackText = '') {
+        const url = `${this.baseUrl}/message/sendList/${this.instanceName}`;
+        const numeroLimpo = (numero || '').replace(/\D/g, '');
+
+        const payload = {
+            number: numeroLimpo,
+            title: title || 'Menu de Opções',
+            description: description || 'Selecione uma opção:',
+            buttonText: buttonText || 'Ver Opções 🍯',
+            footerText: footerText || 'Apiário Favo de Mel',
+            sections: sections || []
+        };
+
+        try {
+            const response = await axios.post(url, payload, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 10000
+            });
+            console.log(`📋 Menu de Lista interativo enviado via Evolution para ${numeroLimpo}`);
+            return response.data;
+        } catch (erro) {
+            console.warn('[EvolutionService] Falha ao enviar lista interativa (usando fallback de texto):', erro.response?.data || erro.message);
+            if (fallbackText) {
+                return await this.enviarMensagemText(numeroLimpo, fallbackText);
+            }
+            throw erro;
+        }
+    }
+
+    /**
+     * Envia Botões Clicáveis (Buttons Message) com fallback automático para texto simples
+     */
+    static async enviarBotoes(numero, { title, description, footer, buttons }, fallbackText = '') {
+        const url = `${this.baseUrl}/message/sendButtons/${this.instanceName}`;
+        const numeroLimpo = (numero || '').replace(/\D/g, '');
+
+        const payload = {
+            number: numeroLimpo,
+            title: title || '',
+            description: description || '',
+            footer: footer || 'Apiário Favo de Mel',
+            buttons: (buttons || []).map((b, idx) => ({
+                buttonId: String(b.id || idx + 1),
+                buttonText: {
+                    displayText: b.text || b.titulo || `Opção ${idx + 1}`
+                },
+                type: 1
+            }))
+        };
+
+        try {
+            const response = await axios.post(url, payload, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 10000
+            });
+            console.log(`🔘 Botões interativos enviados via Evolution para ${numeroLimpo}`);
+            return response.data;
+        } catch (erro) {
+            console.warn('[EvolutionService] Falha ao enviar botões interativos (usando fallback de texto):', erro.response?.data || erro.message);
+            if (fallbackText) {
+                return await this.enviarMensagemText(numeroLimpo, fallbackText);
+            }
+            throw erro;
+        }
+    }
+
+    /**
      * Auxiliar para remover o prefixo Data URI ("data:image/png;base64,") deixando apenas o Base64 puro
      */
     static limparBase64(base64String) {

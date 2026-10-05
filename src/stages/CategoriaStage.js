@@ -33,15 +33,36 @@ class CategoriaStage {
         sessao.categoriaSelecionada = t;
 
         let submenu = `*${categoriaEscolhida.nome}*\n_${categoriaEscolhida.descricao || ''}_\n\n`;
+        const rows = [];
         
         for (const [chave, produto] of Object.entries(categoriaEscolhida.produtos || {})) {
             const precoFormatado = produto.preco.toFixed(2).replace('.', ',');
             submenu += `*${chave}️⃣* - *${produto.nome}* - R$ ${precoFormatado}\n`;
+            rows.push({
+                title: `${chave}. ${produto.nome}`.substring(0, 24),
+                description: `R$ ${precoFormatado}${produto.descricao ? ' - ' + produto.descricao : ''}`.substring(0, 72),
+                rowId: chave
+            });
         }
 
         submenu += `\n👉 *Digite o número do produto* que deseja escolher, *0* para trocar de categoria, ou *#* para voltar ao menu principal.`;
 
-        await msg.reply(submenu);
+        if (typeof msg.replyList === 'function' && rows.length > 0) {
+            await msg.replyList({
+                title: categoriaEscolhida.nome.substring(0, 24),
+                description: `${categoriaEscolhida.descricao ? categoriaEscolhida.descricao + '\n\n' : ''}Toque no botão abaixo para escolher o produto desejado:`,
+                buttonText: "Ver Produtos 🍯",
+                footerText: "Apiário Favo de Mel",
+                sections: [
+                    {
+                        title: "Produtos Disponíveis",
+                        rows: rows
+                    }
+                ]
+            }, submenu);
+        } else {
+            await msg.reply(submenu);
+        }
         sessao.etapa = 'aguardando_produto';
     }
 }

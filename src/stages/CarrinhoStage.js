@@ -11,9 +11,8 @@ class CarrinhoStage {
 
         // Opção 1: Adicionar mais produtos
         if (t === '1' || t.includes('adicionar') || t.includes('mais')) {
-            sessao.etapa = 'aguardando_categoria';
-            await msg.reply(mensagens.produtos.escolhaCategoria);
-            return;
+            const MenuPrincipalStage = require('./MenuPrincipalStage');
+            return await MenuPrincipalStage.executar(msg, '1', sessao);
         }
 
         // Opção 2: Finalizar pedido
