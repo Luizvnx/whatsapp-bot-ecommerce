@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Apiário Favo de Mel | Painel de Atendimento ao Vivo</title>
 
     <!-- Favicon & PWA -->
@@ -48,6 +48,35 @@
             font-family: var(--font-sans);
             height: 100%;
             height: 100dvh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overscroll-behavior: none;
+            overscroll-behavior-y: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Previne zoom automático indesejado no iOS / Safari / Android */
+        @media screen and (max-width: 768px) {
+            input, textarea, select {
+                font-size: 16px !important;
+            }
+        }
+
+        /* Isola a rolagem das mensagens e da lista para impedir que puxe a página */
+        #chatMensagensStream,
+        #listaConversas,
+        .custom-scrollbar {
+            overscroll-behavior-y: contain !important;
+            overscroll-behavior: contain !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
         }
 
         .custom-scrollbar::-webkit-scrollbar {
@@ -84,7 +113,7 @@
             <!-- Brand Logo -->
             <div class="flex items-center gap-2.5 flex-shrink-0">
                 <div class="w-9 h-9 rounded-full bg-white border border-stone-200/90 shadow-xs flex items-center justify-center overflow-hidden flex-shrink-0 p-0.5">
-                    <img src="/logo.png" alt="Apiário Favo de Mel" class="w-full h-full object-contain">
+                    <img src="/logo.webp" alt="Apiário Favo de Mel" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='/logo.png';">
                 </div>
                 <div class="hidden xs:block">
                     <h1 class="text-sm sm:text-base font-bold text-stone-900 leading-none">Apiário Favo de Mel</h1>
@@ -237,7 +266,7 @@
                     </span>
                     <input type="text" id="campoBusca" placeholder="Buscar por cliente ou telefone..."
                         oninput="aoDigitarBusca()"
-                        class="w-full pl-8 pr-3 py-1.5 bg-white border border-stone-200 rounded-sm text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-900 transition">
+                        class="w-full pl-8 pr-3 py-1.5 bg-white border border-stone-200 rounded-sm text-base md:text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-900 transition">
                 </div>
             </div>
 
@@ -361,7 +390,7 @@
                             <textarea id="inputMensagemChat" placeholder="Digite uma mensagem..." rows="1"
                                 autocomplete="off" onkeydown="aoPressionarTeclaMensagem(event)"
                                 oninput="autoAjustarAlturaTextarea(this)"
-                                class="w-full bg-stone-50/50 border border-stone-200 rounded-sm pl-3 pr-20 py-2 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 transition resize-none custom-scrollbar max-h-32 overflow-y-auto block leading-relaxed"></textarea>
+                                class="w-full bg-stone-50/50 border border-stone-200 rounded-sm pl-3 pr-20 py-2 text-base md:text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 transition resize-none custom-scrollbar max-h-32 overflow-y-auto block leading-relaxed"></textarea>
 
                             <button type="button" onclick="sugerirRespostaIA()" id="btnSugerirIA"
                                 title="Sugerir resposta com IA"
@@ -1553,13 +1582,24 @@
 
             return `
                 <div class="relative group max-w-[85%] sm:max-w-[75%] flex items-center gap-1.5 ${isAtendente ? 'flex-row-reverse' : 'flex-row'}">
-                    <div class="${bgClass} px-3.5 py-2 shadow-xs w-full" ondblclick="iniciarResposta('${safeMsgId}')">
-                        <span class="text-[10px] font-bold ${autorColor} block mb-1">${autor}</span>
+                    <div class="${bgClass} px-3.5 py-2 shadow-xs w-full cursor-pointer select-text" 
+                         onclick="aoClicarBalaoMensagem(event, '${safeMsgId}')"
+                         ondblclick="iniciarResposta('${safeMsgId}')">
+                        <div class="flex items-center justify-between gap-2 mb-1">
+                            <span class="text-[10px] font-bold ${autorColor}">${autor}</span>
+                            <button type="button" onclick="event.stopPropagation(); iniciarResposta('${safeMsgId}')" 
+                                class="text-stone-400 hover:text-stone-700 active:text-amber-600 p-0.5 rounded transition flex items-center gap-0.5"
+                                title="Responder a esta mensagem">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                                </svg>
+                            </button>
+                        </div>
                         ${quotedHtml}
                         ${conteudoCorpo}
                         <span class="text-[9px] ${horaColor} font-medium block text-right mt-1">${hora}</span>
                     </div>
-                    <div class="opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center gap-1 transition flex-shrink-0">
+                    <div class="opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 flex items-center gap-1 transition flex-shrink-0">
                         <button type="button" onclick="iniciarResposta('${safeMsgId}')" title="Responder a esta mensagem (ou duplo-clique no balão)"
                             class="p-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-200 shadow-xs transition cursor-pointer text-xs">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1582,6 +1622,16 @@
         // ==========================================
         // 3.1. GERENCIADOR DE RESPOSTA A MENSAGEM (REPLY)
         // ==========================================
+        function aoClicarBalaoMensagem(event, id) {
+            // Se o atendente clicou num link, áudio ou botão dentro do balão, não intercepta
+            if (event.target.closest('a, button, audio, img, input')) return;
+            
+            // No celular, tocar no balão seleciona automaticamente para responder
+            if (window.innerWidth < 768) {
+                iniciarResposta(id);
+            }
+        }
+
         function iniciarResposta(id) {
             if (!id || !conversaAtivaDados || !Array.isArray(conversaAtivaDados.historicoMensagens)) return;
 
@@ -1628,7 +1678,7 @@
 
             const input = document.getElementById('inputMensagemChat');
             if (input) {
-                input.focus();
+                input.focus({ preventScroll: true });
             }
         }
 
@@ -2269,6 +2319,9 @@
         }
 
         async function selecionarConversa(idCliente) {
+            window.scrollTo(0, 0);
+            if (document.body) document.body.scrollTop = 0;
+            if (document.documentElement) document.documentElement.scrollTop = 0;
             cancelarResposta();
             conversaAtivaId = idCliente;
 

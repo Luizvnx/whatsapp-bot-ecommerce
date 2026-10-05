@@ -1,9 +1,10 @@
 // Service Worker - Apiário Favo de Mel PWA
-const CACHE_NAME = 'favo-de-mel-pwa-v1';
+const CACHE_NAME = 'favo-de-mel-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/admin',
   '/login',
+  '/logo.webp',
   '/logo.png',
   '/favicon.ico',
   '/favicon-16x16.png',
@@ -54,6 +55,7 @@ self.addEventListener('fetch', (event) => {
 
   // Se for imagem ou arquivo estático de ícone: Cache-First com fallback de rede
   if (
+    url.pathname.endsWith('.webp') ||
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.jpeg') ||
