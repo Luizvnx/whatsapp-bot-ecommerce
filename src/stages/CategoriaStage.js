@@ -59,16 +59,64 @@ class CategoriaStage {
             });
         }
 
-        submenu += `\n👉 *Digite o número do produto* que deseja escolher, *0* para trocar de categoria, ou *#* para voltar ao menu principal.`;
+        const produtosArray = Object.entries(categoriaEscolhida.produtos || {}).map(([chaveProd, prod]) => ({
+            id: chaveProd,
+            nome: prod.nome,
+            preco: prod.preco
+        }));
 
-        if (typeof msg.replyList === 'function' && rows.length > 0) {
-            await msg.replyList({
-                title: `🍯 ${categoriaEscolhida.nome}`,
-                description: `${categoriaEscolhida.descricao || 'Selecione um produto abaixo:'}`,
-                buttonText: "Ver Produtos 🍯",
-                footerText: "Apiário Favo de Mel",
-                sections: [{ title: categoriaEscolhida.nome, rows }]
-            }, submenu);
+        if (typeof msg.replyButtons === 'function' && produtosArray.length > 0) {
+            if (produtosArray.length <= 3) {
+                const botoes = produtosArray.map(p => ({
+                    type: 'reply',
+                    displayText: `${p.id}. ${p.nome}`.substring(0, 24),
+                    id: p.id
+                }));
+                if (botoes.length < 3) {
+                    botoes.push({ type: 'reply', displayText: "🏠 Menu Principal", id: "#" });
+                }
+                await msg.replyButtons({
+                    title: `🍯 ${categoriaEscolhida.nome}`,
+                    description: submenu,
+                    footer: "Apiário Favo de Mel",
+                    buttons: botoes
+                }, submenu);
+            } else {
+                // Primeira parte dos botões (produtos 1, 2, 3)
+                const parte1 = produtosArray.slice(0, 3).map(p => ({
+                    type: 'reply',
+                    displayText: `${p.id}. ${p.nome}`.substring(0, 24),
+                    id: p.id
+                }));
+                await msg.replyButtons({
+                    title: `🍯 ${categoriaEscolhida.nome}`,
+                    description: submenu,
+                    footer: "Apiário Favo de Mel",
+                    buttons: parte1
+                }, submenu);
+
+                // Segunda parte dos botões (produtos restantes + Menu Principal)
+                const restantes = produtosArray.slice(3, 5).map(p => ({
+                    type: 'reply',
+                    displayText: `${p.id}. ${p.nome}`.substring(0, 24),
+                    id: p.id
+                }));
+                if (produtosArray.length > 5) {
+                    restantes.push({
+                        type: 'reply',
+                        displayText: `${produtosArray[5].id}. ${produtosArray[5].nome}`.substring(0, 24),
+                        id: produtosArray[5].id
+                    });
+                } else {
+                    restantes.push({ type: 'reply', displayText: "🏠 Menu Principal", id: "#" });
+                }
+                await msg.replyButtons({
+                    title: `🍯 Mais Opções`,
+                    description: "Selecione uma opção abaixo:",
+                    footer: "Apiário Favo de Mel",
+                    buttons: restantes
+                }, submenu);
+            }
         } else {
             await msg.reply(submenu);
         }

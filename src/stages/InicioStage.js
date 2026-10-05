@@ -6,41 +6,23 @@ class InicioStage {
         sessao.categoriaSelecionada = null;
         sessao.produtoSelecionado = null;
 
-        const fallback = mensagens.inicio.boasVindas;
+        const title = "🐝 Apiário Favo de Mel";
+        const description = "Olá! Seja Bem-vindo(a) à Favo de Mel! 🍯\nSomos especialistas em produtos puros da colmeia, resgate de abelhas e consultoria apícola em Aracaju.\n\nEscolha uma das opções abaixo ou envie sua dúvida diretamente:";
+        const footer = "Apiário Favo de Mel";
+        const buttons = [
+            { type: "reply", displayText: "🍯 Comprar Mel", id: "1" },
+            { type: "reply", displayText: "🐝 Resgate Abelhas", id: "2" },
+            { type: "reply", displayText: "👨‍🌾 Consultoria", id: "3" }
+        ];
 
-        if (typeof msg.replyList === 'function') {
-            await msg.replyList({
-                title: "🐝 Apiário Favo de Mel",
-                description: "Olá! Seja bem-vindo(a) à Favo de Mel! 🍯\nSomos especialistas em produtos puros da colmeia, resgate de abelhas e consultoria apícola em Aracaju.\n\nEscolha uma opção no menu:",
-                buttonText: "Ver Opções 🍯",
-                footerText: "Apiário Favo de Mel",
-                sections: [
-                    {
-                        title: "Menu de Atendimento",
-                        rows: [
-                            {
-                                rowId: "1",
-                                title: "1. 🍯 Comprar Produtos",
-                                description: "Méis puros, própolis, pólen, favos e bebidas"
-                            },
-                            {
-                                rowId: "2",
-                                title: "2. 🐝 Resgate de Abelhas",
-                                description: "Captura e remoção segura e ecológica de enxames"
-                            },
-                            {
-                                rowId: "3",
-                                title: "3. 👨‍🌾 Consultoria Apícola",
-                                description: "Manejo técnico produtivo e cursos especializados"
-                            },
-                            {
-                                rowId: "4",
-                                title: "4. ❓ Dúvidas e Informações",
-                                description: "Tire dúvidas com nossa inteligência artificial"
-                            }
-                        ]
-                    }
-                ]
+        const fallback = `*${title}*\n\n${description}\n\n[ 🍯 Comprar Mel ]  [ 🐝 Resgate Abelhas ]  [ 👨‍🌾 Consultoria ]`;
+
+        if (typeof msg.replyButtons === 'function') {
+            await msg.replyButtons({
+                title,
+                description,
+                footer,
+                buttons
             }, fallback);
         } else {
             await msg.reply(fallback);

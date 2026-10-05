@@ -284,11 +284,10 @@ async function runTests() {
             }
         };
 
-        // 8.1 InicioStage deve disparar replyList com seções e botões
+        // 8.1 InicioStage deve disparar replyButtons nativo
         await InicioStage.executar(msgInterativa, '', sessao);
-        assert(listaRecebida, 'InicioStage deve usar replyList quando suportado');
-        assert.strictEqual(listaRecebida.buttonText, 'Ver Opções 🍯');
-        assert.strictEqual(listaRecebida.sections[0].rows.length, 4, 'Menu deve ter 4 opções interativas');
+        assert(botoesRecebidos, 'InicioStage deve usar replyButtons quando suportado');
+        assert.strictEqual(botoesRecebidos.buttons.length, 3, 'Menu deve ter 3 botões interativos');
 
         // 8.2 Simulação de clique do cliente no botão (formato nativeFlowResponseMessage da Evolution 2.4)
         const mockWebhookMessage = {

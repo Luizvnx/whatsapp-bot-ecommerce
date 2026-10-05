@@ -15,43 +15,25 @@ class MenuPrincipalStage {
 
         if (t === '1' || t.includes('mel') || t.includes('comprar') || t.includes('produto') || t.includes('catalogo')) {
             sessao.etapa = 'aguardando_categoria';
-            const CatalogoService = require('../services/CatalogoService');
-            const catalogo = await CatalogoService.obterCatalogo();
             
-            let msgCategorias = "🍯 *Produtos da Colmeia - Favo de Mel*\n\nEscolha uma categoria para ver os itens disponíveis:\n\n";
-            const rows = [];
-            for (const [chave, cat] of Object.entries(catalogo.categorias || {})) {
-                msgCategorias += `*${chave}️⃣* - ${cat.nome}\n`;
-                rows.push({
-                    title: `${chave}. ${cat.nome}`,
-                    description: cat.descricao ? cat.descricao.substring(0, 60) : `Ver produtos de ${cat.nome}`,
-                    rowId: chave
-                });
-            }
-            msgCategorias += "\n👉 *Digite o número da categoria* ou *#* para voltar ao menu principal.";
+            const botoesCategorias = [
+                { type: "reply", displayText: "🍯 Méis & Favos", id: "1" },
+                { type: "reply", displayText: "🌿 Própolis & Cuidados", id: "2" },
+                { type: "reply", displayText: "🕯️ Artesanais & Cera", id: "3" }
+            ];
 
-            const botoesCategorias = Object.entries(catalogo.categorias || {}).map(([chave, cat]) => ({
-                id: chave,
-                text: `${chave}. ${cat.nome}`.substring(0, 24)
-            }));
+            const desc = "Escolha uma categoria abaixo para ver os itens disponíveis:";
+            const fallback = `🍯 *Produtos da Colmeia - Favo de Mel*\n\n${desc}\n\n[ 🍯 Méis & Favos ]  [ 🌿 Própolis & Cuidados ]  [ 🕯️ Artesanais & Cera ]`;
 
-            if (typeof msg.replyButtons === 'function' && botoesCategorias.length > 0 && botoesCategorias.length <= 3) {
+            if (typeof msg.replyButtons === 'function') {
                 await msg.replyButtons({
-                    title: "🍯 Categorias de Produtos",
-                    description: "Escolha uma das categorias abaixo para ver os itens disponíveis:",
+                    title: "🍯 Produtos da Colmeia",
+                    description: desc,
                     footer: "Apiário Favo de Mel",
                     buttons: botoesCategorias
-                }, msgCategorias);
-            } else if (typeof msg.replyList === 'function' && rows.length > 0) {
-                await msg.replyList({
-                    title: "🍯 Categorias de Produtos",
-                    description: "Selecione uma categoria para ver os itens disponíveis:",
-                    buttonText: "Ver Categorias 🍯",
-                    footerText: "Apiário Favo de Mel",
-                    sections: [{ title: "Categorias", rows }]
-                }, msgCategorias);
+                }, fallback);
             } else {
-                await msg.reply(msgCategorias);
+                await msg.reply(fallback);
             }
             return;
         }
@@ -60,17 +42,19 @@ class MenuPrincipalStage {
             return await ResgateStage.executar(msg, texto, sessao);
         }
 
-        if (t === '3' || t.includes('consultoria') || t.includes('curso') || t.includes('manejo') || t.includes('apiario')) {
+        // Opção 3: Consultoria e Manejo Apícola
+        if (t === '3' || t === 'consultoria' || t.includes('consultoria') || t.includes('curso') || t.includes('manejo') || t.includes('apiario')) {
             return await ConsultoriaStage.executar(msg, texto, sessao);
         }
 
-        if (t === '4' || t.includes('duvida') || t.includes('dúvida') || t.includes('pergunta')) {
+        // Opção 4: Dúvidas ou falar com IA
+        if (t === '4' || t === 'ia' || t.includes('duvida') || t.includes('dúvida') || t.includes('pergunta')) {
             sessao.etapa = 'conversando_com_ia';
             await msg.reply(mensagens.ia.saudacao);
             return;
         }
 
-        // Se o cliente digitou uma pergunta ou frase livre, tenta responder via IA
+        // Se o cliente digitou uma pergunta ou frase livre, responde via IA
         if (t.length > 5 && !/^[0-9#]+$/.test(t)) {
             sessao.etapa = 'conversando_com_ia';
             return await IaStage.executar(msg, texto, sessao);
@@ -84,7 +68,21 @@ class MenuPrincipalStage {
             return;
         }
 
-        await msg.reply(mensagens.erros.opcaoInvalida);
+        const fallbackInvalido = "⚠️ Opção não reconhecida. Por favor, escolha uma das opções abaixo ou digite *#* para voltar ao menu principal.";
+        if (typeof msg.replyButtons === 'function') {
+            await msg.replyButtons({
+                title: "🐝 Apiário Favo de Mel",
+                description: "Não entendi sua resposta. Escolha uma das opções:",
+                footer: "Apiário Favo de Mel",
+                buttons: [
+                    { type: "reply", displayText: "🍯 Comprar Produtos", id: "1" },
+                    { type: "reply", displayText: "🐝 Resgate Abelhas", id: "2" },
+                    { type: "reply", displayText: "❓ Dúvidas e Mais", id: "3" }
+                ]
+            }, fallbackInvalido);
+        } else {
+            await msg.reply(fallbackInvalido);
+        }
     }
 }
 

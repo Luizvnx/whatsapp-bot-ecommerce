@@ -262,33 +262,28 @@ class BotController {
                 return resp;
             },
             replyList: async (options, fallbackText = '') => {
-                const textParaHistorico = fallbackText || `${options.title || ''}\n${options.description || ''}`;
-                if (sessao) {
-                    if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
-                    sessao.historicoIa.push({
-                        role: 'model',
-                        parts: [{ text: textParaHistorico }]
-                    });
-                    if (sessao.historicoIa.length > 30) sessao.historicoIa = sessao.historicoIa.slice(-30);
-                }
-                const resp = await EvolutionService.enviarLista(numeroCliente, options, fallbackText);
-                const msgId = resp?.key?.id || null;
-                try {
-                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', textParaHistorico, null, {
-                        tipo: 'texto',
-                        atendenteNome: 'Bot Favo de Mel',
-                        messageId: msgId,
-                        whatsappMessageId: msgId
-                    });
-                    if (sessao) {
-                        if (!Array.isArray(sessao.historicoMensagens)) sessao.historicoMensagens = [];
-                        sessao.historicoMensagens.push(novaMsg);
-                    }
-                } catch (e) {}
-                return resp;
+                // WhatsApp não entrega mais mensagens de lista (listMessage).
+                // Redireciona automaticamente para replyButtons
+                const rows = options?.sections?.[0]?.rows || [];
+                const botoes = rows.slice(0, 3).map(r => ({
+                    id: String(r.rowId || r.id),
+                    displayText: (r.title || r.text || '').substring(0, 24),
+                    type: 'reply'
+                }));
+                return await msg.replyButtons({
+                    title: options.title,
+                    description: options.description,
+                    footer: options.footerText || options.footer,
+                    buttons: botoes
+                }, fallbackText);
             },
             replyButtons: async (options, fallbackText = '') => {
-                const textParaHistorico = fallbackText || `${options.title || ''}\n${options.description || ''}`;
+                let botoesVisuais = '';
+                if (Array.isArray(options.buttons) && options.buttons.length > 0) {
+                    botoesVisuais = '\n\n' + options.buttons.map(b => `[ ${b.displayText || b.text || b.titulo || b.id} ]`).join('  ');
+                }
+                const textParaHistorico = `${options.title ? `*${options.title}*\n\n` : ''}${options.description || ''}${botoesVisuais}`.trim() || fallbackText;
+                
                 if (sessao) {
                     if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
                     sessao.historicoIa.push({
@@ -299,6 +294,14 @@ class BotController {
                 }
                 const resp = await EvolutionService.enviarBotoes(numeroCliente, options, fallbackText);
                 const msgId = resp?.key?.id || null;
+                if (msgId) {
+                    try {
+                        const WebhookController = require('./WebhookController');
+                        if (typeof WebhookController.registrarMensagemEnviadaPeloBot === 'function') {
+                            WebhookController.registrarMensagemEnviadaPeloBot(msgId);
+                        }
+                    } catch (_) {}
+                }
                 try {
                     const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', textParaHistorico, null, {
                         tipo: 'texto',
