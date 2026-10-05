@@ -47,36 +47,7 @@ class CategoriaStage {
 
         submenu += `\n👉 *Digite o número do produto* que deseja escolher, *0* para trocar de categoria, ou *#* para voltar ao menu principal.`;
 
-        const botoesProdutos = [];
-        const entries = Object.entries(categoriaEscolhida.produtos || {});
-        if (entries.length <= 3) {
-            for (const [chave, produto] of entries) {
-                botoesProdutos.push({
-                    id: chave,
-                    text: `${chave}. ${produto.nome}`.substring(0, 20)
-                });
-            }
-        } else {
-            for (let i = 0; i < Math.min(2, entries.length); i++) {
-                const [chave, produto] = entries[i];
-                botoesProdutos.push({
-                    id: chave,
-                    text: `${chave}. ${produto.nome}`.substring(0, 20)
-                });
-            }
-            botoesProdutos.push({ id: '#', text: '🏠 Menu Principal' });
-        }
-
-        if (typeof msg.replyButtons === 'function' && botoesProdutos.length > 0) {
-            await msg.replyButtons({
-                title: categoriaEscolhida.nome.substring(0, 24),
-                description: submenu,
-                footer: "Apiário Favo de Mel",
-                buttons: botoesProdutos
-            }, submenu);
-        } else {
-            await msg.reply(submenu);
-        }
+        await msg.reply(submenu);
         sessao.etapa = 'aguardando_produto';
     }
 }

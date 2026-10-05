@@ -30,21 +30,7 @@ class MenuPrincipalStage {
             }
             msgCategorias += "\n👉 *Digite o número da categoria* ou *#* para voltar ao menu principal.";
 
-            const botoesCategorias = Object.entries(catalogo.categorias || {}).slice(0, 3).map(([chave, cat]) => ({
-                id: chave,
-                text: `${chave}. ${cat.nome}`.substring(0, 20)
-            }));
-
-            if (typeof msg.replyButtons === 'function' && botoesCategorias.length > 0) {
-                await msg.replyButtons({
-                    title: "🍯 Categorias de Produtos",
-                    description: msgCategorias,
-                    footer: "Apiário Favo de Mel",
-                    buttons: botoesCategorias
-                }, msgCategorias);
-            } else {
-                await msg.reply(msgCategorias);
-            }
+            await msg.reply(msgCategorias);
             return;
         }
 

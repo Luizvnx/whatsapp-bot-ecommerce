@@ -228,6 +228,21 @@ class SessionService {
             const idMsg = extraData.messageId || extraData.id || (Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5));
             const whatsappMsgId = extraData.whatsappMessageId || extraData.messageId || null;
 
+            // Desduplicação determinística: impede que a mesma mensagem seja adicionada 2x
+            // (ex: envio do bot + eco do webhook da Evolution API)
+            const buscaId = whatsappMsgId || extraData.messageId || extraData.id;
+            if (buscaId) {
+                const jaExiste = conversa.historicoMensagens.find(m => 
+                    m.id === buscaId || 
+                    m.whatsappMessageId === buscaId
+                );
+                if (jaExiste) {
+                    if (extraData.mediaUrl && !jaExiste.mediaUrl) jaExiste.mediaUrl = extraData.mediaUrl;
+                    if (extraData.mediaBase64 && !jaExiste.mediaBase64) jaExiste.mediaBase64 = extraData.mediaBase64;
+                    return jaExiste;
+                }
+            }
+
             // Tratamento e enriquecimento da mensagem citada (quoted)
             let quotedFinal = null;
             if (extraData.quoted && typeof extraData.quoted === 'object') {

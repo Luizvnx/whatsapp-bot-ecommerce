@@ -38,20 +38,7 @@ class CarrinhoStage {
             return;
         }
 
-        if (typeof msg.replyButtons === 'function') {
-            await msg.replyButtons({
-                title: "🛒 Opções do Carrinho",
-                description: "Opção não reconhecida. Por favor, escolha uma das opções abaixo:",
-                footer: "Apiário Favo de Mel",
-                buttons: [
-                    { id: "1", text: "🛒 Adicionar Mais" },
-                    { id: "2", text: "✅ Finalizar Pedido" },
-                    { id: "#", text: "🏠 Menu Principal" }
-                ]
-            }, "Opção inválida. Digite *1* para adicionar mais itens ao carrinho, *2* para finalizar seu pedido ou *#* para voltar ao menu.");
-        } else {
-            await msg.reply("Opção inválida. Digite *1* para adicionar mais itens ao carrinho, *2* para finalizar seu pedido ou *#* para voltar ao menu.");
-        }
+        await msg.reply("Opção inválida. Digite *1* para adicionar mais itens ao carrinho, *2* para finalizar seu pedido ou *#* para voltar ao menu.");
     }
 }
 

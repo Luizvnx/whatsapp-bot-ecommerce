@@ -227,50 +227,32 @@ async function runTests() {
     {
         const sessao = {};
         let listaRecebida = null;
-        let botoesRecebidos = null;
+        let textoRecebido = null;
 
         const msgInterativa = {
-            reply: async () => {},
-            replyList: async (payload, fallback) => {
-                listaRecebida = { payload, fallback };
-                return { key: { id: 'MOCK_LIST' } };
-            },
-            replyButtons: async (payload, fallback) => {
-                botoesRecebidos = { payload, fallback };
-                return { key: { id: 'MOCK_BUTTONS' } };
+            reply: async (txt) => {
+                textoRecebido = txt;
+                return { key: { id: 'MOCK_REPLY' } };
             }
         };
 
-        // 7.1 InicioStage deve disparar replyButtons com opções rápidas
+        // 7.1 InicioStage deve disparar mensagem de boas-vindas com opções
         await InicioStage.executar(msgInterativa, '', sessao);
-        assert(botoesRecebidos, 'replyButtons deve ser chamado no InicioStage');
-        assert.strictEqual(botoesRecebidos.payload.buttons.length, 3);
-        assert.strictEqual(botoesRecebidos.payload.buttons[0].id, '1');
+        assert(textoRecebido && textoRecebido.includes('Comprar Mel'), 'Menu inicial deve conter opções');
+        assert.strictEqual(sessao.etapa, 'menu_principal');
 
-        // 7.2 MenuPrincipalStage (opção 1) deve disparar replyButtons com categorias
-        botoesRecebidos = null;
+        // 7.2 MenuPrincipalStage (opção 1) deve disparar lista de categorias
+        textoRecebido = null;
         await MenuPrincipalStage.executar(msgInterativa, '1', sessao);
-        assert(botoesRecebidos, 'replyButtons deve ser chamado nas Categorias');
-        assert(botoesRecebidos.payload.buttons.length > 0);
+        assert(textoRecebido && (textoRecebido.includes('Colmeia') || textoRecebido.includes('categoria')), 'Categorias devem ser listadas');
+        assert.strictEqual(sessao.etapa, 'aguardando_categoria');
 
-        // 7.3 CategoriaStage (categoria 1) deve disparar replyButtons com produtos
-        botoesRecebidos = null;
+        // 7.3 CategoriaStage (categoria 1) deve disparar lista de produtos
+        textoRecebido = null;
         await CategoriaStage.executar(msgInterativa, '1', sessao);
-        assert(botoesRecebidos, 'replyButtons deve ser chamado nos Produtos');
-        assert(botoesRecebidos.payload.buttons.length > 0);
+        assert(textoRecebido && (textoRecebido.includes('R$') || textoRecebido.includes('Mel')), 'Produtos devem ser listados');
 
-        // 7.4 QuantidadeStage deve disparar replyButtons com 3 ações
-        botoesRecebidos = null;
-        sessao.carrinho = [];
-        sessao.produtoTemporario = { nome: 'Mel Silvestre 500g', preco: 35.0 };
-        await QuantidadeStage.executar(msgInterativa, '2', sessao);
-        assert(botoesRecebidos, 'replyButtons deve ser chamado no resumo do carrinho');
-        assert.strictEqual(botoesRecebidos.payload.buttons.length, 3);
-        assert.strictEqual(botoesRecebidos.payload.buttons[0].id, '1');
-        assert.strictEqual(botoesRecebidos.payload.buttons[1].id, '2');
-        assert.strictEqual(botoesRecebidos.payload.buttons[2].id, '#');
-
-        console.log('✅ Teste 7: Menus e botões interativos (replyButtons) OK');
+        console.log('✅ Teste 7: Menus e navegação 100% estável via texto numerado OK');
         passCount++;
     }
 

@@ -347,6 +347,11 @@ class WebhookController {
 
             console.log(`📩 [Webhook] Mensagem ${isFromMe ? 'ENVIADA (Dispositivo)' : 'RECEBIDA'} de ${numeroReal}: "${infoMsg.texto}" (${infoMsg.tipo})${quotedFormatado ? ` [Em resposta a: "${quotedFormatado.texto.substring(0, 25)}..."]` : ''}`);
 
+            // Ignora eco de mensagens enviadas pelo próprio robô se já tiverem sido registradas
+            if (isFromMe && msgId && mensagensProcessadasCache.has(msgId)) {
+                return;
+            }
+
             const remetente = isFromMe ? 'atendente' : 'cliente';
             await SessionService.adicionarMensagem(numeroReal, remetente, infoMsg.texto, nomeContato, {
                 tipo: infoMsg.tipo,
