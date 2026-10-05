@@ -194,15 +194,35 @@ class EvolutionService {
      */
     static async enviarMidia(numero, { media, mediatype, mimetype, fileName, caption = '', quoted = null }) {
         const url = `${this.baseUrl}/message/sendMedia/${this.instanceName}`;
-        const mediaPura = this.limparBase64(media);
+        const numeroLimpo = (numero || '').replace(/\D/g, '');
+        const isUrl = typeof media === 'string' && (media.startsWith('http://') || media.startsWith('https://'));
+        
+        let detectedMime = mimetype;
+        if (!detectedMime && typeof media === 'string') {
+            if (media.startsWith('data:')) {
+                const match = media.match(/^data:([^;]+);base64,/);
+                if (match) detectedMime = match[1];
+            } else if (isUrl) {
+                if (media.endsWith('.png')) detectedMime = 'image/png';
+                else if (media.endsWith('.webp')) detectedMime = 'image/webp';
+                else if (media.endsWith('.gif')) detectedMime = 'image/gif';
+            }
+        }
+        if (!detectedMime) {
+            detectedMime = mediatype === 'video' ? 'video/mp4' : (mediatype === 'document' ? 'application/pdf' : 'image/jpeg');
+        }
+
+        const ext = detectedMime === 'image/png' ? 'png' : (detectedMime === 'image/webp' ? 'webp' : 'jpg');
+        const defaultFileName = mediatype === 'document' ? 'documento.pdf' : (mediatype === 'video' ? 'video.mp4' : `imagem.${ext}`);
+        const mediaPura = isUrl ? media : this.limparBase64(media);
 
         const payload = {
-            number: numero,
+            number: numeroLimpo,
             mediatype: mediatype || 'image',
-            mimetype: mimetype || 'image/jpeg',
+            mimetype: detectedMime,
             caption: caption || '',
             media: mediaPura,
-            fileName: fileName || (mediatype === 'document' ? 'documento.pdf' : mediatype === 'video' ? 'video.mp4' : 'imagem.jpg')
+            fileName: fileName || defaultFileName
         };
 
         if (quoted && (quoted.id || quoted.whatsappMessageId)) {
@@ -228,9 +248,25 @@ class EvolutionService {
                     'Content-Type': 'application/json'
                 }
             });
-            console.log(`📎 Mídia (${mediatype}) enviada via Evolution para ${numero}${quoted ? ' (com citação)' : ''}`);
+            console.log(`📎 Mídia (${mediatype || 'image'}) enviada via Evolution para ${numeroLimpo}${quoted ? ' (com citação)' : ''}`);
             return response.data;
         } catch (erro) {
+            if (!isUrl && typeof media === 'string') {
+                try {
+                    const fallbackPayload = {
+                        ...payload,
+                        media: media.startsWith('data:') ? media : `data:${detectedMime};base64,${mediaPura}`
+                    };
+                    const retryResp = await axios.post(url, fallbackPayload, {
+                        headers: {
+                            'apikey': this.apiKey,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    console.log(`📎 Mídia enviada com sucesso no retry (com data URI) para ${numeroLimpo}`);
+                    return retryResp.data;
+                } catch (_) {}
+            }
             console.error('[Erro Evolution] Falha ao enviar mídia:', erro.response ? erro.response.data : erro.message);
             throw erro;
         }

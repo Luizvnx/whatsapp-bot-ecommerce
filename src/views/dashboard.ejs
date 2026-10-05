@@ -3130,9 +3130,13 @@
                 const nomeCat = cat ? cat.nome : `Categoria #${prod.categoria_id}`;
                 const ativo = prod.ativo !== false;
 
+                const fotoHtml = prod.foto 
+                    ? `<div class="w-14 h-14 rounded-sm bg-stone-100 border border-stone-200 overflow-hidden flex-shrink-0 shadow-2xs"><img src="${prod.foto}" class="w-full h-full object-cover"></div>`
+                    : `<div class="w-14 h-14 rounded-sm bg-amber-50 border border-amber-200 flex-shrink-0 flex items-center justify-center text-xl shadow-2xs">🍯</div>`;
+
                 return `
                     <div class="bg-white border ${ativo ? 'border-slate-200' : 'border-rose-200 opacity-60'} rounded-sm p-4 flex flex-col justify-between gap-3 shadow-xs hover:border-amber-400 transition">
-                        <div class="space-y-2">
+                        <div class="space-y-2.5">
                             <div class="flex items-center justify-between gap-2">
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-stone-100 text-amber-800 border border-amber-200 truncate">
                                     ${nomeCat}
@@ -3141,8 +3145,14 @@
                                     ${ativo ? 'Ativo' : 'Inativo'}
                                 </span>
                             </div>
-                            <h4 class="text-sm font-bold text-slate-900 leading-snug">${escapeHtml(prod.nome)}</h4>
-                            <p class="text-xs text-slate-500 line-clamp-2">${escapeHtml(prod.descricao || 'Sem descrição cadastrada.')}</p>
+                            
+                            <div class="flex items-start gap-3">
+                                ${fotoHtml}
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="text-sm font-bold text-slate-900 leading-snug truncate" title="${escapeHtml(prod.nome)}">${escapeHtml(prod.nome)}</h4>
+                                    <p class="text-xs text-slate-500 line-clamp-2 mt-0.5">${escapeHtml(prod.descricao || 'Sem descrição cadastrada.')}</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
@@ -3153,12 +3163,11 @@
                             <div class="flex items-center gap-1.5">
                                 <button type="button" onclick="abrirModalEditarProduto('${prod.id}')"
                                     class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-sm text-xs font-semibold transition flex items-center gap-1 shadow-xs">
-                                    
                                     <span>Editar</span>
                                 </button>
                                 <button type="button" onclick="excluirProduto('${prod.id}', '${escapeHtml(prod.nome).replace(/'/g, "\\'")}')"
                                     class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-sm text-xs font-semibold transition" title="Excluir produto">
-                                    
+                                    ✕
                                 </button>
                             </div>
                         </div>
@@ -3182,10 +3191,112 @@
             renderizarProdutosCatalogo(filtrados);
         }
 
+        // ==========================================
+        // GERENCIAMENTO DE FOTO DO PRODUTO (PREVIEW E COMPRESSÃO)
+        // ==========================================
+        let fotoProdutoAtual = null;
+
+        function aoSelecionarFotoProduto(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                mostrarToast('Por favor, selecione um arquivo de imagem válido (JPG, PNG, WEBP).', 'erro');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Redimensiona inteligentemente via canvas para otimizar velocidade e armazenamento
+                    const MAX_SIZE = 1000;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_SIZE || height > MAX_SIZE) {
+                        if (width > height) {
+                            height = Math.round((height * MAX_SIZE) / width);
+                            width = MAX_SIZE;
+                        } else {
+                            width = Math.round((width * MAX_SIZE) / height);
+                            height = MAX_SIZE;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    fotoProdutoAtual = compressedDataUrl;
+
+                    const imgPreview = document.getElementById('prodEditFotoPreview');
+                    const placeholder = document.getElementById('prodEditFotoPlaceholder');
+                    const btnRemover = document.getElementById('btnRemoverFotoProduto');
+                    const inputUrl = document.getElementById('prodEditFotoUrl');
+
+                    if (imgPreview) {
+                        imgPreview.src = compressedDataUrl;
+                        imgPreview.classList.remove('hidden');
+                    }
+                    if (placeholder) placeholder.classList.add('hidden');
+                    if (btnRemover) btnRemover.classList.remove('hidden');
+                    if (inputUrl) inputUrl.value = '';
+                };
+                img.onerror = () => {
+                    mostrarToast('Erro ao carregar a imagem selecionada.', 'erro');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function aoDigitarUrlFotoProduto(url) {
+            const urlLimpa = (url || '').trim();
+            const imgPreview = document.getElementById('prodEditFotoPreview');
+            const placeholder = document.getElementById('prodEditFotoPlaceholder');
+            const btnRemover = document.getElementById('btnRemoverFotoProduto');
+
+            if (!urlLimpa) {
+                removerFotoProduto();
+                return;
+            }
+
+            fotoProdutoAtual = urlLimpa;
+            if (imgPreview) {
+                imgPreview.src = urlLimpa;
+                imgPreview.classList.remove('hidden');
+            }
+            if (placeholder) placeholder.classList.add('hidden');
+            if (btnRemover) btnRemover.classList.remove('hidden');
+        }
+
+        function removerFotoProduto() {
+            fotoProdutoAtual = null;
+            const inputArquivo = document.getElementById('prodEditFotoArquivo');
+            const inputUrl = document.getElementById('prodEditFotoUrl');
+            const imgPreview = document.getElementById('prodEditFotoPreview');
+            const placeholder = document.getElementById('prodEditFotoPlaceholder');
+            const btnRemover = document.getElementById('btnRemoverFotoProduto');
+
+            if (inputArquivo) inputArquivo.value = '';
+            if (inputUrl) inputUrl.value = '';
+            if (imgPreview) {
+                imgPreview.src = '';
+                imgPreview.classList.add('hidden');
+            }
+            if (placeholder) placeholder.classList.remove('hidden');
+            if (btnRemover) btnRemover.classList.add('hidden');
+        }
+
         function abrirModalNovoProduto() {
             document.getElementById('formProduto').reset();
             document.getElementById('prodEditId').value = '';
             document.getElementById('prodEditAtivo').checked = true;
+            removerFotoProduto();
             document.getElementById('tituloModalProduto').textContent = 'Novo Produto';
             document.getElementById('btnSalvarProduto').textContent = 'Cadastrar Produto';
             document.getElementById('modalProduto').classList.remove('hidden');
@@ -3202,6 +3313,26 @@
             document.getElementById('prodEditPreco').value = prod.preco || '';
             document.getElementById('prodEditDescricao').value = prod.descricao || '';
             document.getElementById('prodEditAtivo').checked = prod.ativo !== false;
+
+            if (prod.foto) {
+                fotoProdutoAtual = prod.foto;
+                const imgPreview = document.getElementById('prodEditFotoPreview');
+                const placeholder = document.getElementById('prodEditFotoPlaceholder');
+                const btnRemover = document.getElementById('btnRemoverFotoProduto');
+                const inputUrl = document.getElementById('prodEditFotoUrl');
+
+                if (imgPreview) {
+                    imgPreview.src = prod.foto;
+                    imgPreview.classList.remove('hidden');
+                }
+                if (placeholder) placeholder.classList.add('hidden');
+                if (btnRemover) btnRemover.classList.remove('hidden');
+                if (inputUrl) {
+                    inputUrl.value = prod.foto.startsWith('data:') ? '' : prod.foto;
+                }
+            } else {
+                removerFotoProduto();
+            }
 
             document.getElementById('tituloModalProduto').textContent = 'Editar Produto';
             document.getElementById('btnSalvarProduto').textContent = 'Salvar Alterações';
@@ -3237,19 +3368,27 @@
                 const res = await fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome, categoria_id, preco, descricao, ativo, foto: fotoProdutoAtual || null })
+                    body: JSON.stringify({ 
+                        nome, 
+                        categoria_id, 
+                        preco, 
+                        descricao, 
+                        ativo, 
+                        foto: fotoProdutoAtual || null 
+                    })
                 });
 
-                const result = await res.json();
-                if (result.success) {
+                const result = await res.json().catch(() => ({}));
+                if (res.ok && result.success) {
                     mostrarToast(result.message || 'Produto salvo com sucesso!', 'sucesso');
                     fecharModalProduto();
                     await carregarProdutosCatalogo();
                 } else {
-                    mostrarToast(result.message || 'Erro ao salvar produto.', 'erro');
+                    mostrarToast(result.message || `Erro ao salvar produto (${res.status}).`, 'erro');
                 }
             } catch (err) {
-                mostrarToast('Falha ao salvar produto. Tente novamente.', 'erro');
+                console.error('Erro ao salvar produto:', err);
+                mostrarToast('Falha ao salvar produto: ' + (err.message || 'Tente novamente.'), 'erro');
             } finally {
                 btn.disabled = false;
                 btn.textContent = id ? 'Salvar Alterações' : 'Cadastrar Produto';

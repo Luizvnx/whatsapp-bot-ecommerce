@@ -210,7 +210,8 @@ class CatalogoService {
         }
 
         campos.push(`atualizado_em = CURRENT_TIMESTAMP`);
-        valores.push(id);
+        const idInt = parseInt(id, 10);
+        valores.push(isNaN(idInt) ? id : idInt);
 
         const sql = `
             UPDATE tb_produtos 
