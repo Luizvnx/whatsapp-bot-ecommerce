@@ -180,4 +180,11 @@ graphify-out/
 backups/
 backups
 
+# Scripts utilitários locais e de manutenção
+scripts/
+
+# Imagens geradas localmente (QR Codes temporários, etc.)
+*.png
+
+
 

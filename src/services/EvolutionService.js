@@ -3,7 +3,7 @@ const config = require('../config');
 
 class EvolutionService {
     static get baseUrl() {
-        return (process.env.EVOLUTION_URL || config.evolution.url || 'https://evolution-api-production-d166.up.railway.app').replace(/\/$/, '');
+        return (process.env.EVOLUTION_URL || config.evolution.url || 'http://137.131.164.202:8081').replace(/\/$/, '');
     }
 
     static get instanceName() {
