@@ -72,7 +72,8 @@ class EvolutionService {
                 headers: {
                     'apikey': this.apiKey,
                     'Content-Type': 'application/json'
-                }
+                },
+                timeout: 5000
             });
             console.log(`✅ Mensagem enviada via Evolution para ${numero}${quoted ? ' (com citação)' : ''}`);
             return response.data;

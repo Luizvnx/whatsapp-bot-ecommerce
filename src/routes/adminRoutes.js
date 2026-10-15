@@ -1141,4 +1141,46 @@ router.delete('/crm/oportunidades/:id', async (req, res) => {
     }
 });
 
+// ==========================================
+// 20. ROTAS DE PAGAMENTO & CONFIRMAÇÃO MANUAL
+// ==========================================
+const PaymentService = require('../services/payment/PaymentService');
+
+// Confirmar pagamento manual pelo card da oportunidade no Kanban
+router.post('/crm/oportunidades/:id/confirmar-pagamento', async (req, res) => {
+    try {
+        const atendenteNome = req.user?.name || req.user?.login || 'Atendente';
+        const resultado = await PaymentService.confirmarPagamentoManual(req.params.id, atendenteNome);
+        res.json({ success: true, message: 'Pagamento confirmado e venda finalizada com sucesso!', ...resultado });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Confirmar venda / Pix direto pelo cabeçalho do chat de atendimento
+router.post('/conversa/:id_cliente/confirmar-venda', async (req, res) => {
+    try {
+        const atendenteNome = req.user?.name || req.user?.login || 'Atendente';
+        const resultado = await PaymentService.confirmarPagamentoManual(req.params.id_cliente, atendenteNome);
+        res.json({ success: true, message: 'Pagamento confirmado com sucesso!', ...resultado });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Gerar dados de cobrança Pix para enviar ao cliente no chat
+router.post('/conversa/:id_cliente/gerar-pix', async (req, res) => {
+    try {
+        const { valor, descricao } = req.body;
+        const resultado = await PaymentService.gerarCobrancaPix({
+            idCliente: req.params.id_cliente,
+            valor: parseFloat(valor) || 0.00,
+            descricao: descricao || 'Pedido Apiário Favo de Mel'
+        });
+        res.json({ success: true, data: resultado });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

@@ -155,6 +155,28 @@ class DatabaseService {
             CREATE INDEX IF NOT EXISTS idx_tb_crm_oportunidades_id_cliente ON tb_crm_oportunidades(id_cliente);
             CREATE INDEX IF NOT EXISTS idx_tb_crm_oportunidades_etapa ON tb_crm_oportunidades(etapa);
             CREATE INDEX IF NOT EXISTS idx_tb_crm_oportunidades_status ON tb_crm_oportunidades(status);
+
+            -- ESTRUTURA DE GATEWAY DE PAGAMENTOS (PIX MANUAL & AUTOMÁTICO)
+            CREATE TABLE IF NOT EXISTS tb_cobrancas_pix (
+                id SERIAL PRIMARY KEY,
+                id_cliente VARCHAR(100) NOT NULL,
+                oportunidade_id INT REFERENCES tb_crm_oportunidades(id) ON DELETE SET NULL,
+                provedor VARCHAR(50) DEFAULT 'manual',
+                id_externo VARCHAR(150),
+                valor NUMERIC(10, 2) NOT NULL,
+                status VARCHAR(50) DEFAULT 'pendente',
+                chave_pix TEXT,
+                copia_e_cola TEXT,
+                qr_code_url TEXT,
+                dados_brutos JSONB DEFAULT '{}',
+                confirmado_por VARCHAR(100),
+                pago_em TIMESTAMP,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_tb_cobrancas_pix_cliente ON tb_cobrancas_pix(id_cliente);
+            CREATE INDEX IF NOT EXISTS idx_tb_cobrancas_pix_externo ON tb_cobrancas_pix(id_externo);
+            CREATE INDEX IF NOT EXISTS idx_tb_cobrancas_pix_status ON tb_cobrancas_pix(status);
         `;
 
         try {

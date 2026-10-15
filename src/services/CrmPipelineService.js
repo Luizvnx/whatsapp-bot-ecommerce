@@ -355,6 +355,24 @@ class CrmPipelineService {
                     `UPDATE tb_crm_clientes SET status = 'cliente' WHERE id = $1`,
                     [op.cliente_id]
                 );
+
+                // Se a oportunidade acabou de ser ganha/fechada, consolida a compra no LTV do cliente
+                if (op.status !== 'ganho') {
+                    try {
+                        const valorCompra = parseFloat(atualizada.valor_estimado) || 0.00;
+                        if (valorCompra > 0) {
+                            await CrmClienteService.registrarCompra(
+                                op.id_cliente, 
+                                valorCompra, 
+                                atualizada.dados_extras
+                            );
+                        }
+                        await CrmClienteService.adicionarTag(op.id_cliente, 'pedido_realizado');
+                        await CrmClienteService.removerTag(op.id_cliente, 'aguardando_pix');
+                    } catch (errCompra) {
+                        console.warn('[CrmPipelineService] Aviso ao consolidar compra no LTV:', errCompra.message);
+                    }
+                }
             }
 
             // Emite notificação de realtime para o Kanban em todos os navegadores abertos

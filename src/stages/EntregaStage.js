@@ -13,7 +13,7 @@ class EntregaStage {
         sessao.etapa = 'em_atendimento_humano';
         sessao.pedidoFinalizado = true;
 
-        // Registra o pedido no CRM com LTV, endereço e atualiza etapa do Funil para Pedido Fechado
+        // Salva endereço no perfil do CRM e move oportunidade para 'aguardando_pagamento'
         try {
             const CrmPipelineService = require('../services/CrmPipelineService');
             let totalPedido = 0;
@@ -23,11 +23,19 @@ class EntregaStage {
                 });
             }
             const idAlvo = msg.numeroReal || msg.numeroCliente;
-            await CrmClienteService.registrarCompra(idAlvo, totalPedido, { texto });
-            await CrmClienteService.adicionarTag(idAlvo, 'pedido_realizado');
-            await CrmPipelineService.sincronizarEtapaComBot(idAlvo, 'pedido_fechado', { totalPedido });
+            
+            // Registra endereço e tag no perfil do cliente sem concluir a compra prematurely
+            await CrmClienteService.atualizar(idAlvo, { endereco: { texto } });
+            await CrmClienteService.adicionarTag(idAlvo, 'aguardando_pix');
+
+            // Move o card no Funil para 'Aguardando Pagamento' com o valor do carrinho
+            await CrmPipelineService.sincronizarEtapaComBot(idAlvo, 'aguardando_dados_entrega', { 
+                totalPedido,
+                carrinho: sessao.carrinho,
+                endereco: texto 
+            });
         } catch (e) {
-            console.warn('[EntregaStage] Falha ao registrar compra no CRM:', e.message);
+            console.warn('[EntregaStage] Falha ao atualizar CRM no envio de endereço:', e.message);
         }
 
         await msg.reply(
