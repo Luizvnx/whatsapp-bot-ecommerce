@@ -4,6 +4,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "dev": "node app.js",
     "reset-whatsapp": "node scripts/reset_whatsapp_session.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

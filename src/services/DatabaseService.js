@@ -228,13 +228,25 @@ class DatabaseService {
         }
     }
 
-    // Método auxiliar para rodar queries
-    static async executar(sql, params = []) {
-        try {
-            return await this.pool.query(sql, params);
-        } catch (err) {
-            console.error('❌ Erro na execução SQL:', err.message);
-            throw err;
+    // Método auxiliar para rodar queries com resiliência a inicialização do banco
+    static async executar(sql, params = [], tentativas = 3) {
+        for (let i = 1; i <= tentativas; i++) {
+            try {
+                return await this.pool.query(sql, params);
+            } catch (err) {
+                const msg = err.message || '';
+                const code = err.code || '';
+                // Se o Postgres ainda estiver ligando/recuperando (57P03: the database system is starting up)
+                if ((code === '57P03' || msg.includes('starting up')) && i < tentativas) {
+                    console.warn(`⏳ [BD] Banco de dados iniciando (tentativa ${i}/${tentativas}). Aguardando 2s...`);
+                    await new Promise(r => setTimeout(r, 2000));
+                    continue;
+                }
+
+                const detalhe = msg || code || (err.errors && err.errors[0]?.message) || String(err);
+                console.error('❌ Erro na execução SQL:', detalhe);
+                throw err;
+            }
         }
     }
 
