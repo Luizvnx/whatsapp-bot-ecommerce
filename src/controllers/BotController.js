@@ -224,8 +224,8 @@ class BotController {
             linkAlerta,
             textoBruto: (textoBruto || '').trim(),
             texto: (textoBruto || '').toLowerCase().trim(),
-            reply: async (t) => {
-                if (sessao) {
+            reply: async (t, skipHistoricoIa = false) => {
+                if (sessao && !skipHistoricoIa && sessao.etapa !== 'conversando_com_ia') {
                     if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
                     sessao.historicoIa.push({
                         role: 'model',

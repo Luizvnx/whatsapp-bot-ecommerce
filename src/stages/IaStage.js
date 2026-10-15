@@ -1,4 +1,5 @@
 const GeminiService = require('../services/GeminiService');
+const EvolutionService = require('../services/EvolutionService');
 
 class IaStage {
     static async executar(msg, texto, sessao) {
@@ -20,22 +21,40 @@ class IaStage {
             sessao.historicoIa = [];
         }
 
+        // 1. Envia feedback visual de "digitando..." no WhatsApp
+        await EvolutionService.enviarPresenca(msg.numeroCliente, 'composing', 1500).catch(() => {});
+
+        // 2. Consulta a IA com Structured Outputs e Stop Sequences
         const retorno = await GeminiService.perguntar(texto, sessao.historicoIa);
 
-        sessao.historicoIa.push({ role: 'user', parts: [{ text: texto }] });
+        // 3. Registra a resposta LIMPA no histórico da IA (sem poluição de rodapés)
+        // Nota: a mensagem do cliente já é registrada de forma centralizada em BotController
         sessao.historicoIa.push({ role: 'model', parts: [{ text: retorno.resposta }] });
 
-        if (sessao.historicoIa.length > 14) {
-            sessao.historicoIa = sessao.historicoIa.slice(-14);
+        if (sessao.historicoIa.length > 20) {
+            sessao.historicoIa = sessao.historicoIa.slice(-20);
         }
 
+        // 4. Se a IA determinou transferência humana de forma estruturada
         if (retorno.transferirHumano) {
             sessao.etapa = 'em_atendimento_humano';
             await msg.reply(retorno.resposta);
             return;
         }
 
-        await msg.reply(`${retorno.resposta}\n\n👉 _Digite *1* para comprar produtos ou *#* para ver o menu principal._`);
+        // 5. Monta rodapé contextual conforme a ação estruturada sugerida pela IA
+        let rodape = '👉 _Digite *1* para comprar produtos ou *#* para ver o menu principal._';
+        if (retorno.sugerirAcao === 'catalogo') {
+            rodape = '👉 _Digite *1* para abrir nosso catálogo completo ou *#* para o menu principal._';
+        } else if (retorno.sugerirAcao === 'resgate') {
+            rodape = '👉 _Digite *2* para solicitar resgate de abelhas ou *#* para o menu principal._';
+        } else if (retorno.sugerirAcao === 'consultoria') {
+            rodape = '👉 _Digite *3* para falar sobre consultoria apícola ou *#* para o menu principal._';
+        } else if (retorno.sugerirAcao === 'menu') {
+            rodape = '👉 _Digite *#* para voltar ao menu principal._';
+        }
+
+        await msg.reply(`${retorno.resposta}\n\n${rodape}`);
     }
 }
 

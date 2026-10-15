@@ -7,11 +7,37 @@ class EvolutionService {
     }
 
     static get instanceName() {
-        return process.env.EVOLUTION_INSTANCE_NAME || config.evolution.instance || 'ViP';
+        return process.env.EVOLUTION_INSTANCE_NAME || config.evolution?.instance || 'FavoDeMel';
     }
 
     static get apiKey() {
-        return process.env.EVOLUTION_API_KEY || config.evolution.apiKey || '176E007EAA4B-4D08-8DFE-5F77AF6E8E09';
+        return process.env.EVOLUTION_API_KEY || config.evolution?.apiKey || '429683C4C977415CAAFCCE10F7D57E11';
+    }
+
+    /**
+     * Envia status de presença no WhatsApp ('composing' = digitando..., 'recording' = gravando áudio...)
+     */
+    static async enviarPresenca(numero, presenca = 'composing', delay = 1200) {
+        const url = `${this.baseUrl}/chat/sendPresence/${this.instanceName}`;
+        const numeroLimpo = (numero || '').replace(/\D/g, '');
+        if (!numeroLimpo) return null;
+
+        try {
+            const response = await axios.post(url, {
+                number: numeroLimpo,
+                presence: presenca,
+                delay: delay
+            }, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 3000
+            });
+            return response.data;
+        } catch (_) {
+            return null;
+        }
     }
 
     /**
