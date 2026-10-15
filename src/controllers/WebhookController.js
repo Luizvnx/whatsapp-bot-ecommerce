@@ -256,6 +256,54 @@ class WebhookController {
             const { event, data } = req.body;
             const eventLower = (event || '').toLowerCase();
 
+            // 0. Tratamento do Evento: Status da Conexão (connection.update / status.instance)
+            if (eventLower === 'connection.update' || eventLower === 'connection_update' || eventLower === 'status.instance' || eventLower === 'status_instance') {
+                const statusState = data?.state || data?.status || req.body?.data?.state || 'desconhecido';
+                console.log(`📡 [Webhook Evolution] Status da conexão WhatsApp atualizado: ${statusState}`);
+
+                EvolutionService.cacheStatus = {
+                    instance: { state: statusState }
+                };
+                EvolutionService.cacheStatusTimestamp = Date.now();
+                if (statusState === 'open') {
+                    EvolutionService.cacheQrCode = null;
+                }
+
+                try {
+                    const SocketService = require('../services/SocketService');
+                    SocketService.emitirStatusInstancia({
+                        status: statusState,
+                        instance: req.body?.instance || EvolutionService.instanceName
+                    });
+                } catch (e) {
+                    console.error('[Webhook Evolution] Erro ao emitir status socket:', e.message);
+                }
+                return;
+            }
+
+            // 0.1. Tratamento do Evento: Novo QR Code Gerado (qrcode.updated)
+            if (eventLower === 'qrcode.updated' || eventLower === 'qrcode_updated') {
+                const qrCodeBase64 = data?.qrcode?.base64 || data?.base64 || req.body?.data?.qrcode?.base64 || null;
+                if (qrCodeBase64) {
+                    console.log(`📷 [Webhook Evolution] Novo QR Code recebido via webhook para ${req.body?.instance || EvolutionService.instanceName}`);
+                    EvolutionService.cacheQrCode = {
+                        base64: qrCodeBase64,
+                        timestamp: Date.now()
+                    };
+                    try {
+                        const SocketService = require('../services/SocketService');
+                        SocketService.emitirStatusInstancia({
+                            status: 'qrcode',
+                            qrCodeBase64: qrCodeBase64,
+                            instance: req.body?.instance || EvolutionService.instanceName
+                        });
+                    } catch (e) {
+                        console.error('[Webhook Evolution] Erro ao emitir QR code socket:', e.message);
+                    }
+                }
+                return;
+            }
+
             // 1. Tratamento do Evento: Mensagem Excluída no WhatsApp (messages.delete)
             if (eventLower === 'messages.delete' || eventLower === 'messages_delete' || eventLower === 'message.delete') {
                 const itens = Array.isArray(data) ? data : (Array.isArray(data?.keys) ? data.keys : [data?.key || data]);

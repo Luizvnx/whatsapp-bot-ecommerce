@@ -417,38 +417,85 @@ router.post('/alterar-status', async (req, res) => {
     }
 });
 
-// 10. STATUS DA CONEXÃO COM A EVOLUTION API (INSTÂNCIA ViP)
+// 10. STATUS DA CONEXÃO COM A EVOLUTION API (CONSULTA 100% LEITURA - NÃO REINICIA NEM DERRUBA O SOCKET)
 router.get('/instance-status', async (req, res) => {
     try {
         const data = await EvolutionService.obterStatusInstancia();
 
         if (!data) {
-            return res.json({ success: false, status: 'offline' });
+            return res.json({ success: false, status: 'offline', instance: EvolutionService.instanceName });
         }
 
-        let status = data?.instance?.state || 'desconhecido';
-        let qrCodeBase64 = null;
+        const status = data?.instance?.state || 'close';
 
-        // Se estiver desconectado, tenta buscar QR Code
-        if (status === 'close' || status === 'connecting') {
-            const qrResponse = await fetch(`${EvolutionService.baseUrl}/instance/connect/${EvolutionService.instanceName}`, {
-                headers: { 'apikey': EvolutionService.apiKey },
-                signal: AbortSignal.timeout(5000)
-            });
-
-            if (qrResponse.ok) {
-                const qrData = await qrResponse.json();
-                if (qrData?.base64) {
-                    qrCodeBase64 = qrData.base64;
-                    status = 'qrcode';
-                }
-            }
-        }
-
-        res.json({ success: true, status, qrCodeBase64, instance: EvolutionService.instanceName });
+        res.json({
+            success: true,
+            status,
+            instance: EvolutionService.instanceName,
+            qrCodeBase64: (status !== 'open' && EvolutionService.cacheQrCode) ? EvolutionService.cacheQrCode.base64 : null
+        });
     } catch (err) {
-        console.error('Erro de conexão com Evolution API:', err.message);
-        res.json({ success: false, status: 'offline' });
+        console.error('Erro ao consultar status da Evolution API:', err.message);
+        res.json({ success: false, status: 'offline', message: err.message });
+    }
+});
+
+// 10.1. GERAR / OBTER QR CODE EXPLICITAMENTE (CHAMADO APENAS QUANDO O USUÁRIO ABRE O MODAL)
+router.get('/instance-qrcode', async (req, res) => {
+    try {
+        const forcar = req.query.forcar === 'true';
+        const dataStatus = await EvolutionService.obterStatusInstancia();
+        const statusAtual = dataStatus?.instance?.state;
+
+        if (statusAtual === 'open') {
+            return res.json({ success: true, status: 'open', message: 'WhatsApp já conectado.' });
+        }
+
+        const qrData = await EvolutionService.gerarQrCode(forcar);
+        const qrCodeBase64 = qrData?.base64 || qrData?.qrcode?.base64 || qrData?.code || null;
+
+        res.json({
+            success: true,
+            status: qrCodeBase64 ? 'qrcode' : (statusAtual || 'connecting'),
+            qrCodeBase64,
+            pairingCode: qrData?.pairingCode || null,
+            instance: EvolutionService.instanceName
+        });
+    } catch (err) {
+        console.error('Erro ao gerar QR Code na Evolution API:', err.message);
+        res.status(500).json({ success: false, message: 'Falha ao gerar QR Code: ' + err.message });
+    }
+});
+
+// 10.2. REINICIAR INSTÂNCIA DA EVOLUTION API (ÚTIL CASO O BAILEYS ENTRE EM ESTADO ZUMBI)
+router.post('/instance-restart', async (req, res) => {
+    try {
+        const resultado = await EvolutionService.reiniciarInstancia();
+        const SocketService = require('../services/SocketService');
+        SocketService.emitirStatusInstancia({
+            status: 'connecting',
+            instance: EvolutionService.instanceName
+        });
+        res.json({ success: true, message: 'Instância reiniciada com sucesso! Aguardando reconexão...', data: resultado });
+    } catch (err) {
+        console.error('Erro ao reiniciar instância na Evolution API:', err.message);
+        res.status(500).json({ success: false, message: 'Falha ao reiniciar instância: ' + (err.response?.data?.message || err.message) });
+    }
+});
+
+// 10.3. DESCONECTAR INSTÂNCIA (LOGOUT DA SESSÃO)
+router.post('/instance-logout', async (req, res) => {
+    try {
+        const resultado = await EvolutionService.desconectarInstancia();
+        const SocketService = require('../services/SocketService');
+        SocketService.emitirStatusInstancia({
+            status: 'close',
+            instance: EvolutionService.instanceName
+        });
+        res.json({ success: true, message: 'Sessão do WhatsApp desconectada com sucesso.', data: resultado });
+    } catch (err) {
+        console.error('Erro ao desconectar instância:', err.message);
+        res.status(500).json({ success: false, message: 'Falha ao desconectar: ' + err.message });
     }
 });
 
@@ -887,50 +934,6 @@ router.post('/limpar-carrinho', async (req, res) => {
     }
 });
 
-// 16.5. Monitorar Conexão da Instância Evolution API
-router.get('/instance-status', async (req, res) => {
-    try {
-        const evolutionUrl = process.env.EVOLUTION_URL || 'http://localhost:8081';
-        const apikey = process.env.EVOLUTION_API_KEY;
-        const instanceName = process.env.EVOLUTION_INSTANCE_NAME || 'FavoDeMel';
-
-        if (!apikey) {
-            return res.json({ success: false, status: 'offline', message: 'API Key ausente' });
-        }
-
-        const stateResponse = await fetch(`${evolutionUrl}/instance/connectionState/${instanceName}`, {
-            headers: { 'apikey': apikey },
-            signal: AbortSignal.timeout(5000)
-        });
-
-        if (!stateResponse.ok) {
-            return res.json({ success: false, status: 'desconhecido' });
-        }
-
-        const stateData = await stateResponse.json();
-        let status = stateData?.instance?.state || 'desconhecido';
-        let qrCodeBase64 = null;
-
-        if (status !== 'open') {
-            const qrResponse = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
-                headers: { 'apikey': apikey },
-                signal: AbortSignal.timeout(6000)
-            });
-
-            if (qrResponse.ok) {
-                const qrData = await qrResponse.json();
-                qrCodeBase64 = qrData?.base64 || qrData?.qrcode?.base64 || qrData?.code || null;
-                if (qrCodeBase64) {
-                    status = 'qrcode';
-                }
-            }
-        }
-
-        res.json({ success: true, status, qrCodeBase64 });
-    } catch (err) {
-        res.json({ success: false, status: 'offline', message: err.message });
-    }
-});
 
 // ==========================================
 // 17. CONFIGURAÇÃO DE USUÁRIO / PERFIL & SENHA

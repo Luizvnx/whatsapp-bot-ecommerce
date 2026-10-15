@@ -14,6 +14,10 @@ class EvolutionService {
         return process.env.EVOLUTION_API_KEY || config.evolution?.apiKey || '429683C4C977415CAAFCCE10F7D57E11';
     }
 
+    static cacheQrCode = null;
+    static cacheStatus = null;
+    static cacheStatusTimestamp = 0;
+
     /**
      * Envia status de presença no WhatsApp ('composing' = digitando..., 'recording' = gravando áudio...)
      */
@@ -46,8 +50,16 @@ class EvolutionService {
     static async enviarMensagemText(numero, texto, quoted = null) {
         const url = `${this.baseUrl}/message/sendText/${this.instanceName}`;
 
+        let numeroFormatado = String(numero || '').trim();
+        if (!numeroFormatado.includes('@g.us')) {
+            numeroFormatado = numeroFormatado.split('@')[0].replace(/\D/g, '');
+        }
+        if (!numeroFormatado) {
+            throw new Error('Número de destino inválido ou vazio para envio de mensagem.');
+        }
+
         const payload = {
-            number: numero,
+            number: numeroFormatado,
             text: texto
         };
 
@@ -67,17 +79,29 @@ class EvolutionService {
             payload.options = { quoted: quotedObj };
         }
 
+        const headers = {
+            'apikey': this.apiKey,
+            'Content-Type': 'application/json'
+        };
+
         try {
             const response = await axios.post(url, payload, {
-                headers: {
-                    'apikey': this.apiKey,
-                    'Content-Type': 'application/json'
-                },
-                timeout: 5000
+                headers,
+                timeout: 8000
             });
-            console.log(`✅ Mensagem enviada via Evolution para ${numero}${quoted ? ' (com citação)' : ''}`);
+            console.log(`✅ Mensagem enviada via Evolution para ${numeroFormatado}${quoted ? ' (com citação)' : ''}`);
             return response.data;
         } catch (erro) {
+            // Se falhou com citação (ex: Baileys Cannot read properties of undefined reading 'find'), tenta fallback sem citação
+            if (payload.quoted) {
+                console.warn(`[EvolutionService] Falha ao enviar com citação para ${numeroFormatado}. Tentando sem citação...`);
+                try {
+                    const fallbackPayload = { number: numeroFormatado, text: texto };
+                    const retryResp = await axios.post(url, fallbackPayload, { headers, timeout: 8000 });
+                    console.log(`✅ Mensagem enviada com sucesso no retry (sem citação) para ${numeroFormatado}`);
+                    return retryResp.data;
+                } catch (_) {}
+            }
             console.error('[Erro Evolution] Falha ao enviar mensagem:', erro.response ? erro.response.data : erro.message);
             throw erro;
         }
@@ -293,19 +317,116 @@ class EvolutionService {
     }
 
     /**
-     * Obtém o status atual da conexão com a instância da Evolution API
+     * Obtém o status atual da conexão com a instância da Evolution API (com cache de 3 segundos)
      */
-    static async obterStatusInstancia() {
+    static async obterStatusInstancia(forcar = false) {
+        const agora = Date.now();
+        if (!forcar && this.cacheStatus && (agora - this.cacheStatusTimestamp < 3000)) {
+            return this.cacheStatus;
+        }
+
         const url = `${this.baseUrl}/instance/connectionState/${this.instanceName}`;
         try {
             const response = await axios.get(url, {
                 headers: { 'apikey': this.apiKey },
                 timeout: 5000
             });
+            this.cacheStatus = response.data;
+            this.cacheStatusTimestamp = agora;
+
+            // Se a instância estiver conectada com sucesso, limpa qualquer QR code antigo
+            if (response.data?.instance?.state === 'open') {
+                this.cacheQrCode = null;
+            }
+
             return response.data;
         } catch (error) {
             console.error('[Erro Evolution] Falha ao consultar status:', error.message);
             return null;
+        }
+    }
+
+    /**
+     * Gera ou obtém o QR Code atual para emparelhamento no WhatsApp (com cache de 20s para evitar descarte contínuo de chaves)
+     */
+    static async gerarQrCode(forcar = false) {
+        const agora = Date.now();
+        // Se temos um QR code gerado há menos de 20 segundos e não foi forçado, reutiliza para não invalidar o handshake
+        if (!forcar && this.cacheQrCode?.base64 && (agora - this.cacheQrCode.timestamp < 20000)) {
+            return {
+                base64: this.cacheQrCode.base64,
+                pairingCode: this.cacheQrCode.pairingCode || null,
+                cached: true
+            };
+        }
+
+        const url = `${this.baseUrl}/instance/connect/${this.instanceName}`;
+        try {
+            const response = await axios.get(url, {
+                headers: { 'apikey': this.apiKey },
+                timeout: 10000
+            });
+
+            const qrBase64 = response.data?.base64 || response.data?.qrcode?.base64 || response.data?.code || null;
+            if (qrBase64) {
+                this.cacheQrCode = {
+                    base64: qrBase64,
+                    pairingCode: response.data?.pairingCode || null,
+                    timestamp: agora
+                };
+            }
+
+            return response.data;
+        } catch (error) {
+            console.error('[Erro Evolution] Falha ao obter QR code:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Reinicia a instância do WhatsApp na Evolution API de forma segura
+     */
+    static async reiniciarInstancia() {
+        this.cacheQrCode = null;
+        this.cacheStatus = null;
+        this.cacheStatusTimestamp = 0;
+
+        const url = `${this.baseUrl}/instance/restart/${this.instanceName}`;
+        try {
+            const response = await axios.post(url, {}, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 15000
+            });
+            console.log(`🔄 [EvolutionService] Instância ${this.instanceName} reiniciada com sucesso.`);
+            return response.data;
+        } catch (error) {
+            console.error('[EvolutionService] Falha ao reiniciar instância:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Desconecta (logout) a sessão atual da instância na Evolution API
+     */
+    static async desconectarInstancia() {
+        this.cacheQrCode = null;
+        this.cacheStatus = null;
+        this.cacheStatusTimestamp = 0;
+
+        const url = `${this.baseUrl}/instance/logout/${this.instanceName}`;
+        try {
+            const response = await axios.delete(url, {
+                headers: { 'apikey': this.apiKey },
+                timeout: 10000
+            });
+            console.log(`🔌 [EvolutionService] Instância ${this.instanceName} desconectada (logout).`);
+            return response.data;
+        } catch (error) {
+            console.error('[EvolutionService] Falha ao desconectar instância:', error.response?.data || error.message);
+            throw error;
         }
     }
 

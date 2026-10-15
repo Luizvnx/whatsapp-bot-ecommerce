@@ -1069,11 +1069,17 @@
                 </ol>
             </div>
 
-            <div class="flex items-center justify-between gap-2 pt-2 border-t border-stone-200">
-                <button type="button" onclick="carregarQrCodeModal(true)" id="btnAtualizarQrModal"
-                    class="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 rounded-sm text-xs font-medium transition shadow-xs">
-                    Atualizar QR Code
-                </button>
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-200">
+                <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="carregarQrCodeModal(true)" id="btnAtualizarQrModal"
+                        class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 rounded-sm text-xs font-medium transition shadow-xs flex items-center gap-1">
+                        <span>🔄</span><span>Atualizar QR</span>
+                    </button>
+                    <button type="button" onclick="reiniciarInstanciaWhatsApp()" id="btnReiniciarModal"
+                        class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-sm text-xs font-medium transition shadow-xs flex items-center gap-1">
+                        <span>⚡</span><span>Reiniciar Conexão</span>
+                    </button>
+                </div>
                 <button type="button" onclick="fecharModalQrCode()"
                     class="px-4 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs">
                     Fechar
@@ -1774,17 +1780,90 @@
                 });
 
                 socket.on('status_instancia', (data) => {
-                    if (data?.status) {
-                        const badge = document.getElementById('badgeStatus');
-                        const alerta = document.getElementById('alertaConexao');
-                        if (data.status === 'open') {
+                    if (!data?.status) return;
+
+                    const badge = document.getElementById('badgeStatus');
+                    const alerta = document.getElementById('alertaConexao');
+                    const cardBadge = document.getElementById('cardInstanciaStatusBadge');
+                    const cardQr = document.getElementById('cardInstanciaQrCode');
+
+                    if (data.status === 'open') {
+                        if (badge) {
                             badge.className = 'flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-[#25D366] text-white shadow-xs hover:bg-[#20bd5a] transition cursor-pointer flex-shrink-0';
+                            badge.title = 'WhatsApp Conectado e Operando';
                             badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-white flex-shrink-0"></span><span>WhatsApp Conectado</span>';
-                            if (alerta) alerta.classList.add('hidden');
-                        } else if (data.status === 'qrcode' || data.status === 'close') {
+                        }
+                        if (alerta) alerta.classList.add('hidden');
+                        if (cardBadge) {
+                            cardBadge.className = 'text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+                            cardBadge.textContent = 'Conectado (Online)';
+                        }
+                        if (cardQr) {
+                            cardQr.innerHTML = '<span class="text-stone-700 font-mono text-xs">Conexão ativa e sincronizada.</span>';
+                        }
+
+                        // Se o modal estava aberto aguardando leitura do QR, comemora e fecha
+                        if (modalQrCodeAberto) {
+                            document.getElementById('qrCodeModalLoading')?.classList.add('hidden');
+                            document.getElementById('qrCodeModalImagemContainer')?.classList.add('hidden');
+                            document.getElementById('qrCodeModalConectado')?.classList.remove('hidden');
+                            mostrarToast('WhatsApp conectado com sucesso!', 'sucesso');
+                            setTimeout(() => fecharModalQrCode(), 1800);
+                        }
+                    } else if (data.status === 'connecting') {
+                        if (badge) {
+                            badge.className = 'flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-amber-500 text-white shadow-xs hover:bg-amber-600 transition cursor-pointer flex-shrink-0';
+                            badge.title = 'WhatsApp em processo de conexão/sincronização...';
+                            badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-white animate-pulse flex-shrink-0"></span><span>WhatsApp Conectando...</span>';
+                        }
+                        if (alerta) {
+                            alerta.classList.remove('hidden');
+                            const spanTexto = alerta.querySelector('span.font-medium');
+                            if (spanTexto) spanTexto.textContent = 'WhatsApp conectando e sincronizando chaves... Aguarde alguns instantes.';
+                        }
+                        if (cardBadge) {
+                            cardBadge.className = 'text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30';
+                            cardBadge.textContent = 'Conectando...';
+                        }
+                    } else if (data.status === 'qrcode' || data.status === 'close') {
+                        if (badge) {
                             badge.className = 'flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-rose-600 text-white shadow-xs hover:bg-rose-700 transition cursor-pointer flex-shrink-0';
+                            badge.title = 'WhatsApp Desconectado! Clique para ler o QR Code';
                             badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-white flex-shrink-0"></span><span>WhatsApp Desconectado</span>';
-                            if (alerta) alerta.classList.remove('hidden');
+                        }
+                        if (alerta) {
+                            alerta.classList.remove('hidden');
+                            const spanTexto = alerta.querySelector('span.font-medium');
+                            if (spanTexto) spanTexto.textContent = 'WhatsApp desconectado. Conecte seu aparelho para sincronizar mensagens.';
+                        }
+                        if (cardBadge) {
+                            cardBadge.className = 'text-xs px-2.5 py-0.5 rounded-full font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30';
+                            cardBadge.textContent = 'Aguardando QR Code';
+                        }
+
+                        if (data.qrCodeBase64) {
+                            ultimoQrCodeBase64 = data.qrCodeBase64;
+                            const srcImg = formatarSrcQrCode(data.qrCodeBase64);
+
+                            // Atualiza imagem no modal
+                            const modalImg = document.getElementById('qrCodeModalImg');
+                            if (modalImg) modalImg.src = srcImg;
+                            document.getElementById('qrCodeModalLoading')?.classList.add('hidden');
+                            document.getElementById('qrCodeModalImagemContainer')?.classList.remove('hidden');
+                            document.getElementById('qrCodeModalConectado')?.classList.add('hidden');
+
+                            if (cardQr) {
+                                cardQr.innerHTML = `
+                                    <div class="flex flex-col items-center gap-2 p-2">
+                                        <div class="p-2 bg-white rounded-sm shadow-md border border-slate-200">
+                                            <img src="${srcImg}" alt="QR Code WhatsApp" class="w-48 h-48 object-contain">
+                                        </div>
+                                        <button type="button" onclick="abrirModalQrCode()" class="mt-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-xs font-bold transition shadow-sm">
+                                            Abrir em Tela Maior
+                                        </button>
+                                    </div>
+                                `;
+                            }
                         }
                     }
                 });
@@ -2998,16 +3077,35 @@
                                     document.getElementById('qrCodeModalLoading')?.classList.add('hidden');
                                     document.getElementById('qrCodeModalImagemContainer')?.classList.add('hidden');
                                     document.getElementById('qrCodeModalConectado')?.classList.remove('hidden');
-                                    mostrarToast('WhatsApp conectado com sucesso.', 'sucesso');
-                                    setTimeout(() => fecharModalQrCode(), 2000);
+                                    mostrarToast('WhatsApp conectado com sucesso!', 'sucesso');
+                                    setTimeout(() => fecharModalQrCode(), 1800);
                                 }
-                            } else if (result.status === 'qrcode' || result.status === 'connecting' || result.status === 'close') {
+                            } else if (result.status === 'connecting') {
+                                if (badge) {
+                                    badge.className = 'flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-amber-500 text-white shadow-xs hover:bg-amber-600 transition cursor-pointer flex-shrink-0';
+                                    badge.title = 'WhatsApp em processo de conexão/sincronização...';
+                                    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-white animate-pulse flex-shrink-0"></span><span>WhatsApp Conectando...</span>';
+                                }
+                                if (alerta) {
+                                    alerta.classList.remove('hidden');
+                                    const spanTexto = alerta.querySelector('span.font-medium');
+                                    if (spanTexto) spanTexto.textContent = 'WhatsApp conectando e sincronizando chaves... Aguarde alguns instantes.';
+                                }
+                                if (cardBadge) {
+                                    cardBadge.className = 'text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30';
+                                    cardBadge.textContent = 'Conectando...';
+                                }
+                            } else {
                                 if (badge) {
                                     badge.className = 'flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-rose-600 text-white shadow-xs hover:bg-rose-700 transition cursor-pointer flex-shrink-0';
                                     badge.title = 'WhatsApp Desconectado! Clique para ler o QR Code';
                                     badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-white flex-shrink-0"></span><span>WhatsApp Desconectado</span>';
                                 }
-                                if (alerta) alerta.classList.remove('hidden');
+                                if (alerta) {
+                                    alerta.classList.remove('hidden');
+                                    const spanTexto = alerta.querySelector('span.font-medium');
+                                    if (spanTexto) spanTexto.textContent = 'WhatsApp desconectado. Conecte seu aparelho para sincronizar mensagens.';
+                                }
 
                                 if (cardBadge) {
                                     cardBadge.className = 'text-xs px-2.5 py-0.5 rounded-full font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30';
@@ -3018,31 +3116,24 @@
                                     ultimoQrCodeBase64 = result.qrCodeBase64;
                                     const srcImg = formatarSrcQrCode(result.qrCodeBase64);
 
-                                    // Atualiza imagem no modal
                                     const modalImg = document.getElementById('qrCodeModalImg');
                                     if (modalImg) modalImg.src = srcImg;
                                     document.getElementById('qrCodeModalLoading')?.classList.add('hidden');
                                     document.getElementById('qrCodeModalImagemContainer')?.classList.remove('hidden');
                                     document.getElementById('qrCodeModalConectado')?.classList.add('hidden');
 
-                                    // Atualiza no card da aba Métricas
                                     if (cardQr) {
                                         cardQr.innerHTML = `
-                                    <div class="flex flex-col items-center gap-2 p-2">
-                                        <div class="p-2 bg-white rounded-sm shadow-md border border-slate-200">
-                                            <img src="${srcImg}" alt="QR Code WhatsApp" class="w-48 h-48 object-contain">
-                                        </div>
-                                        <button type="button" onclick="abrirModalQrCode()" class="mt-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-xs font-bold transition shadow-sm">
-                                            Abrir em Tela Maior
-                                        </button>
-                                    </div>
-                                `;
+                                            <div class="flex flex-col items-center gap-2 p-2">
+                                                <div class="p-2 bg-white rounded-sm shadow-md border border-slate-200">
+                                                    <img src="${srcImg}" alt="QR Code WhatsApp" class="w-48 h-48 object-contain">
+                                                </div>
+                                                <button type="button" onclick="abrirModalQrCode()" class="mt-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-xs font-bold transition shadow-sm">
+                                                    Abrir em Tela Maior
+                                                </button>
+                                            </div>
+                                        `;
                                     }
-                                }
-                            } else {
-                                if (badge) {
-                                    badge.className = 'flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold bg-amber-50 text-amber-800 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-amber-200 shadow-sm';
-                                    badge.innerHTML = `<span class="w-2 h-2 rounded-sm bg-stone-1000"></span><span>Status: ${result.status}</span>`;
                                 }
                             }
                         } else {
@@ -3071,13 +3162,14 @@
                         document.getElementById('qrCodeModalLoading')?.classList.remove('hidden');
                         document.getElementById('qrCodeModalImagemContainer')?.classList.add('hidden');
                         document.getElementById('qrCodeModalConectado')?.classList.add('hidden');
+                        carregarQrCodeModal(false);
                     }
 
                     monitorarInstancia();
 
-                    // Auto-refresh a cada 5s enquanto o modal estiver aberto para checar conexão
+                    // Polling seguro de leitura apenas (6 segundos) enquanto o modal estiver aberto
                     if (intervaloPollingQrModal) clearInterval(intervaloPollingQrModal);
-                    intervaloPollingQrModal = setInterval(monitorarInstancia, 5000);
+                    intervaloPollingQrModal = setInterval(monitorarInstancia, 6000);
                 }
 
                 function fecharModalQrCode() {
@@ -3089,26 +3181,100 @@
                     document.getElementById('modalQrCodeWhatsApp').classList.add('hidden');
                 }
 
-                async function carregarQrCodeModal(animar = false) {
+                async function carregarQrCodeModal(forcar = false) {
                     const btn = document.getElementById('btnAtualizarQrModal');
                     if (btn) {
                         btn.disabled = true;
-                        btn.innerHTML = '<span>⏳</span><span>Atualizando...</span>';
+                        btn.innerHTML = '<span>⏳</span><span>Carregando...</span>';
                     }
                     document.getElementById('qrCodeModalLoading')?.classList.remove('hidden');
                     document.getElementById('qrCodeModalImagemContainer')?.classList.add('hidden');
+                    document.getElementById('qrCodeModalConectado')?.classList.add('hidden');
 
-                    await monitorarInstancia();
+                    try {
+                        const res = await fetch(`/admin/instance-qrcode?forcar=${forcar}`);
+                        const result = await res.json();
 
+                        if (result.success) {
+                            if (result.status === 'open') {
+                                document.getElementById('qrCodeModalLoading')?.classList.add('hidden');
+                                document.getElementById('qrCodeModalImagemContainer')?.classList.add('hidden');
+                                document.getElementById('qrCodeModalConectado')?.classList.remove('hidden');
+                                mostrarToast('WhatsApp já está conectado!', 'sucesso');
+                                setTimeout(() => fecharModalQrCode(), 1500);
+                            } else if (result.qrCodeBase64) {
+                                ultimoQrCodeBase64 = result.qrCodeBase64;
+                                const srcImg = formatarSrcQrCode(result.qrCodeBase64);
+                                const modalImg = document.getElementById('qrCodeModalImg');
+                                if (modalImg) modalImg.src = srcImg;
+
+                                document.getElementById('qrCodeModalLoading')?.classList.add('hidden');
+                                document.getElementById('qrCodeModalImagemContainer')?.classList.remove('hidden');
+                                document.getElementById('qrCodeModalConectado')?.classList.add('hidden');
+                            } else {
+                                document.getElementById('qrCodeModalLoading')?.classList.remove('hidden');
+                                const spanLoading = document.getElementById('qrCodeModalLoading')?.querySelector('span');
+                                if (spanLoading) spanLoading.textContent = 'Aguardando geração do QR Code...';
+                            }
+                        } else {
+                            mostrarToast(result.message || 'Falha ao carregar QR Code.', 'erro');
+                        }
+                    } catch (err) {
+                        console.error('Erro ao buscar QR Code:', err);
+                        mostrarToast('Erro ao se comunicar com a Evolution API.', 'erro');
+                    } finally {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<span>🔄</span><span>Atualizar QR</span>';
+                        }
+                    }
+                }
+
+                async function reiniciarInstanciaWhatsApp() {
+                    if (!confirm('Deseja realmente reiniciar a conexão da instância WhatsApp na Evolution API?')) {
+                        return;
+                    }
+
+                    const btn = document.getElementById('btnReiniciarModal');
                     if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = '<span>Atualizar QR Code</span>';
+                        btn.disabled = true;
+                        btn.innerHTML = '<span>⏳</span><span>Reiniciando...</span>';
+                    }
+
+                    mostrarToast('Reiniciando instância na Evolution API... Aguarde.', 'info');
+
+                    try {
+                        const res = await fetch('/admin/instance-restart', { method: 'POST' });
+                        const result = await res.json();
+
+                        if (result.success) {
+                            mostrarToast('Instância reiniciada! Aguardando reconexão...', 'sucesso');
+                            ultimoQrCodeBase64 = null;
+                            document.getElementById('qrCodeModalLoading')?.classList.remove('hidden');
+                            const spanLoading = document.getElementById('qrCodeModalLoading')?.querySelector('span');
+                            if (spanLoading) spanLoading.textContent = 'Reiniciando instância e gerando novo QR Code...';
+                            document.getElementById('qrCodeModalImagemContainer')?.classList.add('hidden');
+
+                            setTimeout(async () => {
+                                await monitorarInstancia();
+                                await carregarQrCodeModal(true);
+                            }, 3000);
+                        } else {
+                            mostrarToast(result.message || 'Erro ao reiniciar instância.', 'erro');
+                        }
+                    } catch (err) {
+                        mostrarToast('Erro de comunicação ao reiniciar instância.', 'erro');
+                    } finally {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<span>⚡</span><span>Reiniciar Conexão</span>';
+                        }
                     }
                 }
 
                 function clicarBadgeStatus() {
                     const badge = document.getElementById('badgeStatus');
-                    if (badge && (badge.textContent.includes('Desconectado') || badge.textContent.includes('Ler QR') || badge.textContent.includes('Offline'))) {
+                    if (badge && (badge.textContent.includes('Desconectado') || badge.textContent.includes('Conectando') || badge.textContent.includes('Ler QR') || badge.textContent.includes('Offline'))) {
                         abrirModalQrCode();
                     }
                 }
