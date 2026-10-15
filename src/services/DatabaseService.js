@@ -7,12 +7,12 @@ const dbConfig = {
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
     ...(config.database.url
-        ? { 
+        ? {
             connectionString: config.database.url,
-            ssl: (config.database.url.includes('rlwy.net') || config.database.url.includes('railway')) 
-                 ? { rejectUnauthorized: false } 
-                 : false
-          } 
+            ssl: (config.database.url.includes('rlwy.net') || config.database.url.includes('railway'))
+                ? { rejectUnauthorized: false }
+                : false
+        }
         : {
             host: config.database.host,
             user: config.database.user,
@@ -21,7 +21,7 @@ const dbConfig = {
             port: config.database.port
         })
 };
-    
+
 class DatabaseService {
     // 2. CORREÇÃO: Passamos a variável dbConfig diretamente, sem repetir código
     static pool = new Pool(dbConfig);
@@ -168,7 +168,7 @@ class DatabaseService {
             await this.migrarOportunidadesIniciaisSeVazio();
             console.log('📦 Banco de Dados pronto para uso.');
         } catch (error) {
-            console.error('❌ Erro ao inicializar tabelas:', error.message);
+            console.error('Erro ao inicializar tabelas:', error.message);
             throw error;
         }
     }
@@ -229,7 +229,7 @@ class DatabaseService {
             if (parseInt(check.rows[0].count, 10) === 0) {
                 console.log('🔄 [CRM Funil] Inicializando oportunidades para clientes existentes...');
                 const clientes = await this.executar('SELECT id, id_cliente, nome, status, etapa_funil, ltv, ticket_medio, total_pedidos, criado_em, atualizado_em FROM tb_crm_clientes');
-                
+
                 for (const c of clientes.rows) {
                     let etapa = 'novo_lead';
                     let status = 'aberto';
@@ -282,7 +282,7 @@ class DatabaseService {
             if (parseInt(check.rows[0].count, 10) === 0) {
                 console.log('🌱 [SEED] Semeando catálogo no banco de dados pela primeira vez...');
                 const catalogoPadrao = require('../data/catalogo.json');
-                
+
                 let ordem = 1;
                 for (const [catId, catObj] of Object.entries(catalogoPadrao.categorias || {})) {
                     await this.executar(
@@ -320,7 +320,7 @@ class DatabaseService {
                 }
 
                 const detalhe = msg || code || (err.errors && err.errors[0]?.message) || String(err);
-                console.error('❌ Erro na execução SQL:', detalhe);
+                console.error('Erro na execução SQL:', detalhe);
                 throw err;
             }
         }
@@ -338,7 +338,7 @@ class DatabaseService {
             }
             return null;
         } catch (err) {
-            console.error(`❌ Erro ao obter config ${chave}:`, err.message);
+            console.error(`Erro ao obter config ${chave}:`, err.message);
             return null;
         }
     }
@@ -359,7 +359,7 @@ class DatabaseService {
             await this.executar(sql, [chave, JSON.stringify(valor)]);
             return true;
         } catch (err) {
-            console.error(`❌ Erro ao salvar config ${chave}:`, err.message);
+            console.error(`Erro ao salvar config ${chave}:`, err.message);
             throw err;
         }
     }
@@ -378,7 +378,7 @@ class DatabaseService {
             console.log(`✅ [LIMPEZA] ${result.rowCount} sessões inativas removidas do banco de dados.`);
             return result.rowCount;
         } catch (error) {
-            console.error('❌ Erro na rotina de limpeza de sessões:', error.message);
+            console.error('Erro na rotina de limpeza de sessões:', error.message);
         }
     }
 }

@@ -16,7 +16,7 @@ const server = http.createServer(app);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src', 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json({ limit: '50mb' })); 
+app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ROTA DE LOGIN (GET)
@@ -70,7 +70,7 @@ const iniciarRotinasDeLimpeza = () => {
                 await DatabaseService.limparSessoesInativas();
             }
         } catch (err) {
-            console.error('❌ Erro na rotina de limpeza:', err.message);
+            console.error('Erro na rotina de limpeza:', err.message);
         }
     }, 24 * 60 * 60 * 1000);
 };
@@ -78,7 +78,7 @@ const iniciarRotinasDeLimpeza = () => {
 const bootstrap = async () => {
     try {
         await DatabaseService.inicializar();
-        
+
         // Inicializa WebSocket (Socket.io)
         SocketService.inicializar(server);
 

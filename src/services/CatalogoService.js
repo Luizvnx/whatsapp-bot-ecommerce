@@ -81,7 +81,7 @@ class CatalogoService {
             return catalogoFormatado;
 
         } catch (error) {
-            console.error('❌ [CATALOGO] Erro ao carregar catálogo do banco, usando fallback:', error.message);
+            console.error('[CATALOGO] Erro ao carregar catálogo do banco, usando fallback:', error.message);
             return catalogoFallback;
         }
     }
@@ -123,7 +123,7 @@ class CatalogoService {
                 preco: parseFloat(r.preco)
             }));
         } catch (error) {
-            console.error('❌ Erro ao listar produtos:', error.message);
+            console.error('Erro ao listar produtos:', error.message);
             throw error;
         }
     }
@@ -262,7 +262,7 @@ class CatalogoService {
                 total_produtos: parseInt(r.total_produtos, 10)
             }));
         } catch (error) {
-            console.error('❌ Erro ao listar categorias:', error.message);
+            console.error('Erro ao listar categorias:', error.message);
             throw error;
         }
     }

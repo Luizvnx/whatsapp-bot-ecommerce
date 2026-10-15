@@ -1,4 +1,4 @@
-const SessaoService = require('../services/SessionService'); 
+const SessaoService = require('../services/SessionService');
 const EvolutionService = require('../services/EvolutionService');
 const DatabaseService = require('../services/DatabaseService');
 const mensagens = require('../data/mensagens.json');
@@ -22,7 +22,7 @@ let cacheBotPausado = false;
 let ultimaChecagemConfig = 0;
 
 class BotController {
-    
+
     static async isPausadoGlobalmente() {
         const agora = Date.now();
         // Atualiza o cache do banco a cada 5 segundos se necessário
@@ -52,10 +52,10 @@ class BotController {
         if (!message) return '';
         let msg = message;
         while (msg?.ephemeralMessage?.message || msg?.viewOnceMessage?.message || msg?.viewOnceMessageV2?.message || msg?.documentWithCaptionMessage?.message) {
-            msg = msg.ephemeralMessage?.message 
-               || msg.viewOnceMessage?.message 
-               || msg.viewOnceMessageV2?.message 
-               || msg.documentWithCaptionMessage?.message;
+            msg = msg.ephemeralMessage?.message
+                || msg.viewOnceMessage?.message
+                || msg.viewOnceMessageV2?.message
+                || msg.documentWithCaptionMessage?.message;
         }
 
         let texto = (
@@ -82,7 +82,7 @@ class BotController {
                 if (parsed.rowId) return String(parsed.rowId);
                 if (parsed.selectedId) return String(parsed.selectedId);
                 if (parsed.displayText) return String(parsed.displayText);
-            } catch (_) {}
+            } catch (_) { }
         }
         return texto;
     }
@@ -121,7 +121,7 @@ class BotController {
             // Se for mensagem enviada pelo próprio atendente (via celular ou WhatsApp Web)
             if (info.fromMe) {
                 await this._processarAcoesAdmin(info.textoBruto, numeroReal, sessao);
-                return; 
+                return;
             }
 
             // Atualiza o nome do contato se veio um pushName legítimo do WhatsApp
@@ -143,8 +143,8 @@ class BotController {
             if (SessaoService.verificarExpiracao(sessao)) {
                 await info.reply(mensagens.erros.sessaoExpirada);
                 if (typeof EvolutionService.gerenciarEtiqueta === 'function') {
-                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => {});
-                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => {});
+                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => { });
+                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => { });
                 }
                 return;
             }
@@ -158,10 +158,10 @@ class BotController {
                     sessao.categoriaSelecionada = null;
                     sessao.produtoSelecionado = null;
 
-                    await SessaoService.alternarModoAtendimento(numeroReal, 'bot').catch(() => {});
+                    await SessaoService.alternarModoAtendimento(numeroReal, 'bot').catch(() => { });
                     if (typeof EvolutionService.gerenciarEtiqueta === 'function') {
-                        await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => {});
-                        await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => {});
+                        await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => { });
+                        await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => { });
                     }
 
                     const InicioStage = require('../stages/InicioStage');
@@ -188,10 +188,10 @@ class BotController {
             await estagioAtual.executar(info, info.texto, sessao);
 
         } catch (error) {
-            console.error(`❌ Erro processando cliente:`, error);
+            console.error(`Erro processando cliente:`, error);
         } finally {
             if (sessao && numeroReal) {
-                sessao.processando = false; 
+                sessao.processando = false;
                 await SessaoService.salvarSessao(numeroReal, sessao).catch(console.error);
             }
         }
@@ -203,14 +203,14 @@ class BotController {
 
     static _extrairDadosMensagem(data, sessao, numeroReal) {
         const { remoteJid, fromMe } = data.key;
-        
+
         const numeroCliente = numeroReal.split('@')[0];
         const isLid = numeroCliente.length > 13;
         const rawPushName = (data.pushName && typeof data.pushName === 'string') ? data.pushName.trim() : null;
         const nomeCliente = SessaoService.isNomeContatoValido(rawPushName) ? rawPushName : null;
         const nomeParaExibir = nomeCliente || SessaoService.formatarNumeroWhatsapp(numeroReal);
-        
-        const linkAlerta = isLid 
+
+        const linkAlerta = isLid
             ? `\n👉 *Aviso:* Número oculto pelo WhatsApp. Procure pela conversa de *${nomeParaExibir}* no seu aplicativo.`
             : `\n👉 Link: https://wa.me/${numeroCliente}`;
 
@@ -243,7 +243,7 @@ class BotController {
                         if (typeof WebhookController.registrarMensagemEnviadaPeloBot === 'function') {
                             WebhookController.registrarMensagemEnviadaPeloBot(msgId);
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
                 try {
                     const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', t, null, {
@@ -283,7 +283,7 @@ class BotController {
                     botoesVisuais = '\n\n' + options.buttons.map(b => `[ ${b.displayText || b.text || b.titulo || b.id} ]`).join('  ');
                 }
                 const textParaHistorico = `${options.title ? `*${options.title}*\n\n` : ''}${options.description || ''}${botoesVisuais}`.trim() || fallbackText;
-                
+
                 if (sessao) {
                     if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
                     sessao.historicoIa.push({
@@ -300,7 +300,7 @@ class BotController {
                         if (typeof WebhookController.registrarMensagemEnviadaPeloBot === 'function') {
                             WebhookController.registrarMensagemEnviadaPeloBot(msgId);
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
                 try {
                     const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', textParaHistorico, null, {
@@ -313,7 +313,7 @@ class BotController {
                         if (!Array.isArray(sessao.historicoMensagens)) sessao.historicoMensagens = [];
                         sessao.historicoMensagens.push(novaMsg);
                     }
-                } catch (e) {}
+                } catch (e) { }
                 return resp;
             },
             replyMedia: async (media, caption = '') => {
@@ -346,7 +346,7 @@ class BotController {
                         if (typeof WebhookController.registrarMensagemEnviadaPeloBot === 'function') {
                             WebhookController.registrarMensagemEnviadaPeloBot(msgId);
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
                 try {
                     const isBase64 = typeof media === 'string' && (media.startsWith('data:') || media.length > 500);
@@ -373,18 +373,18 @@ class BotController {
     static async _processarAcoesAdmin(texto, numeroReal, sessao) {
         const textoLimpo = texto.toLowerCase().trim();
 
-        if (textoLimpo === '/pausarbot') { 
+        if (textoLimpo === '/pausarbot') {
             await this.setPausadoGlobalmente(true);
-            return; 
+            return;
         }
-        if (textoLimpo === '/ligarbot') { 
+        if (textoLimpo === '/ligarbot') {
             await this.setPausadoGlobalmente(false);
-            return; 
+            return;
         }
-        
+
         // Se o vendedor mandou mensagem e não é um comando/emoji automático do bot, assume atendimento humano
         const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖', '🛒', '👉 Link:'].some(e => texto.includes(e));
-        
+
         if (!isMsgBot) {
             if (!Array.isArray(sessao.historicoIa)) sessao.historicoIa = [];
             sessao.historicoIa.push({
@@ -398,8 +398,8 @@ class BotController {
             if (sessao.etapa !== 'em_atendimento_humano') {
                 sessao.etapa = 'em_atendimento_humano';
                 const numeroLimpoParaTag = numeroReal.split('@')[0];
-                await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '8', 'remove').catch(() => {});
-                await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '7', 'add').catch(() => {});
+                await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '8', 'remove').catch(() => { });
+                await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '7', 'add').catch(() => { });
             }
         }
     }
@@ -413,14 +413,14 @@ class BotController {
             sessao.errosConsecutivos = 0;
             sessao.categoriaSelecionada = null;
             sessao.produtoSelecionado = null;
-            
+
             if (typeof EvolutionService.gerenciarEtiqueta === 'function') {
-                await EvolutionService.gerenciarEtiqueta(numeroCliente, '7', 'remove').catch(() => {});
-                await EvolutionService.gerenciarEtiqueta(numeroCliente, '8', 'add').catch(() => {});
+                await EvolutionService.gerenciarEtiqueta(numeroCliente, '7', 'remove').catch(() => { });
+                await EvolutionService.gerenciarEtiqueta(numeroCliente, '8', 'add').catch(() => { });
             }
 
             await estagios['inicio'].executar(info, '', sessao);
-            return true; 
+            return true;
         }
 
         if (texto === 'carrinho' || texto === '/carrinho') {
@@ -439,7 +439,7 @@ class BotController {
 
         let subtotal = 0;
         let resumo = `🛒 *Aqui está o seu carrinho:*\n\n`;
-        
+
         sessao.carrinho.forEach((item) => {
             const totalItem = item.preco * item.quantidade;
             subtotal += totalItem;

@@ -10,7 +10,7 @@ class PedidoRepository {
             );
             return resultado.insertId;
         } catch (erro) {
-            console.error('❌ Erro ao criar pedido no banco:', erro);
+            console.error('Erro ao criar pedido no banco:', erro);
             throw erro;
         }
     }
@@ -18,7 +18,7 @@ class PedidoRepository {
     static async atualizarStatusPagamento(transacaoId, status) {
         try {
             let query = 'UPDATE pedidos SET status_pagamento = ? WHERE transacao_id = ?';
-            
+
             if (status === 'pago' || status === 'approved') {
                 query = 'UPDATE pedidos SET status_pagamento = ?, data_pagamento = NOW() WHERE transacao_id = ?';
             }
@@ -27,8 +27,8 @@ class PedidoRepository {
             return resultado.affectedRows > 0;
 
         } catch (erro) {
-            console.error('❌ Erro de banco de dados:', erro);
-            throw erro; 
+            console.error('Erro de banco de dados:', erro);
+            throw erro;
         }
     }
 }

@@ -9,7 +9,7 @@ const { atualizarPerfilUsuario, gerarTokenSessao } = require('../config/users');
 
 // 1. ROTA VISUAL: Renders Painel de Chat
 router.get('/', (req, res) => {
-    res.render('dashboard', { user: req.user || { name: 'Atendente', email: '' } }); 
+    res.render('dashboard', { user: req.user || { name: 'Atendente', email: '' } });
 });
 
 // 2. ROTA DE CONVERSAS (Lista de conversas ordenadas pela última mensagem)
@@ -31,7 +31,7 @@ router.get('/conversas', async (req, res) => {
 
         const conversasFormatadas = result.rows.map(row => {
             let dados = typeof row.dados_sessao === 'string' ? JSON.parse(row.dados_sessao) : (row.dados_sessao || {});
-            
+
             // Garantir extração correta de mensagens
             let mensagens = Array.isArray(dados.historicoMensagens) ? dados.historicoMensagens : [];
             if (mensagens.length === 0 && Array.isArray(dados.historicoIa)) {
@@ -56,12 +56,12 @@ router.get('/conversas', async (req, res) => {
                 } else if (ultimaMensagemObj.texto && ultimaMensagemObj.texto.trim()) {
                     previewTexto = ultimaMensagemObj.texto;
                 } else if (ultimaMensagemObj.tipo) {
-                    const icones = { 
-                        audio: '🎙️ [Mensagem de Voz]', 
-                        imagem: '🖼️ [Imagem]', 
-                        video: '🎥 [Vídeo]', 
-                        documento: `📄 [${ultimaMensagemObj.fileName || 'Documento'}]`, 
-                        figurinha: '🎨 [Figurinha]' 
+                    const icones = {
+                        audio: '🎙️ [Mensagem de Voz]',
+                        imagem: '🖼️ [Imagem]',
+                        video: '🎥 [Vídeo]',
+                        documento: `📄 [${ultimaMensagemObj.fileName || 'Documento'}]`,
+                        figurinha: '🎨 [Figurinha]'
                     };
                     previewTexto = icones[ultimaMensagemObj.tipo] || `[${ultimaMensagemObj.tipo}]`;
                 }
@@ -80,7 +80,7 @@ router.get('/conversas', async (req, res) => {
 
         res.json({ success: true, data: conversasFormatadas });
     } catch (err) {
-        console.error('❌ Erro ao buscar lista de conversas:', err);
+        console.error('Erro ao buscar lista de conversas:', err);
         res.status(500).json({ success: false, message: "Erro interno no BD" });
     }
 });
@@ -96,7 +96,7 @@ router.post('/conversa/:id_cliente/atualizar-nome', async (req, res) => {
         const conversaAtualizada = await SessionService.atualizarNomeContato(id_cliente, nome);
         res.json({ success: true, nome_contato: conversaAtualizada.nome_contato });
     } catch (err) {
-        console.error('❌ Erro ao atualizar nome do contato:', err);
+        console.error('Erro ao atualizar nome do contato:', err);
         res.status(500).json({ success: false, message: 'Erro ao atualizar nome do contato.' });
     }
 });
@@ -112,7 +112,7 @@ router.get('/conversa/:id_cliente', async (req, res) => {
         const conversa = await SessionService.obterConversa(id_cliente);
         res.json({ success: true, data: conversa });
     } catch (err) {
-        console.error('❌ Erro ao buscar detalhes da conversa:', err);
+        console.error('Erro ao buscar detalhes da conversa:', err);
         res.status(500).json({ success: false, message: 'Erro ao carregar conversa.' });
     }
 });
@@ -158,7 +158,7 @@ router.get('/conversa/:id_cliente/exportar-txt', async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="chat_${numero}.txt"`);
         res.send(txt);
     } catch (err) {
-        console.error('❌ Erro ao exportar conversa em TXT:', err);
+        console.error('Erro ao exportar conversa em TXT:', err);
         res.status(500).send('Erro ao exportar histórico da conversa.');
     }
 });
@@ -175,7 +175,7 @@ router.post('/enviar-mensagem', async (req, res) => {
         const numeroLimpo = id_cliente.split('@')[0];
         const nomeAtendente = req.user?.name || 'Atendente';
         const textoFinal = mensagem.trim();
-        
+
         // 1. Dispara via Evolution API diretamente (sem prefixo) e contexto de citação se houver
         const respostaEvolution = await EvolutionService.enviarMensagemText(numeroLimpo, textoFinal, quoted);
         const msgIdEvolution = respostaEvolution?.key?.id || null;
@@ -191,7 +191,7 @@ router.post('/enviar-mensagem', async (req, res) => {
 
         res.json({ success: true, message: 'Mensagem enviada com sucesso!', data: mensagemRegistrada });
     } catch (err) {
-        console.error('❌ Erro ao enviar mensagem pelo painel:', err);
+        console.error('Erro ao enviar mensagem pelo painel:', err);
         res.status(500).json({ success: false, message: 'Falha ao enviar mensagem via WhatsApp.' });
     }
 });
@@ -226,7 +226,7 @@ router.post('/enviar-audio', async (req, res) => {
 
         res.json({ success: true, message: 'Áudio enviado com sucesso!', data: mensagemRegistrada });
     } catch (err) {
-        console.error('❌ Erro ao enviar áudio pelo painel:', err);
+        console.error('Erro ao enviar áudio pelo painel:', err);
         res.status(500).json({ success: false, message: 'Falha ao enviar áudio via WhatsApp.' });
     }
 });
@@ -263,10 +263,10 @@ router.post('/enviar-midia', async (req, res) => {
 
         // 2. Salva no histórico da conversa
         const mensagemRegistrada = await SessionService.adicionarMensagem(
-            id_cliente, 
-            'atendente', 
-            captionFinal, 
-            null, 
+            id_cliente,
+            'atendente',
+            captionFinal,
+            null,
             {
                 tipo: tipoMensagem,
                 mediaBase64: mediaBase64,
@@ -281,7 +281,7 @@ router.post('/enviar-midia', async (req, res) => {
 
         res.json({ success: true, message: 'Mídia enviada com sucesso!', data: mensagemRegistrada });
     } catch (err) {
-        console.error('❌ Erro ao enviar mídia pelo painel:', err);
+        console.error('Erro ao enviar mídia pelo painel:', err);
         res.status(500).json({ success: false, message: 'Falha ao enviar mídia via WhatsApp.' });
     }
 });
@@ -301,8 +301,8 @@ router.post('/apagar-mensagem', async (req, res) => {
         let isFromMe = true;
         try {
             const conversa = await SessionService.obterConversa(id_cliente);
-            const msgAlvo = conversa?.historicoMensagens?.find(m => 
-                m.id === id_mensagem || 
+            const msgAlvo = conversa?.historicoMensagens?.find(m =>
+                m.id === id_mensagem ||
                 m.whatsappMessageId === id_mensagem ||
                 m.id === msgIdEvolution ||
                 m.whatsappMessageId === msgIdEvolution
@@ -341,7 +341,7 @@ router.post('/apagar-mensagem', async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('❌ Erro ao apagar mensagem:', err);
+        console.error('Erro ao apagar mensagem:', err);
         res.status(500).json({ success: false, message: err.message || 'Erro interno ao apagar mensagem.' });
     }
 });
@@ -359,7 +359,7 @@ router.post('/ia/sugerir-resposta', async (req, res) => {
         const sugestao = await GeminiService.sugerirResposta(conversa.historicoMensagens, conversa.nome_contato);
         res.json({ success: true, sugestao });
     } catch (err) {
-        console.error('❌ Erro ao gerar sugestão com Gemini:', err.message);
+        console.error('Erro ao gerar sugestão com Gemini:', err.message);
         res.status(500).json({ success: false, message: err.message || 'Erro ao consultar IA Gemini.' });
     }
 });
@@ -377,7 +377,7 @@ router.post('/ia/resumir-conversa', async (req, res) => {
         const resumo = await GeminiService.resumirConversa(conversa.historicoMensagens, conversa.nome_contato);
         res.json({ success: true, resumo });
     } catch (err) {
-        console.error('❌ Erro ao gerar resumo com Gemini:', err.message);
+        console.error('Erro ao gerar resumo com Gemini:', err.message);
         res.status(500).json({ success: false, message: err.message || 'Erro ao gerar resumo da conversa.' });
     }
 });
@@ -395,7 +395,7 @@ router.post('/conversa/:id_cliente/alternar-modo', async (req, res) => {
         const conversa = await SessionService.alternarModoAtendimento(id_cliente, modo);
         res.json({ success: true, modo: conversa.modo_atendimento });
     } catch (err) {
-        console.error('❌ Erro ao alternar modo de atendimento:', err);
+        console.error('Erro ao alternar modo de atendimento:', err);
         res.status(500).json({ success: false, message: 'Erro ao alternar modo.' });
     }
 });
@@ -412,7 +412,7 @@ router.post('/alterar-status', async (req, res) => {
         await SessionService.alternarModoAtendimento(id_cliente, 'bot');
         res.json({ success: true, message: 'Cliente transferido para o bot com sucesso!', data: conversa });
     } catch (err) {
-        console.error('❌ Erro ao alterar etapa do cliente:', err);
+        console.error('Erro ao alterar etapa do cliente:', err);
         res.status(500).json({ success: false, message: 'Erro ao transferir etapa do bot.' });
     }
 });
@@ -421,7 +421,7 @@ router.post('/alterar-status', async (req, res) => {
 router.get('/instance-status', async (req, res) => {
     try {
         const data = await EvolutionService.obterStatusInstancia();
-        
+
         if (!data) {
             return res.json({ success: false, status: 'offline' });
         }
@@ -435,19 +435,19 @@ router.get('/instance-status', async (req, res) => {
                 headers: { 'apikey': EvolutionService.apiKey },
                 signal: AbortSignal.timeout(5000)
             });
-            
+
             if (qrResponse.ok) {
                 const qrData = await qrResponse.json();
                 if (qrData?.base64) {
                     qrCodeBase64 = qrData.base64;
-                    status = 'qrcode'; 
+                    status = 'qrcode';
                 }
             }
         }
 
         res.json({ success: true, status, qrCodeBase64, instance: EvolutionService.instanceName });
     } catch (err) {
-        console.error('❌ Erro de conexão com Evolution API:', err.message);
+        console.error('Erro de conexão com Evolution API:', err.message);
         res.json({ success: false, status: 'offline' });
     }
 });
@@ -471,7 +471,7 @@ router.post('/verificar-numero', async (req, res) => {
         const resultado = await EvolutionService.verificarNumeroWhatsApp(numeroLimpo);
         res.json({ success: true, ...resultado });
     } catch (err) {
-        console.error('❌ Erro ao verificar número WhatsApp:', err);
+        console.error('Erro ao verificar número WhatsApp:', err);
         res.status(500).json({ success: false, message: 'Falha ao verificar número no WhatsApp.' });
     }
 });
@@ -504,7 +504,7 @@ router.post('/novo-chat', async (req, res) => {
 
         const idCliente = verif.jid;
         const nomeFinal = (nome && nome.trim()) ? nome.trim() : `Contato (${numeroLimpo})`;
-        
+
         // Obtém ou inicializa a conversa
         const conversa = await SessionService.obterConversa(idCliente);
         conversa.nome_contato = nomeFinal;
@@ -514,7 +514,7 @@ router.post('/novo-chat', async (req, res) => {
         if (mensagemInicial && mensagemInicial.trim()) {
             const nomeAtendente = req.user?.name || 'Atendente';
             const textoFinal = mensagemInicial.trim();
-            
+
             await EvolutionService.enviarMensagemText(verif.numero, textoFinal);
             await SessionService.adicionarMensagem(idCliente, 'atendente', textoFinal, nomeFinal, {
                 tipo: 'texto',
@@ -529,7 +529,7 @@ router.post('/novo-chat', async (req, res) => {
             nome_contato: nomeFinal
         });
     } catch (err) {
-        console.error('❌ Erro ao iniciar nova conversa:', err);
+        console.error('Erro ao iniciar nova conversa:', err);
         res.status(500).json({ success: false, message: err.message || 'Erro ao iniciar conversa.' });
     }
 });
@@ -572,7 +572,7 @@ router.post('/novo-contato', async (req, res) => {
         if (mensagemInicial && mensagemInicial.trim()) {
             const nomeAtendente = req.user?.name || 'Atendente';
             const textoFinal = mensagemInicial.trim();
-            
+
             await EvolutionService.enviarMensagemText(verif.numero, textoFinal);
             await SessionService.adicionarMensagem(idCliente, 'atendente', textoFinal, nomeFinal, {
                 tipo: 'texto',
@@ -587,7 +587,7 @@ router.post('/novo-contato', async (req, res) => {
             nome_contato: nomeFinal
         });
     } catch (err) {
-        console.error('❌ Erro ao cadastrar novo contato:', err);
+        console.error('Erro ao cadastrar novo contato:', err);
         res.status(500).json({ success: false, message: err.message || 'Erro ao criar contato.' });
     }
 });
@@ -635,7 +635,7 @@ router.post('/novo-grupo', async (req, res) => {
         if (mensagemInicial && mensagemInicial.trim()) {
             const nomeAtendente = req.user?.name || 'Atendente';
             const textoFinal = mensagemInicial.trim();
-            
+
             await EvolutionService.enviarMensagemText(grupoJid, textoFinal);
             await SessionService.adicionarMensagem(grupoJid, 'atendente', textoFinal, nomeGrupo.trim(), {
                 tipo: 'texto',
@@ -651,7 +651,7 @@ router.post('/novo-grupo', async (req, res) => {
             grupo: grupoCriado
         });
     } catch (err) {
-        console.error('❌ Erro ao criar novo grupo:', err);
+        console.error('Erro ao criar novo grupo:', err);
         res.status(500).json({ success: false, message: err.message || 'Erro ao criar grupo no WhatsApp.' });
     }
 });
@@ -667,7 +667,7 @@ router.get('/produtos', async (req, res) => {
         const produtos = await CatalogoService.listarTodosOsProdutos(busca);
         res.json({ success: true, data: produtos });
     } catch (err) {
-        console.error('❌ Erro ao buscar produtos:', err);
+        console.error('Erro ao buscar produtos:', err);
         res.status(500).json({ success: false, message: 'Erro ao carregar lista de produtos.' });
     }
 });
@@ -690,7 +690,7 @@ router.post('/produtos', async (req, res) => {
         });
         res.json({ success: true, message: 'Produto cadastrado com sucesso!', data: produto });
     } catch (err) {
-        console.error('❌ Erro ao criar produto:', err);
+        console.error('Erro ao criar produto:', err);
         res.status(500).json({ success: false, message: err.message || 'Erro ao cadastrar produto.' });
     }
 });
@@ -703,7 +703,7 @@ router.put('/produtos/:id', async (req, res) => {
         const produto = await CatalogoService.atualizarProduto(id, dados);
         res.json({ success: true, message: 'Produto atualizado com sucesso!', data: produto });
     } catch (err) {
-        console.error('❌ Erro ao atualizar produto:', err);
+        console.error('Erro ao atualizar produto:', err);
         res.status(500).json({ success: false, message: err.message || 'Erro ao atualizar produto.' });
     }
 });
@@ -715,7 +715,7 @@ router.delete('/produtos/:id', async (req, res) => {
         const produto = await CatalogoService.deletarProduto(id);
         res.json({ success: true, message: `Produto "${produto.nome}" removido com sucesso!` });
     } catch (err) {
-        console.error('❌ Erro ao excluir produto:', err);
+        console.error('Erro ao excluir produto:', err);
         res.status(500).json({ success: false, message: err.message || 'Erro ao excluir produto.' });
     }
 });
@@ -726,7 +726,7 @@ router.get('/categorias', async (req, res) => {
         const categorias = await CatalogoService.listarCategorias();
         res.json({ success: true, data: categorias });
     } catch (err) {
-        console.error('❌ Erro ao buscar categorias:', err);
+        console.error('Erro ao buscar categorias:', err);
         res.status(500).json({ success: false, message: 'Erro ao carregar categorias.' });
     }
 });
@@ -741,7 +741,7 @@ router.post('/categorias', async (req, res) => {
         const categoria = await CatalogoService.criarCategoria({ id, nome, descricao, icone, ordem, ativo });
         res.json({ success: true, message: 'Categoria cadastrada com sucesso!', data: categoria });
     } catch (err) {
-        console.error('❌ Erro ao criar categoria:', err);
+        console.error('Erro ao criar categoria:', err);
         res.status(500).json({ success: false, message: err.message || 'Erro ao criar categoria.' });
     }
 });
@@ -753,7 +753,7 @@ router.put('/categorias/:id', async (req, res) => {
         const categoria = await CatalogoService.atualizarCategoria(id, req.body);
         res.json({ success: true, message: 'Categoria atualizada com sucesso!', data: categoria });
     } catch (err) {
-        console.error('❌ Erro ao atualizar categoria:', err);
+        console.error('Erro ao atualizar categoria:', err);
         res.status(500).json({ success: false, message: err.message || 'Erro ao atualizar categoria.' });
     }
 });
@@ -765,7 +765,7 @@ router.delete('/categorias/:id', async (req, res) => {
         const categoria = await CatalogoService.deletarCategoria(id);
         res.json({ success: true, message: `Categoria "${categoria.nome}" removida com sucesso!` });
     } catch (err) {
-        console.error('❌ Erro ao excluir categoria:', err);
+        console.error('Erro ao excluir categoria:', err);
         res.status(500).json({ success: false, message: err.message || 'Erro ao excluir categoria.' });
     }
 });
@@ -780,7 +780,7 @@ router.get('/bot-status', async (req, res) => {
         const config = await DatabaseService.obterConfig('bot_global_status');
         res.json({ success: true, pausado: Boolean(config?.pausado) });
     } catch (err) {
-        console.error('❌ Erro ao consultar status do bot:', err);
+        console.error('Erro ao consultar status do bot:', err);
         res.status(500).json({ success: false, pausado: false });
     }
 });
@@ -789,13 +789,13 @@ router.post('/bot-status', async (req, res) => {
     try {
         const { pausado } = req.body;
         await DatabaseService.salvarConfig('bot_global_status', { pausado: Boolean(pausado) });
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: pausado ? 'Bot global pausado com sucesso!' : 'Bot global reativado com sucesso!',
             pausado: Boolean(pausado)
         });
     } catch (err) {
-        console.error('❌ Erro ao alterar status global do bot:', err);
+        console.error('Erro ao alterar status global do bot:', err);
         res.status(500).json({ success: false, message: 'Erro ao salvar configuração do bot.' });
     }
 });
@@ -840,7 +840,7 @@ router.get('/estatisticas', async (req, res) => {
             etapas
         });
     } catch (err) {
-        console.error('❌ Erro ao buscar estatísticas:', err);
+        console.error('Erro ao buscar estatísticas:', err);
         res.status(500).json({ success: false, message: 'Erro ao carregar estatísticas.' });
     }
 });
@@ -857,16 +857,16 @@ router.post('/alterar-status', async (req, res) => {
         const numeroLimpo = id_cliente.split('@')[0];
 
         if (novaEtapa === 'em_atendimento_humano') {
-            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '8', 'remove').catch(() => {});
-            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '7', 'add').catch(() => {});
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '8', 'remove').catch(() => { });
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '7', 'add').catch(() => { });
         } else {
-            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '7', 'remove').catch(() => {});
-            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '8', 'add').catch(() => {});
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '7', 'remove').catch(() => { });
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '8', 'add').catch(() => { });
         }
 
         res.json({ success: true, message: `Cliente transferido para etapa: ${novaEtapa}` });
     } catch (err) {
-        console.error('❌ Erro ao alterar etapa:', err);
+        console.error('Erro ao alterar etapa:', err);
         res.status(500).json({ success: false, message: 'Erro ao alterar etapa.' });
     }
 });
@@ -882,7 +882,7 @@ router.post('/limpar-carrinho', async (req, res) => {
         await SessionService.limparCarrinho(id_cliente);
         res.json({ success: true, message: 'Carrinho do cliente foi esvaziado com sucesso.' });
     } catch (err) {
-        console.error('❌ Erro ao limpar carrinho:', err);
+        console.error('Erro ao limpar carrinho:', err);
         res.status(500).json({ success: false, message: 'Erro ao limpar carrinho.' });
     }
 });
@@ -900,13 +900,13 @@ router.get('/instance-status', async (req, res) => {
 
         const stateResponse = await fetch(`${evolutionUrl}/instance/connectionState/${instanceName}`, {
             headers: { 'apikey': apikey },
-            signal: AbortSignal.timeout(5000) 
+            signal: AbortSignal.timeout(5000)
         });
-        
+
         if (!stateResponse.ok) {
             return res.json({ success: false, status: 'desconhecido' });
         }
-        
+
         const stateData = await stateResponse.json();
         let status = stateData?.instance?.state || 'desconhecido';
         let qrCodeBase64 = null;
@@ -916,12 +916,12 @@ router.get('/instance-status', async (req, res) => {
                 headers: { 'apikey': apikey },
                 signal: AbortSignal.timeout(6000)
             });
-            
+
             if (qrResponse.ok) {
                 const qrData = await qrResponse.json();
                 qrCodeBase64 = qrData?.base64 || qrData?.qrcode?.base64 || qrData?.code || null;
                 if (qrCodeBase64) {
-                    status = 'qrcode'; 
+                    status = 'qrcode';
                 }
             }
         }
@@ -963,7 +963,7 @@ router.post('/perfil', async (req, res) => {
             user: updated
         });
     } catch (err) {
-        console.error('❌ Erro ao atualizar perfil:', err.message);
+        console.error('Erro ao atualizar perfil:', err.message);
         res.status(400).json({ success: false, message: err.message || 'Erro ao atualizar dados do usuário.' });
     }
 });
@@ -1006,7 +1006,7 @@ router.get('/crm/clientes/:id', async (req, res) => {
     try {
         const cliente = await CrmClienteService.obterPorIdOuJid(req.params.id);
         if (!cliente) return res.status(404).json({ success: false, message: 'Cliente não encontrado' });
-        
+
         const notas = await CrmClienteService.obterNotas(cliente.id);
         res.json({ success: true, cliente, notas });
     } catch (err) {
@@ -1073,7 +1073,7 @@ router.get('/crm/kanban', async (req, res) => {
         });
         res.json({ success: true, data: kanban });
     } catch (err) {
-        console.error('❌ Erro na rota GET /crm/kanban:', err);
+        console.error('Erro na rota GET /crm/kanban:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 });

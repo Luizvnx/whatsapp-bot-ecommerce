@@ -3,7 +3,7 @@
 class MercadoPagoService {
     static async gerarPix(produto, valor) {
         // Puxa o token do seu arquivo .env
-        const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN; 
+        const ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 
         const payloadMP = {
             transaction_amount: valor,
@@ -39,7 +39,7 @@ class MercadoPagoService {
                 pixCopiaECola: dadosPix.point_of_interaction.transaction_data.qr_code
             };
         } catch (erro) {
-            console.error('❌ Erro ao gerar Pix:', erro);
+            console.error('Erro ao gerar Pix:', erro);
             throw erro;
         }
     }

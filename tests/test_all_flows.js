@@ -95,7 +95,7 @@ async function runTests() {
     // ----------------------------------------------------
     {
         const sessao = { etapa: 'menu_principal', carrinho: [] };
-        
+
         // 3.1: Menu Principal digita '1' para ver categorias
         const msg1 = criarMsgMock();
         await MenuPrincipalStage.executar(msg1, '1', sessao);
@@ -147,7 +147,7 @@ async function runTests() {
     // ----------------------------------------------------
     {
         const sessao = { etapa: 'menu_principal' };
-        
+
         // 4.1: Cliente escolhe '2' (Resgate)
         const msg1 = criarMsgMock();
         await MenuPrincipalStage.executar(msg1, '2', sessao);
@@ -209,7 +209,7 @@ async function runTests() {
     // ----------------------------------------------------
     {
         const sessao = { etapa: 'em_atendimento_humano', id_cliente: '557999999999@s.whatsapp.net' };
-        
+
         // Simula mensagem com '#'
         const infoHash = {
             texto: '#',
@@ -224,7 +224,7 @@ async function runTests() {
         // Valida se a etapa no BotController é reativada
         const comandosRetorno = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', 'catalogo', 'catálogo', '0', 'inicio', 'início'];
         assert(comandosRetorno.includes(infoHash.texto), 'info.texto # deve estar nos comandos de retorno');
-        
+
         console.log('✅ Teste 6: BotController comandos de retorno ao menu OK');
         passCount++;
     }
@@ -314,6 +314,6 @@ async function runTests() {
 }
 
 runTests().catch(err => {
-    console.error('❌ Falha nos testes:', err);
+    console.error('Falha nos testes:', err);
     process.exit(1);
 });

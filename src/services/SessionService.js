@@ -103,7 +103,7 @@ class SessionService {
         if (cached && (agora - cached.timestamp < this.CACHE_SESSAO_TTL)) {
             return cached.dados;
         }
-        
+
         // Busca determinística pela sessão mais recente, cobrindo variações de sufixo
         const sql = `
             SELECT id_cliente, nome_contato, etapa, dados_sessao, ultima_msg 
@@ -118,12 +118,12 @@ class SessionService {
             const row = result.rows[0];
             let dados = typeof row.dados_sessao === 'string' ? JSON.parse(row.dados_sessao) : (row.dados_sessao || {});
             dados.id_cliente = idCanonico;
-            
-            let nomeFinal = this.isNomeContatoValido(row.nome_contato) 
-                ? row.nome_contato.trim() 
+
+            let nomeFinal = this.isNomeContatoValido(row.nome_contato)
+                ? row.nome_contato.trim()
                 : (this.isNomeContatoValido(dados.nome_contato) ? dados.nome_contato.trim() : this.formatarNumeroWhatsapp(idCanonico));
             dados.nome_contato = nomeFinal;
-            
+
             // Retrocompatibilidade para conversas anteriores
             if (!Array.isArray(dados.historicoMensagens)) {
                 if (Array.isArray(dados.historicoIa)) {
@@ -164,7 +164,7 @@ class SessionService {
     static async salvarConversa(numeroCliente, dadosConversa) {
         const idCanonico = this.normalizarId(numeroCliente);
         dadosConversa.id_cliente = idCanonico;
-        
+
         const nomeParaSalvar = this.isNomeContatoValido(dadosConversa.nome_contato)
             ? dadosConversa.nome_contato.trim()
             : this.formatarNumeroWhatsapp(idCanonico);
@@ -200,9 +200,9 @@ class SessionService {
                 dados_sessao = EXCLUDED.dados_sessao,
                 ultima_msg = CURRENT_TIMESTAMP;
         `;
-        
+
         await DatabaseService.executar(sql, [
-            idCanonico, 
+            idCanonico,
             nomeParaSalvar,
             JSON.stringify(dadosConversa)
         ]);
@@ -211,9 +211,9 @@ class SessionService {
         try {
             const CrmClienteService = require('./CrmClienteService');
             const CrmPipelineService = require('./CrmPipelineService');
-            CrmClienteService.obterOuCriar(idCanonico, nomeParaSalvar).catch(() => {});
-            CrmPipelineService.sincronizarEtapaComBot(idCanonico, dadosConversa.etapa || 'inicio', dadosConversa).catch(() => {});
-        } catch (_) {}
+            CrmClienteService.obterOuCriar(idCanonico, nomeParaSalvar).catch(() => { });
+            CrmPipelineService.sincronizarEtapaComBot(idCanonico, dadosConversa.etapa || 'inicio', dadosConversa).catch(() => { });
+        } catch (_) { }
     }
 
     /**
@@ -240,8 +240,8 @@ class SessionService {
             // (ex: envio do bot + eco do webhook da Evolution API)
             const buscaId = whatsappMsgId || extraData.messageId || extraData.id;
             if (buscaId) {
-                const jaExiste = conversa.historicoMensagens.find(m => 
-                    m.id === buscaId || 
+                const jaExiste = conversa.historicoMensagens.find(m =>
+                    m.id === buscaId ||
                     m.whatsappMessageId === buscaId
                 );
                 if (jaExiste) {
@@ -265,9 +265,9 @@ class SessionService {
 
                 if (quotedFinal.id || quotedFinal.whatsappMessageId) {
                     const buscaId = quotedFinal.whatsappMessageId || quotedFinal.id;
-                    const msgOriginal = conversa.historicoMensagens.find(m => 
-                        m.id === buscaId || 
-                        m.whatsappMessageId === buscaId || 
+                    const msgOriginal = conversa.historicoMensagens.find(m =>
+                        m.id === buscaId ||
+                        m.whatsappMessageId === buscaId ||
                         (m.id && buscaId && (m.id.includes(buscaId) || buscaId.includes(m.id)))
                     );
                     if (msgOriginal) {
@@ -366,8 +366,8 @@ class SessionService {
                     return null;
                 }
 
-                const msg = conversa.historicoMensagens.find(m => 
-                    m.id === idMensagem || 
+                const msg = conversa.historicoMensagens.find(m =>
+                    m.id === idMensagem ||
                     m.whatsappMessageId === idMensagem ||
                     (m.id && idMensagem && (m.id.includes(idMensagem) || idMensagem.includes(m.id)))
                 );
@@ -417,7 +417,7 @@ class SessionService {
                 return await aplicarExclusao(idEncontrado);
             }
         } catch (dbErr) {
-            console.error('❌ [SessionService] Erro na busca global por mensagem apagada:', dbErr.message);
+            console.error('[SessionService] Erro na busca global por mensagem apagada:', dbErr.message);
         }
 
         console.warn(`⚠️ [SessionService] Mensagem ${idMensagem} não encontrada em nenhuma sessão para marcar como apagada.`);

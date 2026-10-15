@@ -24,10 +24,10 @@ async function extrairDadosMensagem(message, fullData = null) {
     if (!message) return { texto: '', tipo: 'texto' };
     let msg = message;
     while (msg?.ephemeralMessage?.message || msg?.viewOnceMessage?.message || msg?.viewOnceMessageV2?.message || msg?.documentWithCaptionMessage?.message) {
-        msg = msg.ephemeralMessage?.message 
-           || msg.viewOnceMessage?.message 
-           || msg.viewOnceMessageV2?.message 
-           || msg.documentWithCaptionMessage?.message;
+        msg = msg.ephemeralMessage?.message
+            || msg.viewOnceMessage?.message
+            || msg.viewOnceMessageV2?.message
+            || msg.documentWithCaptionMessage?.message;
     }
 
     if (msg?.stickerMessage) {
@@ -135,10 +135,10 @@ function extrairContextInfo(message, fullData = null) {
 
     let msg = message;
     while (msg?.ephemeralMessage?.message || msg?.viewOnceMessage?.message || msg?.viewOnceMessageV2?.message || msg?.documentWithCaptionMessage?.message) {
-        msg = msg.ephemeralMessage?.message 
-           || msg.viewOnceMessage?.message 
-           || msg.viewOnceMessageV2?.message 
-           || msg.documentWithCaptionMessage?.message;
+        msg = msg.ephemeralMessage?.message
+            || msg.viewOnceMessage?.message
+            || msg.viewOnceMessageV2?.message
+            || msg.documentWithCaptionMessage?.message;
     }
 
     const context = (
@@ -161,10 +161,10 @@ function extrairContextInfo(message, fullData = null) {
 
     let quoted = context.quotedMessage;
     while (quoted?.ephemeralMessage?.message || quoted?.viewOnceMessage?.message || quoted?.viewOnceMessageV2?.message || quoted?.documentWithCaptionMessage?.message) {
-        quoted = quoted.ephemeralMessage?.message 
-              || quoted.viewOnceMessage?.message 
-              || quoted.viewOnceMessageV2?.message 
-              || quoted.documentWithCaptionMessage?.message;
+        quoted = quoted.ephemeralMessage?.message
+            || quoted.viewOnceMessage?.message
+            || quoted.viewOnceMessageV2?.message
+            || quoted.documentWithCaptionMessage?.message;
     }
 
     let texto = '';
@@ -401,7 +401,7 @@ class WebhookController {
             await BotController.processarMensagem(data);
 
         } catch (err) {
-            console.error('❌ Erro ao processar webhook da Evolution:', err.message);
+            console.error('Erro ao processar webhook da Evolution:', err.message);
         }
     }
 
