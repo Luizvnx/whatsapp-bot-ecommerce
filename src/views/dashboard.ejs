@@ -4502,16 +4502,45 @@
                     }
                 });
 
-                async function instalarPWA() {
-                    if (!deferredPrompt) return;
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log('[PWA] Decisão de instalação:', outcome);
-                    deferredPrompt = null;
+                // Detecção de Modo Standalone PWA
+                window.addEventListener('DOMContentLoaded', () => {
+                    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
                     const btnInstalar = document.getElementById('btnInstalarApp');
                     if (btnInstalar) {
-                        btnInstalar.classList.add('hidden');
-                        btnInstalar.classList.remove('inline-flex');
+                        if (isStandalone) {
+                            btnInstalar.classList.add('hidden');
+                            btnInstalar.classList.remove('inline-flex');
+                        } else {
+                            // Se não for standalone, exibe o botão para o usuário poder instalar com 1 clique
+                            btnInstalar.classList.remove('hidden');
+                            btnInstalar.classList.add('inline-flex');
+                        }
+                    }
+                });
+
+                async function instalarPWA() {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        console.log('[PWA] Decisão de instalação:', outcome);
+                        deferredPrompt = null;
+                        const btnInstalar = document.getElementById('btnInstalarApp');
+                        if (btnInstalar) {
+                            btnInstalar.classList.add('hidden');
+                            btnInstalar.classList.remove('inline-flex');
+                        }
+                    } else {
+                        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                        if (isStandalone) {
+                            mostrarToast('O aplicativo já está instalado e ativo em modo PWA!', 'info');
+                        } else {
+                            const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                            if (isIos) {
+                                mostrarToast('Para instalar no iOS/Safari: Toque no botão de Compartilhar e selecione "Adicionar à Tela de Início".', 'info');
+                            } else {
+                                mostrarToast('Para instalar no navegador: Clique no ícone de instalar (+) na barra de endereços ou no menu do navegador.', 'info');
+                            }
+                        }
                     }
                 }
 
