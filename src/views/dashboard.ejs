@@ -1737,31 +1737,60 @@
 
                     if (ehConversaAtiva) {
                         if (conversaAtivaDados && Array.isArray(conversaAtivaDados.historicoMensagens)) {
-                            if (!conversaAtivaDados.historicoMensagens.some(m => m.id === mensagem.id)) {
+                            const jaExiste = conversaAtivaDados.historicoMensagens.some(m =>
+                                (mensagem.id && m.id === mensagem.id) ||
+                                (mensagem.whatsappMessageId && (m.whatsappMessageId === mensagem.whatsappMessageId || m.id === mensagem.whatsappMessageId)) ||
+                                (m.remetente === mensagem.remetente && (m.texto || '').trim() === (mensagem.texto || '').trim() && Math.abs(new Date(m.timestamp || 0).getTime() - new Date(mensagem.timestamp || 0).getTime()) < 25000)
+                            );
+                            if (!jaExiste) {
                                 conversaAtivaDados.historicoMensagens.push(mensagem);
                             }
                         }
 
                         const stream = document.getElementById('chatMensagensStream');
+                        if (!stream) return;
+
+                        // Desduplicação por ID no DOM
+                        const seletorExistente = (mensagem.id ? `[data-msg-id="${mensagem.id}"]` : '') +
+                            (mensagem.whatsappMessageId ? `${mensagem.id ? ', ' : ''}[data-whatsapp-id="${mensagem.whatsappMessageId}"]` : '');
+                        if (seletorExistente && stream.querySelector(seletorExistente)) {
+                            return;
+                        }
+
+                        // Desduplicação defensiva no DOM: verifica se a última bolha já é idêntica
+                        const ultimasBolhas = stream.querySelectorAll('div[data-texto-msg]');
+                        if (ultimasBolhas.length > 0) {
+                            const ultimaBolha = ultimasBolhas[ultimasBolhas.length - 1];
+                            const ultimoRemetente = ultimaBolha.getAttribute('data-remetente-msg');
+                            const ultimoTexto = (ultimaBolha.getAttribute('data-texto-msg') || '').trim();
+                            const textoAtual = (mensagem.texto || '').trim();
+                            const ultimoTimestamp = parseInt(ultimaBolha.getAttribute('data-timestamp-msg') || '0', 10);
+                            const dif = Math.abs(Date.now() - (ultimoTimestamp || Date.now()));
+
+                            if (ultimoRemetente === mensagem.remetente && ultimoTexto === textoAtual && dif < 25000) {
+                                return;
+                            }
+                        }
 
                         const msgId = mensagem.id ? `msg-${mensagem.id}` : null;
-                        if (!msgId || !document.getElementById(msgId)) {
-                            const hora = formatarData(mensagem.timestamp);
-                            const div = document.createElement('div');
-                            if (msgId) div.id = msgId;
-                            if (mensagem.id) div.setAttribute('data-msg-id', mensagem.id);
-                            if (mensagem.whatsappMessageId) div.setAttribute('data-whatsapp-id', mensagem.whatsappMessageId);
-                            div.className = isAtendente ? 'flex flex-col items-end animate-fadeIn w-full' : 'flex flex-col items-start animate-fadeIn w-full';
+                        const hora = formatarData(mensagem.timestamp);
+                        const div = document.createElement('div');
+                        if (msgId) div.id = msgId;
+                        if (mensagem.id) div.setAttribute('data-msg-id', mensagem.id);
+                        if (mensagem.whatsappMessageId) div.setAttribute('data-whatsapp-id', mensagem.whatsappMessageId);
+                        div.setAttribute('data-remetente-msg', mensagem.remetente || '');
+                        div.setAttribute('data-texto-msg', (mensagem.texto || '').replace(/"/g, '&quot;').trim());
+                        div.setAttribute('data-timestamp-msg', String(new Date(mensagem.timestamp || Date.now()).getTime()));
+                        div.className = isAtendente ? 'flex flex-col items-end animate-fadeIn w-full' : 'flex flex-col items-start animate-fadeIn w-full';
 
-                            div.innerHTML = renderizarBolhaMensagem(mensagem, isAtendente, nomeContato, hora);
+                        div.innerHTML = renderizarBolhaMensagem(mensagem, isAtendente, nomeContato, hora);
 
-                            if (stream.children.length === 1 && stream.children[0].textContent.includes('Nenhuma mensagem')) {
-                                stream.innerHTML = '';
-                            }
-
-                            stream.appendChild(div);
-                            stream.scrollTop = stream.scrollHeight;
+                        if (stream.children.length === 1 && stream.children[0].textContent.includes('Nenhuma mensagem')) {
+                            stream.innerHTML = '';
                         }
+
+                        stream.appendChild(div);
+                        stream.scrollTop = stream.scrollHeight;
                     }
 
                     if (!isAtendente) {
@@ -2930,23 +2959,43 @@
                             const stream = document.getElementById('chatMensagensStream');
                             const mensagens = conversa.historicoMensagens || [];
 
+                            // Desduplicação defensiva na renderização do histórico
+                            const mensagensFiltradas = [];
+                            for (let i = 0; i < mensagens.length; i++) {
+                                const atual = mensagens[i];
+                                if (mensagensFiltradas.length > 0) {
+                                    const anterior = mensagensFiltradas[mensagensFiltradas.length - 1];
+                                    const mesmoRemetente = anterior.remetente === atual.remetente;
+                                    const mesmoTexto = (anterior.texto || '').trim() === (atual.texto || '').trim();
+                                    const difTempo = Math.abs(new Date(atual.timestamp || 0).getTime() - new Date(anterior.timestamp || 0).getTime());
+                                    const mesmoId = atual.id && anterior.id && (atual.id === anterior.id || (atual.whatsappMessageId && atual.whatsappMessageId === anterior.whatsappMessageId));
+
+                                    if (mesmoId || (mesmoRemetente && mesmoTexto && difTempo < 30000)) {
+                                        continue;
+                                    }
+                                }
+                                mensagensFiltradas.push(atual);
+                            }
+
                             const noFim = (stream.scrollHeight - stream.scrollTop - stream.clientHeight) < 60;
 
-                            if (mensagens.length === 0) {
+                            if (mensagensFiltradas.length === 0) {
                                 stream.innerHTML = `
                             <div class="text-center py-12 text-slate-500 text-xs italic">
                                 Nenhuma mensagem neste histórico.
                             </div>
                         `;
                             } else {
-                                stream.innerHTML = mensagens.map(msg => {
+                                stream.innerHTML = mensagensFiltradas.map(msg => {
                                     const isAtendente = msg.remetente === 'atendente';
                                     const hora = formatarData(msg.timestamp);
                                     const msgId = msg.id ? `id="msg-${msg.id}" data-msg-id="${msg.id}" data-whatsapp-id="${msg.whatsappMessageId || ''}"` : '';
                                     const divClass = isAtendente ? 'flex flex-col items-end' : 'flex flex-col items-start';
+                                    const tsVal = new Date(msg.timestamp || Date.now()).getTime();
+                                    const textoSanitizado = (msg.texto || '').replace(/"/g, '&quot;').trim();
 
                                     return `
-                                <div ${msgId} class="${divClass} w-full">
+                                <div ${msgId} data-remetente-msg="${msg.remetente || ''}" data-texto-msg="${textoSanitizado}" data-timestamp-msg="${tsVal}" class="${divClass} w-full">
                                     ${renderizarBolhaMensagem(msg, isAtendente, conversa.nome_contato, hora)}
                                 </div>
                             `;

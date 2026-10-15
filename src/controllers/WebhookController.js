@@ -395,13 +395,46 @@ class WebhookController {
 
             console.log(`📩 [Webhook] Mensagem ${isFromMe ? 'ENVIADA (Dispositivo)' : 'RECEBIDA'} de ${numeroReal}: "${infoMsg.texto}" (${infoMsg.tipo})${quotedFormatado ? ` [Em resposta a: "${quotedFormatado.texto.substring(0, 25)}..."]` : ''}`);
 
-            // Ignora eco de mensagens enviadas pelo próprio robô se já tiverem sido registradas
-            if (isFromMe && msgId && mensagensProcessadasCache.has(msgId)) {
+            // 1. Se a mensagem foi enviada pelo dispositivo (eco do próprio bot ou atendente humano digitando no celular)
+            if (isFromMe) {
+                // Se já estiver registrada no cache de envio do bot
+                if (msgId && mensagensProcessadasCache.has(msgId)) {
+                    return;
+                }
+
+                // Verifica se a mensagem já foi gravada recentemente pelo bot no histórico
+                const conversa = await SessionService.obterConversa(numeroReal);
+                const ultimasMsgs = (conversa.historicoMensagens || []).slice(-6);
+                const jaExiste = ultimasMsgs.some(m =>
+                    (msgId && (m.id === msgId || m.whatsappMessageId === msgId)) ||
+                    (m.remetente === 'atendente' && (m.texto || '').trim() === (infoMsg.texto || '').trim() && (Date.now() - new Date(m.timestamp || 0).getTime() < 30000))
+                );
+
+                if (jaExiste) {
+                    if (msgId) mensagensProcessadasCache.add(msgId);
+                    return; // Eco descartado sem duplicar!
+                }
+
+                // Se não era do bot, é um atendente humano digitando diretamente no WhatsApp
+                await SessionService.adicionarMensagem(numeroReal, 'atendente', infoMsg.texto, nomeContato, {
+                    tipo: infoMsg.tipo,
+                    mediaUrl: infoMsg.mediaUrl,
+                    mediaBase64: infoMsg.mediaBase64,
+                    fileName: infoMsg.fileName,
+                    mimetype: infoMsg.mimetype,
+                    messageId: msgId,
+                    whatsappMessageId: msgId,
+                    quoted: quotedFormatado
+                });
+
+                if (conversa.modo_atendimento !== 'humano') {
+                    await SessionService.alternarModoAtendimento(numeroReal, 'humano');
+                }
                 return;
             }
 
-            const remetente = isFromMe ? 'atendente' : 'cliente';
-            await SessionService.adicionarMensagem(numeroReal, remetente, infoMsg.texto, nomeContato, {
+            // 2. Se a mensagem veio do cliente: grava no histórico e processa
+            await SessionService.adicionarMensagem(numeroReal, 'cliente', infoMsg.texto, nomeContato, {
                 tipo: infoMsg.tipo,
                 mediaUrl: infoMsg.mediaUrl,
                 mediaBase64: infoMsg.mediaBase64,
@@ -411,21 +444,6 @@ class WebhookController {
                 whatsappMessageId: msgId,
                 quoted: quotedFormatado
             });
-
-            // 1. Se a mensagem foi enviada no WhatsApp (verificação se foi o bot ou atendente humano)
-            if (isFromMe) {
-                const isMsgBot = ['🐝', '👨‍🌾', '✅', '⚠️', '🔇', '⏳', '🤖', '🛒', '👉 Link:', '🍯', 'Favo de Mel', 'Catálogo', 'Cardápio', 'R$'].some(e => (infoMsg.texto || '').includes(e));
-                if (isMsgBot) {
-                    // Mensagem automática enviada pelo robô: NÃO altera o modo para humano
-                    return;
-                }
-
-                const conversa = await SessionService.obterConversa(numeroReal);
-                if (conversa.modo_atendimento !== 'humano') {
-                    await SessionService.alternarModoAtendimento(numeroReal, 'humano');
-                }
-                return;
-            }
 
             // 2. Se a mensagem veio do cliente
             const conversa = await SessionService.obterConversa(numeroReal);

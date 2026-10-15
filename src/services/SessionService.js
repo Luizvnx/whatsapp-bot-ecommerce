@@ -143,6 +143,27 @@ class SessionService {
                 }
             }
 
+            // Saneamento e Desduplicação Automática do Histórico
+            if (Array.isArray(dados.historicoMensagens) && dados.historicoMensagens.length > 1) {
+                const msgsLimpas = [];
+                for (let i = 0; i < dados.historicoMensagens.length; i++) {
+                    const atual = dados.historicoMensagens[i];
+                    if (msgsLimpas.length > 0) {
+                        const anterior = msgsLimpas[msgsLimpas.length - 1];
+                        const mesmoRemetente = anterior.remetente === atual.remetente;
+                        const mesmoTexto = (anterior.texto || '').trim() === (atual.texto || '').trim();
+                        const difTempo = Math.abs(new Date(atual.timestamp || 0).getTime() - new Date(anterior.timestamp || 0).getTime());
+                        const mesmoId = atual.id && anterior.id && (atual.id === anterior.id || (atual.whatsappMessageId && atual.whatsappMessageId === anterior.whatsappMessageId));
+
+                        if (mesmoId || (mesmoRemetente && mesmoTexto && difTempo < 30000)) {
+                            continue;
+                        }
+                    }
+                    msgsLimpas.push(atual);
+                }
+                dados.historicoMensagens = msgsLimpas;
+            }
+
             this.cacheConversas.set(idCanonico, { dados, timestamp: Date.now() });
             return dados;
         }
@@ -237,7 +258,7 @@ class SessionService {
             const whatsappMsgId = extraData.whatsappMessageId || extraData.messageId || null;
 
             // Desduplicação determinística: impede que a mesma mensagem seja adicionada 2x
-            // (ex: envio do bot + eco do webhook da Evolution API)
+            // (ex: envio do bot + eco do webhook da Evolution API ou push redundante)
             const buscaId = whatsappMsgId || extraData.messageId || extraData.id;
             if (buscaId) {
                 const jaExiste = conversa.historicoMensagens.find(m =>
@@ -248,6 +269,25 @@ class SessionService {
                     if (extraData.mediaUrl && !jaExiste.mediaUrl) jaExiste.mediaUrl = extraData.mediaUrl;
                     if (extraData.mediaBase64 && !jaExiste.mediaBase64) jaExiste.mediaBase64 = extraData.mediaBase64;
                     return jaExiste;
+                }
+            }
+
+            // Desduplicação por Conteúdo Consecutivo (dentro de 20 segundos)
+            // Se a última mensagem for do mesmo remetente com texto idêntico recente, reaproveita sem duplicar
+            if (conversa.historicoMensagens.length > 0) {
+                const ultimaMsg = conversa.historicoMensagens[conversa.historicoMensagens.length - 1];
+                const mesmoRemetente = ultimaMsg.remetente === remetente;
+                const mesmoTexto = (ultimaMsg.texto || '').trim() === (texto || '').trim();
+                const difTempo = Math.abs(Date.now() - new Date(ultimaMsg.timestamp || 0).getTime());
+
+                if (mesmoRemetente && mesmoTexto && difTempo < 20000) {
+                    if (!ultimaMsg.whatsappMessageId && whatsappMsgId) {
+                        ultimaMsg.whatsappMessageId = whatsappMsgId;
+                    }
+                    if (extraData.mediaUrl && !ultimaMsg.mediaUrl) ultimaMsg.mediaUrl = extraData.mediaUrl;
+                    if (extraData.mediaBase64 && !ultimaMsg.mediaBase64) ultimaMsg.mediaBase64 = extraData.mediaBase64;
+                    await this.salvarConversa(idCanonico, conversa);
+                    return ultimaMsg;
                 }
             }
 

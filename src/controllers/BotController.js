@@ -246,16 +246,12 @@ class BotController {
                     } catch (_) { }
                 }
                 try {
-                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', t, null, {
+                    await SessaoService.adicionarMensagem(numeroReal, 'atendente', t, null, {
                         tipo: 'texto',
                         atendenteNome: 'Bot Favo de Mel',
                         messageId: msgId,
                         whatsappMessageId: msgId
                     });
-                    if (sessao) {
-                        if (!Array.isArray(sessao.historicoMensagens)) sessao.historicoMensagens = [];
-                        sessao.historicoMensagens.push(novaMsg);
-                    }
                 } catch (e) {
                     console.error('[BotController] Erro ao registrar mensagem do bot:', e.message);
                 }
@@ -303,16 +299,12 @@ class BotController {
                     } catch (_) { }
                 }
                 try {
-                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', textParaHistorico, null, {
+                    await SessaoService.adicionarMensagem(numeroReal, 'atendente', textParaHistorico, null, {
                         tipo: 'texto',
                         atendenteNome: 'Bot Favo de Mel',
                         messageId: msgId,
                         whatsappMessageId: msgId
                     });
-                    if (sessao) {
-                        if (!Array.isArray(sessao.historicoMensagens)) sessao.historicoMensagens = [];
-                        sessao.historicoMensagens.push(novaMsg);
-                    }
                 } catch (e) { }
                 return resp;
             },
@@ -350,7 +342,7 @@ class BotController {
                 }
                 try {
                     const isBase64 = typeof media === 'string' && (media.startsWith('data:') || media.length > 500);
-                    const novaMsg = await SessaoService.adicionarMensagem(numeroReal, 'atendente', caption, null, {
+                    await SessaoService.adicionarMensagem(numeroReal, 'atendente', caption, null, {
                         tipo: 'imagem',
                         mediaUrl: isBase64 ? null : media,
                         mediaBase64: isBase64 ? media : null,
@@ -358,10 +350,6 @@ class BotController {
                         messageId: msgId,
                         whatsappMessageId: msgId
                     });
-                    if (sessao) {
-                        if (!Array.isArray(sessao.historicoMensagens)) sessao.historicoMensagens = [];
-                        sessao.historicoMensagens.push(novaMsg);
-                    }
                 } catch (e) {
                     console.error('[BotController] Erro ao registrar foto do bot:', e.message);
                 }
