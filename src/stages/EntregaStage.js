@@ -1,3 +1,5 @@
+const CrmClienteService = require('../services/CrmClienteService');
+
 class EntregaStage {
     static async executar(msg, texto, sessao) {
         const t = (texto || '').toLowerCase().trim();
@@ -10,6 +12,20 @@ class EntregaStage {
         sessao.dadosEntregaTexto = texto;
         sessao.etapa = 'em_atendimento_humano';
         sessao.pedidoFinalizado = true;
+
+        // Registra o pedido no CRM com LTV e endereço
+        try {
+            let totalPedido = 0;
+            if (Array.isArray(sessao.carrinho)) {
+                sessao.carrinho.forEach(item => {
+                    totalPedido += (parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1);
+                });
+            }
+            await CrmClienteService.registrarCompra(msg.numeroReal || msg.numeroCliente, totalPedido, { texto });
+            await CrmClienteService.adicionarTag(msg.numeroReal || msg.numeroCliente, 'pedido_realizado');
+        } catch (e) {
+            console.warn('[EntregaStage] Falha ao registrar compra no CRM:', e.message);
+        }
 
         await msg.reply(
             "✅ *Perfeito! Recebemos seus dados de entrega com sucesso!*\n\n" +

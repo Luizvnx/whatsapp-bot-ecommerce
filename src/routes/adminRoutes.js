@@ -968,4 +968,92 @@ router.post('/perfil', async (req, res) => {
     }
 });
 
+// ==========================================
+// 18. ROTAS CRM - FASE 1: CLIENTES & LEAD 360°
+// ==========================================
+const CrmClienteService = require('../services/CrmClienteService');
+
+// Listar clientes com filtros, busca e paginação
+router.get('/crm/clientes', async (req, res) => {
+    try {
+        const { busca, status, etapa_funil, tag, limit, offset } = req.query;
+        const resultado = await CrmClienteService.listar({
+            busca,
+            status,
+            etapa_funil,
+            tag,
+            limit: parseInt(limit, 10) || 50,
+            offset: parseInt(offset, 10) || 0
+        });
+        res.json({ success: true, ...resultado });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Métricas executivas do CRM
+router.get('/crm/metricas', async (req, res) => {
+    try {
+        const metricas = await CrmClienteService.obterMetricas();
+        res.json({ success: true, metricas });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Obter perfil detalhado 360 do cliente
+router.get('/crm/clientes/:id', async (req, res) => {
+    try {
+        const cliente = await CrmClienteService.obterPorIdOuJid(req.params.id);
+        if (!cliente) return res.status(404).json({ success: false, message: 'Cliente não encontrado' });
+        
+        const notas = await CrmClienteService.obterNotas(cliente.id);
+        res.json({ success: true, cliente, notas });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Atualizar dados cadastrais do cliente
+router.put('/crm/clientes/:id', async (req, res) => {
+    try {
+        const atualizado = await CrmClienteService.atualizar(req.params.id, req.body);
+        res.json({ success: true, cliente: atualizado });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Adicionar / remover tag
+router.post('/crm/clientes/:id/tags', async (req, res) => {
+    try {
+        const { tag } = req.body;
+        const atualizado = await CrmClienteService.adicionarTag(req.params.id, tag);
+        res.json({ success: true, cliente: atualizado });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+router.delete('/crm/clientes/:id/tags/:tag', async (req, res) => {
+    try {
+        const atualizado = await CrmClienteService.removerTag(req.params.id, req.params.tag);
+        res.json({ success: true, cliente: atualizado });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Adicionar anotação interna
+router.post('/crm/clientes/:id/notas', async (req, res) => {
+    try {
+        const { texto } = req.body;
+        const autorNome = req.user?.name || req.user?.login || 'Atendente';
+        const novaNota = await CrmClienteService.adicionarNota(req.params.id, autorNome, texto);
+        res.json({ success: true, nota: novaNota });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

@@ -96,16 +96,104 @@ class DatabaseService {
             ON CONFLICT (login) DO NOTHING;
         `;
 
+        const sqlCrm = `
+            CREATE TABLE IF NOT EXISTS tb_crm_clientes (
+                id SERIAL PRIMARY KEY,
+                id_cliente VARCHAR(100) UNIQUE NOT NULL,
+                telefone VARCHAR(50) NOT NULL,
+                nome VARCHAR(150),
+                email VARCHAR(150),
+                documento VARCHAR(30),
+                origem VARCHAR(50) DEFAULT 'whatsapp',
+                status VARCHAR(50) DEFAULT 'lead',
+                etapa_funil VARCHAR(50) DEFAULT 'novo_contato',
+                tags TEXT[] DEFAULT '{}',
+                endereco JSONB DEFAULT '{}',
+                ltv NUMERIC(10,2) DEFAULT 0.00,
+                total_pedidos INT DEFAULT 0,
+                ticket_medio NUMERIC(10,2) DEFAULT 0.00,
+                primeira_compra_em TIMESTAMP,
+                ultima_compra_em TIMESTAMP,
+                observacoes TEXT,
+                campos_personalizados JSONB DEFAULT '{}',
+                responsavel_id INT REFERENCES tb_usuarios(id) ON DELETE SET NULL,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_tb_crm_clientes_telefone ON tb_crm_clientes(telefone);
+            CREATE INDEX IF NOT EXISTS idx_tb_crm_clientes_status ON tb_crm_clientes(status);
+            CREATE INDEX IF NOT EXISTS idx_tb_crm_clientes_etapa_funil ON tb_crm_clientes(etapa_funil);
+
+            CREATE TABLE IF NOT EXISTS tb_crm_notas (
+                id SERIAL PRIMARY KEY,
+                cliente_id INT NOT NULL REFERENCES tb_crm_clientes(id) ON DELETE CASCADE,
+                autor_nome VARCHAR(100) NOT NULL,
+                texto TEXT NOT NULL,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_tb_crm_notas_cliente ON tb_crm_notas(cliente_id);
+        `;
+
         try {
             await this.executar(sqlSessoes);
             await this.executar(sqlConfig);
             await this.executar(sqlCatalogo);
             await this.executar(sqlUsuarios);
+            await this.executar(sqlCrm);
             await this.semearCatalogoSeVazio();
+            await this.migrarSessoesParaCrmClientesSeVazio();
             console.log('📦 Banco de Dados pronto para uso.');
         } catch (error) {
             console.error('❌ Erro ao inicializar tabelas:', error.message);
             throw error;
+        }
+    }
+
+    /**
+     * Sincroniza/migra contatos da tabela tb_bot_sessoes para tb_crm_clientes se estiver vazia
+     */
+    static async migrarSessoesParaCrmClientesSeVazio() {
+        try {
+            const check = await this.executar('SELECT count(*) FROM tb_crm_clientes');
+            if (parseInt(check.rows[0].count, 10) === 0) {
+                console.log('🔄 [CRM] Migrando clientes de tb_bot_sessoes para tb_crm_clientes...');
+                const sessoes = await this.executar('SELECT id_cliente, nome_contato, dados_sessao, ultima_msg FROM tb_bot_sessoes');
+                for (const row of sessoes.rows) {
+                    if (!row.id_cliente) continue;
+                    const telefone = row.id_cliente.split('@')[0].split(':')[0].replace(/\D/g, '');
+                    if (!telefone) continue;
+                    const nome = row.nome_contato || 'Cliente';
+                    const dados = row.dados_sessao || {};
+                    const endereco = dados.dadosEntregaTexto ? { texto: dados.dadosEntregaTexto } : {};
+                    const totalPedidos = dados.pedidoFinalizado ? 1 : 0;
+                    const status = totalPedidos > 0 ? 'cliente' : 'lead';
+                    const etapaFunil = totalPedidos > 0 ? 'fechamento' : 'novo_contato';
+                    const tags = [];
+                    if (dados.categoriaSelecionada) tags.push(`cat_${dados.categoriaSelecionada}`);
+                    if (dados.pedidoFinalizado) tags.push('pedido_realizado');
+
+                    await this.executar(`
+                        INSERT INTO tb_crm_clientes (
+                            id_cliente, telefone, nome, status, etapa_funil, tags, endereco, total_pedidos, criado_em, atualizado_em
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
+                        ON CONFLICT (id_cliente) DO NOTHING
+                    `, [
+                        row.id_cliente,
+                        telefone,
+                        nome,
+                        status,
+                        etapaFunil,
+                        tags,
+                        JSON.stringify(endereco),
+                        totalPedidos,
+                        row.ultima_msg || new Date()
+                    ]);
+                }
+                console.log(`✅ [CRM] Migração de contatos para o CRM concluída com sucesso.`);
+            }
+        } catch (err) {
+            console.warn('⚠️ [CRM] Aviso na migração de clientes para o CRM:', err.message);
         }
     }
 

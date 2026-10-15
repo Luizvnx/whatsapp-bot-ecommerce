@@ -206,6 +206,12 @@ class SessionService {
             nomeParaSalvar,
             JSON.stringify(dadosConversa)
         ]);
+
+        // Sincroniza o cliente com o CRM (Fase 1) em segundo plano
+        try {
+            const CrmClienteService = require('./CrmClienteService');
+            CrmClienteService.obterOuCriar(idCanonico, nomeParaSalvar).catch(() => {});
+        } catch (_) {}
     }
 
     /**

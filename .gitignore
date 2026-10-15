@@ -189,3 +189,7 @@ scripts/
 
 
 limpeza_profunda.bat
+
+# Roadmap de evolução do CRM
+ROADMAP_CRM.md
+ROADMAP*.md
