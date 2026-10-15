@@ -10,8 +10,12 @@ class GeminiService {
      * Prompts e Instruções do Sistema para a Loja Favo de Mel
      */
     static get systemInstruction() {
-        return `Você é a Assistente Virtual Inteligente da loja Favo de Mel (Aracaju/SE).
-Sua personalidade: Simpática, acolhedora, objetiva e apaixonada por abelhas e produtos naturais. Use emojis com moderação (🐝🍯🌼).
+        return `Você é a atendente virtual da loja Favo de Mel (Aracaju/SE).
+Tom de conversa: Natural, educado, direto e humano, como uma pessoa real atendendo no WhatsApp de uma loja.
+
+REGRA CRÍTICA DE COMUNICAÇÃO:
+- NUNCA use emojis em nenhuma mensagem. Não use abelhas, potes de mel, flores, setas ou nenhum outro emoji.
+- Escreva de forma fluida, simples e agradável. Evite textos artificiais, robóticos ou excessivamente enfeitados.
 
 CONHECIMENTO DA FAVO DE MEL:
 - Loja física: Av. Deputado Pedro Valadares, 690, loja 8, Garden's Gallery - Bairro Jardins, Aracaju/SE (próximo ao Shopping Jardins).
@@ -26,13 +30,13 @@ CONHECIMENTO DA FAVO DE MEL:
 - Serviços Especializados:
   * Captura e Resgate Seguro de Abelhas (remoção ecológica de enxames de residências e empresas para preservação em apiário).
   * Consultoria Apícola e Manejo (capacitação para novos e experientes criadores).
-- Dica de ouro sobre mel: A cristalização é um fenômeno natural do mel 100% puro e cru, provando que ele não foi superaquecido ou adulterado!
+- Dica sobre mel: A cristalização é um fenômeno natural do mel 100% puro e cru, provando que ele não foi superaquecido ou adulterado.
 
 DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
-1. Responda de forma direta e concisa (máximo de 2 a 3 parágrafos curtos).
-2. Se o cliente perguntar preço ou como comprar, informe o valor e oriente a ver o catálogo.
-3. Se for uma dúvida que você NÃO saiba responder com certeza (ex: frete para CEP específico fora de Aracaju, pedidos de desconto em atacado grande, parcerias comerciais, reclamações ou assuntos fora do tema):
-   Defina "transferirHumano": true e informe com carinho que vai encaminhar para os atendentes humanos.
+1. Responda de forma direta e concisa (máximo de 2 parágrafos curtos).
+2. Se o cliente perguntar preço ou como comprar, informe o valor e oriente a consultar o catálogo.
+3. Se for uma dúvida que você não saiba responder com certeza (ex: frete para CEP específico fora de Aracaju, pedidos de desconto em atacado grande, parcerias comerciais, reclamações ou assuntos fora do tema):
+   Defina "transferirHumano": true e informe cordialmente que vai transferir para um de nossos atendentes.
 4. NUNCA invente informações não confirmadas. NUNCA gere introduções como "Aqui está sua resposta", prefixos ou tags de raciocínio.`;
     }
 
@@ -45,7 +49,7 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
             properties: {
                 resposta: {
                     type: 'STRING',
-                    description: 'Texto final limpo e acolhedor formatado para WhatsApp (*negrito*, emojis). Sem prefixos e sem tags.'
+                    description: 'Texto final limpo, humano e acolhedor formatado para WhatsApp (*negrito*). NUNCA utilize emojis. Sem prefixos e sem tags.'
                 },
                 transferirHumano: {
                     type: 'BOOLEAN',
@@ -67,7 +71,7 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
     }
 
     /**
-     * Responde dúvidas sobre a Favo de Mel utilizando Structured Outputs e Stop Sequences
+     * Responde dúvidas sobre a Favo de Mel utilizando Structured Outputs, Stop Sequences e tom humano sem emojis
      */
     static async perguntar(mensagemCliente, historicoCliente = []) {
         const keyGemini = this.apiKey;
@@ -75,7 +79,7 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
         if (!keyGemini) {
             console.warn('⚠️ GEMINI_API_KEY não configurada no .env');
             return {
-                resposta: "Desculpe, nosso assistente virtual está temporariamente indisponível. Para falar com a equipe, por favor aguarde um momento! 🐝",
+                resposta: "Desculpe, nosso assistente virtual está temporariamente indisponível. Para falar com a equipe, por favor aguarde um momento.",
                 transferirHumano: true,
                 intencao: 'humano',
                 sugerirAcao: 'nenhuma'
@@ -89,7 +93,7 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
         historicoRecente.forEach(item => {
             const role = item.role === 'model' ? 'model' : 'user';
             const rawText = (item.parts && item.parts[0]?.text) ? item.parts[0].text : (item.text || '');
-            const cleanText = OutputSanitizer.removerTagsRaciocinio(rawText).trim();
+            const cleanText = OutputSanitizer.removerEmojis(OutputSanitizer.removerTagsRaciocinio(rawText)).trim();
             if (cleanText) {
                 contents.push({ role, parts: [{ text: cleanText }] });
             }
@@ -100,7 +104,7 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
             parts: [{ text: mensagemCliente.trim() }]
         });
 
-        const modelosGemini = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+        const modelosGemini = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest'];
         const stopSequences = ['\nCliente:', '\nUsuário:', '\nUser:', '\n[Cliente]:'];
 
         for (const model of modelosGemini) {
@@ -151,7 +155,7 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
 
         // Fallback Seguro de Degradação Graciosa
         return {
-            resposta: "Estou com uma pequena instabilidade para consultar as informações no momento. Vou transferir para nossa equipe te atender em instantes! 🐝",
+            resposta: "Estou com uma pequena instabilidade para consultar as informações no momento. Vou transferir para nossa equipe te atender em instantes.",
             transferirHumano: true,
             intencao: 'humano',
             sugerirAcao: 'nenhuma'
@@ -160,7 +164,7 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
 
     /**
      * Sugere uma resposta inteligente para o atendente humano aprovar e enviar pelo painel
-     * Garante que NUNCA venha com meta-comentários, aspas ou introduções
+     * Garante tom 100% humano, sem emojis, sem meta-comentários e sem aspas
      */
     static async sugerirResposta(historicoMensagens = [], nomeContato = 'Cliente') {
         const key = this.apiKey;
@@ -173,12 +177,13 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
             .join('\n');
 
         if (!key || !historicoRecente.trim()) {
-            return `Olá, ${nomeContato || 'tudo bem'}! Como posso te ajudar hoje com nossos produtos da Favo de Mel? 🐝`;
+            return `Olá, ${nomeContato || 'tudo bem'}! Como posso te ajudar hoje com nossos produtos da Favo de Mel?`;
         }
 
-        const prompt = `Você é um copiloto de atendimento da loja Favo de Mel (Aracaju/SE).
-Analise o histórico recente com o cliente "${nomeContato}" e crie uma resposta recomendada perfeita para o atendente enviar pelo WhatsApp.
-A resposta deve ser cordial, acolhedora, objetiva e útil (use emojis com moderação, como 🐝🍯).
+        const prompt = `Você é um atendente humano experiente da loja Favo de Mel (Aracaju/SE).
+Analise o histórico recente com o cliente "${nomeContato}" e crie uma resposta recomendada ideal para o atendente enviar pelo WhatsApp.
+A resposta deve ser cordial, acolhedora, objetiva e soar exatamente como uma pessoa real digitando.
+REGRA: NÃO utilize nenhum emoji.
 
 HISTÓRICO RECENTE:
 ${historicoRecente}
@@ -190,7 +195,7 @@ Gere a mensagem pronta para envio imediato.`;
             properties: {
                 mensagemSugerida: {
                     type: 'STRING',
-                    description: 'Texto limpo da mensagem a ser enviada ao cliente no WhatsApp, sem introduções e sem aspas.'
+                    description: 'Texto limpo da mensagem a ser enviada ao cliente no WhatsApp, sem emojis, sem introduções e sem aspas.'
                 },
                 resumoContexto: {
                     type: 'STRING',
@@ -200,7 +205,7 @@ Gere a mensagem pronta para envio imediato.`;
             required: ['mensagemSugerida']
         };
 
-        const modelos = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+        const modelos = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest'];
 
         for (const model of modelos) {
             try {
@@ -229,11 +234,11 @@ Gere a mensagem pronta para envio imediato.`;
             }
         }
 
-        return `Olá, ${nomeContato}! Estou verificando sua solicitação aqui e já te passo mais detalhes em instantes. 🐝`;
+        return `Olá, ${nomeContato}! Estou verificando sua solicitação aqui e já te passo mais detalhes em instantes.`;
     }
 
     /**
-     * Gera um resumo estruturado da conversa para o operador e CRM
+     * Gera um resumo estruturado da conversa para o operador e CRM (sem emojis)
      */
     static async resumirConversa(historicoMensagens = [], nomeContato = 'Cliente') {
         const key = this.apiKey;
@@ -246,10 +251,10 @@ Gere a mensagem pronta para envio imediato.`;
             .join('\n');
 
         if (!key || !historicoTexto.trim()) {
-            return `Resumo do Atendimento:\n• Cliente: ${nomeContato}\n• Total de mensagens: ${(historicoMensagens || []).length}\n• Sem dados suficientes para gerar resumo inteligente.`;
+            return `Resumo do Atendimento:\n- Cliente: ${nomeContato}\n- Total de mensagens: ${(historicoMensagens || []).length}\n- Sem dados suficientes para gerar resumo inteligente.`;
         }
 
-        const prompt = `Você é um assistente de CRM da Favo de Mel. Analise o histórico desta conversa com o cliente "${nomeContato}" e gere um resumo conciso.
+        const prompt = `Você é um assistente de CRM da Favo de Mel. Analise o histórico desta conversa com o cliente "${nomeContato}" e gere um resumo conciso sem utilizar emojis.
 
 HISTÓRICO:
 ${historicoTexto}`;
@@ -261,12 +266,12 @@ ${historicoTexto}`;
                 objetivo: { type: 'STRING', description: 'Interesse principal do cliente' },
                 status: { type: 'STRING', description: 'Status atual do atendimento' },
                 proximaAcao: { type: 'STRING', description: 'Ação recomendada para o operador' },
-                resumoFormatado: { type: 'STRING', description: 'Resumo completo em tópicos formatado com emojis' }
+                resumoFormatado: { type: 'STRING', description: 'Resumo completo em tópicos profissionais sem emojis' }
             },
             required: ['cliente', 'objetivo', 'status', 'proximaAcao', 'resumoFormatado']
         };
 
-        const modelos = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+        const modelos = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest'];
 
         for (const model of modelos) {
             try {
@@ -294,7 +299,7 @@ ${historicoTexto}`;
             }
         }
 
-        return `Resumo do Atendimento:\n• Cliente: ${nomeContato}\n• Mensagens trocadas: ${(historicoMensagens || []).length}\n• Status: Atendimento em andamento.`;
+        return `Resumo do Atendimento:\n- Cliente: ${nomeContato}\n- Mensagens trocadas: ${(historicoMensagens || []).length}\n- Status: Atendimento em andamento.`;
     }
 
     /**

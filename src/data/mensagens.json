@@ -25,7 +25,7 @@
         "apresentacao": "👨‍🌾 *Consultoria e Manejo Apícola - Favo de Mel*\n\nOferecemos assessoria técnica para implantação de apiários, manejo produtivo, divisão de enxames e capacitação em apicultura e meliponicultura.\n\nPor favor, nos informe brevemente:\n📌 Você já cria abelhas ou deseja começar do zero?\n📌 Qual cidade/região fica sua propriedade?\n\nNosso consultor apícola entrará em contato por aqui para agendar seu atendimento especializado!"
     },
     "ia": {
-        "saudacao": "Olá! Sou a assistente virtual da Favo de Mel 🐝. Como posso te ajudar?\nPode me perguntar sobre nossos méis, benefícios do própolis, resgate de abelhas ou nosso endereço.\n\n*(Digite # a qualquer momento para ver o menu de opções)*"
+        "saudacao": "Olá! Sou a assistente virtual da Favo de Mel. Como posso te ajudar?\nPode me perguntar sobre nossos méis, benefícios do própolis, resgate de abelhas ou nosso endereço.\n\n*(Digite # a qualquer momento para ver o menu de opções)*"
     },
     "erros": {
         "opcaoInvalida": "⚠️ Opção não reconhecida. Por favor, digite o número correspondente à opção desejada ou *#* para voltar ao menu principal.",
