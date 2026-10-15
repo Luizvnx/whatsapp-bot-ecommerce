@@ -247,6 +247,10 @@ class CrmPipelineService {
             clienteFinal = busca.rows[0];
         } else if (id_cliente) {
             clienteFinal = await CrmClienteService.obterOuCriar(id_cliente, dados.nome || null);
+            if (dados.nome && dados.nome.trim() && clienteFinal && clienteFinal.nome !== dados.nome.trim()) {
+                await CrmClienteService.atualizar(clienteFinal.id_cliente, { nome: dados.nome.trim() });
+                clienteFinal.nome = dados.nome.trim();
+            }
         }
 
         if (!clienteFinal) {
