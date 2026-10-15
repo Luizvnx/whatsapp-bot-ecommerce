@@ -64,6 +64,14 @@ class SocketService {
             ...info
         });
     }
+
+    /**
+     * Emite evento de movimentação ou atualização no Pipeline / Kanban
+     */
+    static emitirPipelineAtualizado(dados) {
+        if (!this.io) return;
+        this.io.emit('pipeline_atualizado', dados);
+    }
 }
 
 module.exports = SocketService;

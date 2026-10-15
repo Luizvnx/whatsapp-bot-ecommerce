@@ -207,10 +207,12 @@ class SessionService {
             JSON.stringify(dadosConversa)
         ]);
 
-        // Sincroniza o cliente com o CRM (Fase 1) em segundo plano
+        // Sincroniza o cliente com o CRM (Fase 1) e o Funil de Vendas (Fase 2) em segundo plano
         try {
             const CrmClienteService = require('./CrmClienteService');
+            const CrmPipelineService = require('./CrmPipelineService');
             CrmClienteService.obterOuCriar(idCanonico, nomeParaSalvar).catch(() => {});
+            CrmPipelineService.sincronizarEtapaComBot(idCanonico, dadosConversa.etapa || 'inicio', dadosConversa).catch(() => {});
         } catch (_) {}
     }
 

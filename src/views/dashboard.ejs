@@ -131,6 +131,10 @@
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900 hover:bg-stone-200/60">
                     <span>Catálogo</span>
                 </button>
+                <button type="button" onclick="trocarAba('kanban')" id="btnAbaKanban"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900 hover:bg-stone-200/60">
+                    <span>Funil & Pipeline</span>
+                </button>
                 <button type="button" onclick="trocarAba('metricas')" id="btnAbaMetricas"
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900 hover:bg-stone-200/60">
                     <span>Métricas & Bot</span>
@@ -211,9 +215,13 @@
                     class="flex-1 py-1 text-center rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900">
                     <span>Catálogo</span>
                 </button>
+                <button type="button" onclick="trocarAba('kanban')" id="btnAbaKanbanMobile"
+                    class="flex-1 py-1 text-center rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900">
+                    <span>Funil</span>
+                </button>
                 <button type="button" onclick="trocarAba('metricas')" id="btnAbaMetricasMobile"
                     class="flex-1 py-1 text-center rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900">
-                    <span>Métricas & Bot</span>
+                    <span>Métricas</span>
                 </button>
             </nav>
         </div>
@@ -483,7 +491,94 @@
         </div>
     </div>
 
-    <!-- 3. ABA MÉTRICAS & CONTROLE DO BOT -->
+    <!-- 3. ABA FUNIL DE VENDAS & PIPELINE (KANBAN) -->
+    <div id="abaConteudoKanban" class="hidden flex-1 overflow-hidden max-w-7xl mx-auto w-full p-2 sm:p-3 flex-col gap-3">
+        <!-- Métricas Rápidas do Funil -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 flex-shrink-0">
+            <div class="bg-white border border-stone-200 rounded-md p-3 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-stone-500 font-semibold">Valor em Aberto</span>
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                </div>
+                <span id="kanbanMetricaValorFunil" class="text-base sm:text-lg font-mono font-bold text-stone-900 mt-1 block">R$ 0,00</span>
+                <span class="text-[10px] text-stone-400 mt-0.5 block">Negociações ativas no funil</span>
+            </div>
+
+            <div class="bg-white border border-stone-200 rounded-md p-3 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-stone-500 font-semibold">Vendas Concluídas</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                </div>
+                <span id="kanbanMetricaValorGanho" class="text-base sm:text-lg font-mono font-bold text-emerald-700 mt-1 block">R$ 0,00</span>
+                <span class="text-[10px] text-stone-400 mt-0.5 block">Total faturado ganho</span>
+            </div>
+
+            <div class="bg-white border border-stone-200 rounded-md p-3 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-stone-500 font-semibold">Taxa de Conversão</span>
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                </div>
+                <span id="kanbanMetricaConversao" class="text-base sm:text-lg font-mono font-bold text-stone-900 mt-1 block">0.0%</span>
+                <span class="text-[10px] text-stone-400 mt-0.5 block">Proporção ganhos vs perdidos</span>
+            </div>
+
+            <div class="bg-white border border-stone-200 rounded-md p-3 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-stone-500 font-semibold">Total de Negócios</span>
+                    <span class="w-2 h-2 rounded-full bg-stone-500"></span>
+                </div>
+                <span id="kanbanMetricaTotalOportunidades" class="text-base sm:text-lg font-mono font-bold text-stone-900 mt-1 block">0</span>
+                <span class="text-[10px] text-stone-400 mt-0.5 block">Oportunidades mapeadas</span>
+            </div>
+        </div>
+
+        <!-- Barra de Ferramentas & Filtros -->
+        <div class="bg-white border border-stone-200 rounded-md p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2.5 shadow-xs flex-shrink-0">
+            <div class="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
+                <div class="relative flex-1 sm:max-w-xs">
+                    <input type="text" id="buscaKanban" placeholder="Buscar cliente, telefone ou título..." oninput="filtrarKanbanLocal()"
+                        class="w-full px-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-sm text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 transition">
+                </div>
+
+                <select id="filtroStatusKanban" onchange="carregarKanban()"
+                    class="py-1.5 px-2.5 bg-stone-50 border border-stone-200 rounded-sm text-xs text-stone-800 focus:outline-none focus:bg-white focus:border-stone-900 transition">
+                    <option value="todos">Todos os Status</option>
+                    <option value="aberto" selected>Apenas Abertos</option>
+                    <option value="ganho">Apenas Ganhos</option>
+                    <option value="perdido">Apenas Perdidos</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="carregarKanban(true)" title="Recarregar dados do Funil"
+                    class="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span class="hidden sm:inline">Recarregar</span>
+                </button>
+
+                <button type="button" onclick="abrirModalNovaOportunidade()"
+                    class="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Nova Oportunidade</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quadro Kanban (Scroll Horizontal e Drag & Drop) -->
+        <div class="flex-1 bg-stone-100/60 border border-stone-200 rounded-md overflow-hidden p-2 sm:p-2.5 shadow-xs flex flex-col">
+            <div id="quadroKanbanColunas" class="flex-1 flex gap-3 overflow-x-auto custom-scrollbar pb-1">
+                <div class="w-full text-center py-16 text-stone-400 font-mono text-xs">
+                    ⏳ Carregando Funil de Vendas...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ABA MÉTRICAS & CONTROLE DO BOT -->
     <div id="abaConteudoMetricas" class="hidden flex-1 overflow-y-auto custom-scrollbar max-w-7xl mx-auto w-full p-2 sm:p-3 flex-col gap-3">
         <div class="bg-white border border-stone-200 rounded-md p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -1157,6 +1252,147 @@
                     </button>
                 </div>
             </form>
+    <!-- Modal: Nova Oportunidade no Funil -->
+    <div id="modalNovaOportunidade" class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4" onclick="if(event.target === this) fecharModalNovaOportunidade()">
+        <div class="bg-white rounded-md border border-stone-200 shadow-lg w-full max-w-md overflow-hidden">
+            <div class="p-3 sm:p-4 border-b border-stone-200 flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-serif font-bold text-stone-900">Nova Oportunidade no Funil</h3>
+                    <p class="text-[11px] text-stone-500 font-mono">Adicione um novo negócio ao pipeline de vendas</p>
+                </div>
+                <button type="button" onclick="fecharModalNovaOportunidade()" class="text-stone-400 hover:text-stone-700 p-1 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <form id="formNovaOportunidade" onsubmit="submeterNovaOportunidade(event)" class="p-3 sm:p-4 space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Telefone do Cliente (com DDD) *</label>
+                    <input type="text" id="novaOpTelefone" required placeholder="Ex: 79988562587"
+                        class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-stone-900">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Nome do Cliente (Opcional)</label>
+                    <input type="text" id="novaOpNome" placeholder="Ex: João da Silva"
+                        class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-stone-900">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Título da Oportunidade *</label>
+                    <input type="text" id="novaOpTitulo" required placeholder="Ex: Pedido de Mel Silvestre e Própolis"
+                        class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-stone-900">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-xs font-medium text-stone-700 mb-1">Valor Estimado (R$)</label>
+                        <input type="number" step="0.01" min="0" id="novaOpValor" placeholder="0,00"
+                            class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-900 font-mono focus:outline-none focus:bg-white focus:border-stone-900">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-stone-700 mb-1">Etapa Inicial</label>
+                        <select id="novaOpEtapa" class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-800 focus:outline-none focus:bg-white focus:border-stone-900">
+                            <option value="novo_lead">1. Novo Lead</option>
+                            <option value="qualificacao" selected>2. Qualificação / Dúvida</option>
+                            <option value="carrinho_aberto">3. Carrinho Aberto</option>
+                            <option value="aguardando_pagamento">4. Aguardando Pagamento</option>
+                            <option value="pedido_fechado">5. Pedido Fechado</option>
+                            <option value="pos_venda">6. Pós-Venda</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2 border-t border-stone-200">
+                    <button type="button" onclick="fecharModalNovaOportunidade()"
+                        class="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="btnSalvarNovaOp"
+                        class="px-4 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-xs font-semibold uppercase tracking-wider transition shadow-xs cursor-pointer">
+                        <span>Criar Oportunidade</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Oportunidade no Funil -->
+    <div id="modalEditarOportunidade" class="hidden fixed inset-0 z-50 bg-stone-900/40 flex items-center justify-center p-4" onclick="if(event.target === this) fecharModalEditarOportunidade()">
+        <div class="bg-white rounded-md border border-stone-200 shadow-lg w-full max-w-md overflow-hidden">
+            <div class="p-3 sm:p-4 border-b border-stone-200 flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-serif font-bold text-stone-900">Editar Oportunidade</h3>
+                    <p id="editOpSubtitulo" class="text-[11px] text-stone-500 font-mono">Detalhes da negociação</p>
+                </div>
+                <button type="button" onclick="fecharModalEditarOportunidade()" class="text-stone-400 hover:text-stone-700 p-1 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <form id="formEditarOportunidade" onsubmit="submeterEditarOportunidade(event)" class="p-3 sm:p-4 space-y-3">
+                <input type="hidden" id="editOpId">
+
+                <div>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Título da Negociação *</label>
+                    <input type="text" id="editOpTitulo" required
+                        class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-stone-900">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-xs font-medium text-stone-700 mb-1">Valor Estimado (R$)</label>
+                        <input type="number" step="0.01" min="0" id="editOpValor"
+                            class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-900 font-mono focus:outline-none focus:bg-white focus:border-stone-900">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-stone-700 mb-1">Etapa Atual</label>
+                        <select id="editOpEtapa" class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-800 focus:outline-none focus:bg-white focus:border-stone-900">
+                            <option value="novo_lead">1. Novo Lead</option>
+                            <option value="qualificacao">2. Qualificação / Dúvida</option>
+                            <option value="carrinho_aberto">3. Carrinho Aberto</option>
+                            <option value="aguardando_pagamento">4. Aguardando Pagamento</option>
+                            <option value="pedido_fechado">5. Pedido Fechado</option>
+                            <option value="pos_venda">6. Pós-Venda</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Status da Oportunidade</label>
+                    <select id="editOpStatus" onchange="alternarCampoMotivoPerda()" class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-800 focus:outline-none focus:bg-white focus:border-stone-900">
+                        <option value="aberto">Em Aberto (Negociando)</option>
+                        <option value="ganho">Venda Ganha (Fechado com Sucesso)</option>
+                        <option value="perdido">Perdido (Não fechou)</option>
+                    </select>
+                </div>
+
+                <div id="campoMotivoPerda" class="hidden">
+                    <label class="block text-xs font-medium text-stone-700 mb-1">Motivo da Perda</label>
+                    <textarea id="editOpMotivoPerda" rows="2" placeholder="Ex: Achou o frete alto, comprou no concorrente..."
+                        class="w-full bg-stone-50 border border-stone-200 rounded-sm px-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-stone-900 resize-none"></textarea>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between border-t border-stone-200">
+                    <button type="button" onclick="excluirOportunidadeAtual()"
+                        class="px-3 py-1.5 text-rose-600 hover:bg-rose-50 rounded-sm text-xs font-medium transition cursor-pointer">
+                        Excluir
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="fecharModalEditarOportunidade()"
+                            class="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-sm text-xs font-medium transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btnSalvarEditarOp"
+                            class="px-4 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-xs font-semibold uppercase tracking-wider transition shadow-xs cursor-pointer">
+                            <span>Salvar Alterações</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1445,7 +1681,11 @@
             carregarListaConversas();
         });
 
-        // ==========================================
+        socket.on('pipeline_atualizado', (data) => {
+            if (typeof carregarKanban === 'function' && abaAtivaGeral === 'kanban') {
+                carregarKanban(false);
+            }
+        });
         // 3. RENDERIZAÇÃO DE BOLHAS DE MENSAGENS (TEXTO, ÁUDIO, MÍDIAS)
         // ==========================================
         function escapeHtml(texto) {
@@ -3044,45 +3284,78 @@
             
             const btnAtendimento = document.getElementById('btnAbaAtendimento');
             const btnCatalogo = document.getElementById('btnAbaCatalogo');
+            const btnKanban = document.getElementById('btnAbaKanban');
             const btnMetricas = document.getElementById('btnAbaMetricas');
+
+            const btnAtendimentoMobile = document.getElementById('btnAbaAtendimentoMobile');
+            const btnCatalogoMobile = document.getElementById('btnAbaCatalogoMobile');
+            const btnKanbanMobile = document.getElementById('btnAbaKanbanMobile');
+            const btnMetricasMobile = document.getElementById('btnAbaMetricasMobile');
 
             const abaAtendimento = document.getElementById('abaConteudoAtendimento');
             const abaCatalogo = document.getElementById('abaConteudoCatalogo');
+            const abaKanban = document.getElementById('abaConteudoKanban');
             const abaMetricas = document.getElementById('abaConteudoMetricas');
 
             const resetBtn = (btn) => {
                 if (!btn) return;
                 btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900 hover:bg-stone-200/60';
             };
-            const activeBtn = (btn, colorClass) => {
+            const resetBtnMobile = (btn) => {
+                if (!btn) return;
+                btn.className = 'flex-1 py-1 text-center rounded-sm text-xs font-semibold transition text-stone-600 hover:text-stone-900';
+            };
+            const activeBtn = (btn) => {
                 if (!btn) return;
                 btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition bg-stone-900 text-stone-100 shadow-xs';
+            };
+            const activeBtnMobile = (btn) => {
+                if (!btn) return;
+                btn.className = 'flex-1 py-1 text-center rounded-sm text-xs font-semibold transition bg-stone-900 text-stone-100 shadow-xs';
             };
 
             resetBtn(btnAtendimento);
             resetBtn(btnCatalogo);
+            resetBtn(btnKanban);
             resetBtn(btnMetricas);
+
+            resetBtnMobile(btnAtendimentoMobile);
+            resetBtnMobile(btnCatalogoMobile);
+            resetBtnMobile(btnKanbanMobile);
+            resetBtnMobile(btnMetricasMobile);
 
             if (abaAtendimento) { abaAtendimento.classList.add('hidden'); abaAtendimento.classList.remove('flex'); }
             if (abaCatalogo) { abaCatalogo.classList.add('hidden'); abaCatalogo.classList.remove('flex'); }
+            if (abaKanban) { abaKanban.classList.add('hidden'); abaKanban.classList.remove('flex'); }
             if (abaMetricas) { abaMetricas.classList.add('hidden'); abaMetricas.classList.remove('flex'); }
 
             if (nomeAba === 'atendimento') {
-                activeBtn(btnAtendimento, 'bg-emerald-600');
+                activeBtn(btnAtendimento);
+                activeBtnMobile(btnAtendimentoMobile);
                 if (abaAtendimento) {
                     abaAtendimento.classList.remove('hidden');
                     abaAtendimento.classList.add('flex');
                 }
             } else if (nomeAba === 'catalogo') {
-                activeBtn(btnCatalogo, 'bg-amber-600');
+                activeBtn(btnCatalogo);
+                activeBtnMobile(btnCatalogoMobile);
                 if (abaCatalogo) {
                     abaCatalogo.classList.remove('hidden');
                     abaCatalogo.classList.add('flex');
                 }
                 carregarCategoriasSelect();
                 carregarProdutosCatalogo();
+            } else if (nomeAba === 'kanban') {
+                activeBtn(btnKanban);
+                activeBtnMobile(btnKanbanMobile);
+                if (abaKanban) {
+                    abaKanban.classList.remove('hidden');
+                    abaKanban.classList.add('flex');
+                }
+                carregarKanban();
             } else if (nomeAba === 'metricas') {
-                activeBtn(btnMetricas, 'bg-blue-600');
+                activeBtn(btnMetricas);
+                activeBtnMobile(btnMetricasMobile);
                 if (abaMetricas) {
                     abaMetricas.classList.remove('hidden');
                     abaMetricas.classList.add('flex');
@@ -3839,6 +4112,8 @@
                 fecharModalDevolverBot();
                 fecharModalPerfil();
                 fecharModalQrCode();
+                fecharModalNovaOportunidade();
+                fecharModalEditarOportunidade();
             }
         });
 
@@ -3881,6 +4156,466 @@
             if (btnInstalar) {
                 btnInstalar.classList.add('hidden');
                 btnInstalar.classList.remove('inline-flex');
+            }
+        }
+
+        // ==========================================
+        // 15. FUNIL DE VENDAS & PIPELINE (KANBAN DRAG & DROP)
+        // ==========================================
+        let dadosKanbanCache = null;
+        let cardArrastadoId = null;
+        let timeoutFiltroKanban = null;
+
+        function filtrarKanbanLocal() {
+            clearTimeout(timeoutFiltroKanban);
+            timeoutFiltroKanban = setTimeout(() => {
+                carregarKanban(false);
+            }, 300);
+        }
+
+        async function carregarKanban(forcar = false) {
+            const quadro = document.getElementById('quadroKanbanColunas');
+            if (!quadro) return;
+
+            const filtroStatus = document.getElementById('filtroStatusKanban')?.value || 'aberto';
+            const termo = document.getElementById('buscaKanban')?.value.trim() || '';
+
+            if (forcar || !dadosKanbanCache) {
+                quadro.innerHTML = '<div class="w-full text-center py-16 text-stone-400 font-mono text-xs">⏳ Carregando funil de oportunidades...</div>';
+            }
+
+            try {
+                const params = new URLSearchParams();
+                if (filtroStatus) params.append('status', filtroStatus);
+                if (termo) params.append('busca', termo);
+
+                const res = await fetch(`/admin/crm/kanban?${params.toString()}`);
+                const json = await res.json();
+
+                if (!json.success || !json.data) {
+                    quadro.innerHTML = `<div class="w-full text-center py-12 text-rose-500 font-mono text-xs">❌ Erro ao carregar funil: ${json.message || 'Falha'}</div>`;
+                    return;
+                }
+
+                dadosKanbanCache = json.data;
+                renderizarQuadroKanban(dadosKanbanCache);
+                atualizarMetricasCabecalhoKanban(dadosKanbanCache.metricasGerais);
+            } catch (err) {
+                console.error('Erro ao carregar kanban:', err);
+                quadro.innerHTML = `<div class="w-full text-center py-12 text-rose-500 font-mono text-xs">❌ Erro de conexão com o servidor.</div>`;
+            }
+        }
+
+        function atualizarMetricasCabecalhoKanban(metricas) {
+            if (!metricas) return;
+            const elValorFunil = document.getElementById('kanbanMetricaValorFunil');
+            const elValorGanho = document.getElementById('kanbanMetricaValorGanho');
+            const elConversao = document.getElementById('kanbanMetricaConversao');
+            const elTotal = document.getElementById('kanbanMetricaTotalOportunidades');
+
+            if (elValorFunil) elValorFunil.textContent = metricas.totalValorFunilFormatado || 'R$ 0,00';
+            if (elValorGanho) elValorGanho.textContent = metricas.valorGanhoFormatado || 'R$ 0,00';
+            if (elConversao) elConversao.textContent = `${metricas.taxaConversao || '0.0'}%`;
+            if (elTotal) elTotal.textContent = metricas.totalOportunidades || '0';
+        }
+
+        function renderizarQuadroKanban(dados) {
+            const quadro = document.getElementById('quadroKanbanColunas');
+            if (!quadro) return;
+
+            const { etapas, colunas } = dados;
+
+            let html = '';
+
+            etapas.forEach(etapa => {
+                const colData = colunas[etapa.id] || { cards: [], totalCards: 0, totalValorFormatado: 'R$ 0,00' };
+                const cards = colData.cards || [];
+
+                html += `
+                    <div class="w-72 sm:w-80 flex-shrink-0 flex flex-col bg-white border border-stone-200 rounded-md shadow-xs h-full overflow-hidden select-none">
+                        <!-- Cabeçalho da Coluna -->
+                        <div class="p-2.5 sm:p-3 border-b border-stone-200 bg-stone-50/70 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full ${obterCorDotEtapa(etapa.id)}"></span>
+                                <h3 class="text-xs font-bold text-stone-900 leading-none">${etapa.titulo}</h3>
+                                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-stone-200/80 text-stone-700 font-semibold">${colData.totalCards}</span>
+                            </div>
+                            <span class="text-[11px] font-mono font-semibold text-stone-600">${colData.totalValorFormatado || 'R$ 0,00'}</span>
+                        </div>
+
+                        <!-- Drop Zone de Cards -->
+                        <div id="colunaKanban_${etapa.id}" 
+                             ondragover="kanbanDragOver(event)" 
+                             ondragleave="kanbanDragLeave(event)" 
+                             ondrop="kanbanDrop(event, '${etapa.id}')"
+                             class="flex-1 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-2 transition-colors min-h-[120px] bg-stone-50/30">
+                            ${cards.length === 0 ? `
+                                <div class="h-24 border border-dashed border-stone-200 rounded-md flex items-center justify-center text-center p-3 text-[11px] text-stone-400 font-mono">
+                                    Nenhum lead nesta etapa
+                                </div>
+                            ` : cards.map(card => renderizarCardKanban(card, etapa.id)).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            quadro.innerHTML = html;
+        }
+
+        function obterCorDotEtapa(etapaId) {
+            const cores = {
+                'novo_lead': 'bg-stone-500',
+                'qualificacao': 'bg-blue-500',
+                'carrinho_aberto': 'bg-amber-500',
+                'aguardando_pagamento': 'bg-purple-500',
+                'pedido_fechado': 'bg-emerald-500',
+                'pos_venda': 'bg-cyan-500'
+            };
+            return cores[etapaId] || 'bg-stone-400';
+        }
+
+        function renderizarCardKanban(card, etapaAtual) {
+            const nomeCliente = escapeHtml(card.cliente?.nome || 'Cliente');
+            const tituloOp = escapeHtml(card.titulo || 'Atendimento');
+            const telefone = card.cliente?.telefone ? formatarTelefoneAmigavel(card.cliente.telefone) : '';
+            const valorFmt = card.valor_formatado || 'R$ 0,00';
+            const tags = Array.isArray(card.cliente?.tags) ? card.cliente.tags : [];
+            const isGanho = card.status === 'ganho';
+            const isPerdido = card.status === 'perdido';
+
+            let statusBadge = '';
+            if (isGanho) {
+                statusBadge = '<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-xs bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold">Ganho</span>';
+            } else if (isPerdido) {
+                statusBadge = '<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-xs bg-rose-100 text-rose-800 border border-rose-300 font-semibold">Perdido</span>';
+            }
+
+            return `
+                <div id="kanbanCard_${card.id}" 
+                     draggable="true" 
+                     ondragstart="kanbanDragStart(event, ${card.id})" 
+                     ondragend="kanbanDragEnd(event)"
+                     class="bg-white border border-stone-200 hover:border-stone-400 rounded-md p-2.5 sm:p-3 shadow-xs hover:shadow-md transition-all cursor-grab active:cursor-grabbing flex flex-col gap-2">
+                    
+                    <!-- Header do Card: Título & Status -->
+                    <div class="flex items-start justify-between gap-1.5">
+                        <span class="text-xs font-bold text-stone-900 leading-snug line-clamp-2">${tituloOp}</span>
+                        ${statusBadge}
+                    </div>
+
+                    <!-- Dados do Contato / Cliente -->
+                    <div class="text-[11px] text-stone-600 flex flex-col gap-0.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-4 h-4 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center text-[10px] font-bold">
+                                ${nomeCliente.charAt(0).toUpperCase()}
+                            </span>
+                            <span class="font-medium text-stone-800 truncate">${nomeCliente}</span>
+                        </div>
+                        ${telefone ? `
+                            <div class="flex items-center gap-1 text-[10px] text-stone-500 font-mono ml-5">
+                                <span>📱 ${telefone}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Tags & Origem -->
+                    <div class="flex items-center gap-1 flex-wrap">
+                        <span class="text-[9px] font-mono px-1.5 py-0.5 rounded-xs bg-stone-100 text-stone-600 border border-stone-200">
+                            🤖 Bot
+                        </span>
+                        ${tags.slice(0, 3).map(tag => `
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded-xs bg-amber-50 text-amber-800 border border-amber-200 truncate max-w-[100px]">
+                                #${escapeHtml(tag)}
+                            </span>
+                        `).join('')}
+                    </div>
+
+                    <!-- Rodapé do Card: Valor e Ações -->
+                    <div class="pt-2 border-t border-stone-100 flex items-center justify-between gap-1">
+                        <span class="text-xs font-mono font-bold text-stone-900">${valorFmt}</span>
+
+                        <div class="flex items-center gap-1">
+                            <!-- Botão Abrir Chat Diretamente -->
+                            <button type="button" onclick="abrirChatDoCard('${card.id_cliente}')" title="Abrir conversa no chat de atendimento"
+                                class="px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-[10px] font-semibold transition cursor-pointer flex items-center gap-1">
+                                <span>💬</span>
+                                <span class="hidden sm:inline">Chat</span>
+                            </button>
+
+                            <!-- Botão Editar -->
+                            <button type="button" onclick="abrirModalEditarOportunidade(${card.id})" title="Editar oportunidade"
+                                class="p-1 hover:bg-stone-100 rounded text-stone-500 hover:text-stone-900 transition cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                            </button>
+
+                            <!-- Seletor Rápido de Etapa para Touch/Acessibilidade -->
+                            <select onchange="moverEtapaRapido(${card.id}, this.value)" title="Mover para outra etapa"
+                                class="text-[10px] py-0.5 px-1 bg-stone-50 border border-stone-200 rounded text-stone-700 cursor-pointer focus:outline-none">
+                                <option value="" disabled selected>Mover...</option>
+                                <option value="novo_lead">1. Novo Lead</option>
+                                <option value="qualificacao">2. Qualificação</option>
+                                <option value="carrinho_aberto">3. Carrinho</option>
+                                <option value="aguardando_pagamento">4. Pagamento</option>
+                                <option value="pedido_fechado">5. Fechado</option>
+                                <option value="pos_venda">6. Pós-Venda</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatarTelefoneAmigavel(tel) {
+            if (!tel) return '';
+            const d = tel.replace(/\D/g, '');
+            if (d.length === 11) return `(${d.substring(0, 2)}) ${d.substring(2, 7)}-${d.substring(7)}`;
+            if (d.length === 10) return `(${d.substring(0, 2)}) ${d.substring(2, 6)}-${d.substring(6)}`;
+            if (d.length === 13 && d.startsWith('55')) return `(${d.substring(2, 4)}) ${d.substring(4, 9)}-${d.substring(9)}`;
+            return tel;
+        }
+
+        // ==========================================
+        // HANDLERS DE DRAG & DROP HTML5
+        // ==========================================
+        function kanbanDragStart(e, id) {
+            cardArrastadoId = id;
+            e.dataTransfer.setData('text/plain', String(id));
+            e.dataTransfer.effectAllowed = 'move';
+            e.currentTarget.classList.add('opacity-40');
+        }
+
+        function kanbanDragEnd(e) {
+            cardArrastadoId = null;
+            e.currentTarget.classList.remove('opacity-40');
+        }
+
+        function kanbanDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.classList.add('bg-stone-200/60', 'ring-1', 'ring-amber-500/40');
+        }
+
+        function kanbanDragLeave(e) {
+            e.currentTarget.classList.remove('bg-stone-200/60', 'ring-1', 'ring-amber-500/40');
+        }
+
+        async function kanbanDrop(e, novaEtapa) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('bg-stone-200/60', 'ring-1', 'ring-amber-500/40');
+
+            const id = e.dataTransfer.getData('text/plain') || cardArrastadoId;
+            if (!id || !novaEtapa) return;
+
+            await moverEtapaRapido(id, novaEtapa);
+        }
+
+        async function moverEtapaRapido(id, novaEtapa) {
+            if (!id || !novaEtapa) return;
+
+            try {
+                const res = await fetch(`/admin/crm/oportunidades/${id}/etapa`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ etapa: novaEtapa })
+                });
+
+                const json = await res.json();
+                if (json.success) {
+                    mostrarToast('Etapa atualizada com sucesso!', 'sucesso');
+                    await carregarKanban(false);
+                } else {
+                    mostrarToast(json.message || 'Erro ao mover etapa', 'erro');
+                }
+            } catch (err) {
+                console.error('Erro ao mover etapa do card:', err);
+                mostrarToast('Falha de conexão ao mover etapa', 'erro');
+            }
+        }
+
+        function abrirChatDoCard(idCliente) {
+            if (!idCliente) return;
+            trocarAba('atendimento');
+            setTimeout(() => {
+                selecionarConversa(idCliente);
+            }, 50);
+        }
+
+        // ==========================================
+        // GESTÃO DOS MODAIS DO FUNIL
+        // ==========================================
+        function abrirModalNovaOportunidade() {
+            const modal = document.getElementById('modalNovaOportunidade');
+            const form = document.getElementById('formNovaOportunidade');
+            if (form) form.reset();
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function fecharModalNovaOportunidade() {
+            const modal = document.getElementById('modalNovaOportunidade');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function submeterNovaOportunidade(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSalvarNovaOp');
+            const telefone = document.getElementById('novaOpTelefone')?.value.trim();
+            const nome = document.getElementById('novaOpNome')?.value.trim();
+            const titulo = document.getElementById('novaOpTitulo')?.value.trim();
+            const valor = parseFloat(document.getElementById('novaOpValor')?.value) || 0.00;
+            const etapa = document.getElementById('novaOpEtapa')?.value || 'novo_lead';
+
+            if (!telefone || !titulo) {
+                mostrarToast('Telefone e título são obrigatórios', 'erro');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span>Salvando...</span>';
+
+            try {
+                const res = await fetch('/admin/crm/oportunidades', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_cliente: telefone,
+                        nome,
+                        titulo,
+                        valor_estimado: valor,
+                        etapa
+                    })
+                });
+
+                const json = await res.json();
+                if (json.success) {
+                    mostrarToast('Oportunidade criada com sucesso!', 'sucesso');
+                    fecharModalNovaOportunidade();
+                    await carregarKanban(false);
+                } else {
+                    mostrarToast(json.message || 'Erro ao criar oportunidade', 'erro');
+                }
+            } catch (err) {
+                mostrarToast('Erro de comunicação ao criar oportunidade', 'erro');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Criar Oportunidade</span>';
+            }
+        }
+
+        async function abrirModalEditarOportunidade(id) {
+            const modal = document.getElementById('modalEditarOportunidade');
+            if (!modal) return;
+
+            try {
+                const res = await fetch(`/admin/crm/oportunidades/${id}`);
+                const json = await res.json();
+
+                if (!json.success || !json.data) {
+                    mostrarToast('Oportunidade não encontrada', 'erro');
+                    return;
+                }
+
+                const op = json.data;
+                document.getElementById('editOpId').value = op.id;
+                document.getElementById('editOpTitulo').value = op.titulo || '';
+                document.getElementById('editOpValor').value = parseFloat(op.valor_estimado) || 0.00;
+                document.getElementById('editOpEtapa').value = op.etapa || 'novo_lead';
+                document.getElementById('editOpStatus').value = op.status || 'aberto';
+                document.getElementById('editOpMotivoPerda').value = op.motivo_perda || '';
+
+                const subtitulo = document.getElementById('editOpSubtitulo');
+                if (subtitulo) {
+                    subtitulo.textContent = `Cliente: ${op.cliente_nome || 'Cliente'} (${op.cliente_telefone || ''})`;
+                }
+
+                alternarCampoMotivoPerda();
+                modal.classList.remove('hidden');
+            } catch (err) {
+                console.error('Erro ao abrir oportunidade:', err);
+                mostrarToast('Erro ao carregar dados da oportunidade', 'erro');
+            }
+        }
+
+        function fecharModalEditarOportunidade() {
+            const modal = document.getElementById('modalEditarOportunidade');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function alternarCampoMotivoPerda() {
+            const status = document.getElementById('editOpStatus')?.value;
+            const campo = document.getElementById('campoMotivoPerda');
+            if (!campo) return;
+            if (status === 'perdido') {
+                campo.classList.remove('hidden');
+            } else {
+                campo.classList.add('hidden');
+            }
+        }
+
+        async function submeterEditarOportunidade(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSalvarEditarOp');
+            const id = document.getElementById('editOpId')?.value;
+            const titulo = document.getElementById('editOpTitulo')?.value.trim();
+            const valor = parseFloat(document.getElementById('editOpValor')?.value) || 0.00;
+            const etapa = document.getElementById('editOpEtapa')?.value;
+            const status = document.getElementById('editOpStatus')?.value;
+            const motivoPerda = document.getElementById('editOpMotivoPerda')?.value.trim();
+
+            if (!id || !titulo) {
+                mostrarToast('Título obrigatório', 'erro');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span>Salvando...</span>';
+
+            try {
+                const res = await fetch(`/admin/crm/oportunidades/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        titulo,
+                        valor_estimado: valor,
+                        etapa,
+                        status,
+                        motivo_perda: status === 'perdido' ? motivoPerda : null
+                    })
+                });
+
+                const json = await res.json();
+                if (json.success) {
+                    mostrarToast('Oportunidade atualizada!', 'sucesso');
+                    fecharModalEditarOportunidade();
+                    await carregarKanban(false);
+                } else {
+                    mostrarToast(json.message || 'Erro ao atualizar', 'erro');
+                }
+            } catch (err) {
+                mostrarToast('Erro ao atualizar oportunidade', 'erro');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Salvar Alterações</span>';
+            }
+        }
+
+        async function excluirOportunidadeAtual() {
+            const id = document.getElementById('editOpId')?.value;
+            if (!id) return;
+
+            if (!confirm('Deseja realmente excluir esta oportunidade do funil?')) return;
+
+            try {
+                const res = await fetch(`/admin/crm/oportunidades/${id}`, { method: 'DELETE' });
+                const json = await res.json();
+                if (json.success) {
+                    mostrarToast('Oportunidade excluída!', 'sucesso');
+                    fecharModalEditarOportunidade();
+                    await carregarKanban(false);
+                } else {
+                    mostrarToast(json.message || 'Erro ao excluir', 'erro');
+                }
+            } catch (err) {
+                mostrarToast('Erro ao excluir oportunidade', 'erro');
             }
         }
     </script>

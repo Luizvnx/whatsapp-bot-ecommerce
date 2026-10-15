@@ -1056,4 +1056,89 @@ router.post('/crm/clientes/:id/notas', async (req, res) => {
     }
 });
 
+// ==========================================
+// 19. ROTAS CRM - FASE 2: FUNIL DE VENDAS & KANBAN
+// ==========================================
+const CrmPipelineService = require('../services/CrmPipelineService');
+
+// Obter quadro Kanban completo agrupado por etapas
+router.get('/crm/kanban', async (req, res) => {
+    try {
+        const { busca, status, tag, responsavel_id } = req.query;
+        const kanban = await CrmPipelineService.listarKanban({
+            busca,
+            status,
+            tag,
+            responsavel_id
+        });
+        res.json({ success: true, data: kanban });
+    } catch (err) {
+        console.error('❌ Erro na rota GET /crm/kanban:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Métricas executivas do funil de vendas
+router.get('/crm/pipeline/metricas', async (req, res) => {
+    try {
+        const metricas = await CrmPipelineService.obterMetricasPipeline();
+        res.json({ success: true, data: metricas });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Obter detalhes de uma oportunidade
+router.get('/crm/oportunidades/:id', async (req, res) => {
+    try {
+        const op = await CrmPipelineService.obterPorId(req.params.id);
+        if (!op) return res.status(404).json({ success: false, message: 'Oportunidade não encontrada' });
+        res.json({ success: true, data: op });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Criar nova oportunidade manualmente
+router.post('/crm/oportunidades', async (req, res) => {
+    try {
+        const nova = await CrmPipelineService.criarOportunidade(req.body);
+        res.status(201).json({ success: true, data: nova });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Atualização de etapa (Drag & Drop no Kanban)
+router.put('/crm/oportunidades/:id/etapa', async (req, res) => {
+    try {
+        const { etapa, motivo_perda } = req.body;
+        if (!etapa) return res.status(400).json({ success: false, message: 'Nova etapa obrigatória' });
+        const atualizada = await CrmPipelineService.atualizarEtapa(req.params.id, etapa, motivo_perda);
+        res.json({ success: true, data: atualizada });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Atualização de dados da oportunidade
+router.put('/crm/oportunidades/:id', async (req, res) => {
+    try {
+        const atualizada = await CrmPipelineService.atualizar(req.params.id, req.body);
+        res.json({ success: true, data: atualizada });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Excluir oportunidade
+router.delete('/crm/oportunidades/:id', async (req, res) => {
+    try {
+        await CrmPipelineService.excluir(req.params.id);
+        res.json({ success: true, message: 'Oportunidade excluída com sucesso' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

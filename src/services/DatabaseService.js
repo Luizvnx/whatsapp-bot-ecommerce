@@ -133,6 +133,28 @@ class DatabaseService {
                 criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX IF NOT EXISTS idx_tb_crm_notas_cliente ON tb_crm_notas(cliente_id);
+
+            -- FASE 2: Funil de Vendas & Pipeline de Negócios (Kanban)
+            CREATE TABLE IF NOT EXISTS tb_crm_oportunidades (
+                id SERIAL PRIMARY KEY,
+                cliente_id INT NOT NULL REFERENCES tb_crm_clientes(id) ON DELETE CASCADE,
+                id_cliente VARCHAR(100) NOT NULL,
+                titulo VARCHAR(150) NOT NULL,
+                valor_estimado NUMERIC(10, 2) DEFAULT 0.00,
+                etapa VARCHAR(50) DEFAULT 'novo_lead',
+                status VARCHAR(20) DEFAULT 'aberto',
+                motivo_perda TEXT,
+                responsavel_id INT REFERENCES tb_usuarios(id) ON DELETE SET NULL,
+                origem VARCHAR(50) DEFAULT 'whatsapp_bot',
+                dados_extras JSONB DEFAULT '{}',
+                data_fechamento TIMESTAMP,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_tb_crm_oportunidades_cliente_id ON tb_crm_oportunidades(cliente_id);
+            CREATE INDEX IF NOT EXISTS idx_tb_crm_oportunidades_id_cliente ON tb_crm_oportunidades(id_cliente);
+            CREATE INDEX IF NOT EXISTS idx_tb_crm_oportunidades_etapa ON tb_crm_oportunidades(etapa);
+            CREATE INDEX IF NOT EXISTS idx_tb_crm_oportunidades_status ON tb_crm_oportunidades(status);
         `;
 
         try {
@@ -143,6 +165,7 @@ class DatabaseService {
             await this.executar(sqlCrm);
             await this.semearCatalogoSeVazio();
             await this.migrarSessoesParaCrmClientesSeVazio();
+            await this.migrarOportunidadesIniciaisSeVazio();
             console.log('📦 Banco de Dados pronto para uso.');
         } catch (error) {
             console.error('❌ Erro ao inicializar tabelas:', error.message);
@@ -194,6 +217,59 @@ class DatabaseService {
             }
         } catch (err) {
             console.warn('⚠️ [CRM] Aviso na migração de clientes para o CRM:', err.message);
+        }
+    }
+
+    /**
+     * Cria oportunidades iniciais para os clientes existentes caso tb_crm_oportunidades esteja vazia
+     */
+    static async migrarOportunidadesIniciaisSeVazio() {
+        try {
+            const check = await this.executar('SELECT count(*) FROM tb_crm_oportunidades');
+            if (parseInt(check.rows[0].count, 10) === 0) {
+                console.log('🔄 [CRM Funil] Inicializando oportunidades para clientes existentes...');
+                const clientes = await this.executar('SELECT id, id_cliente, nome, status, etapa_funil, ltv, ticket_medio, total_pedidos, criado_em, atualizado_em FROM tb_crm_clientes');
+                
+                for (const c of clientes.rows) {
+                    let etapa = 'novo_lead';
+                    let status = 'aberto';
+                    const valor = parseFloat(c.ticket_medio || c.ltv || 0.00) || 0.00;
+
+                    if (c.status === 'cliente' || c.total_pedidos > 0) {
+                        etapa = 'pos_venda';
+                        status = 'ganho';
+                    } else if (c.etapa_funil === 'fechamento' || c.etapa_funil === 'pedido_fechado') {
+                        etapa = 'pedido_fechado';
+                        status = 'ganho';
+                    } else if (c.etapa_funil === 'aguardando_pagamento') {
+                        etapa = 'aguardando_pagamento';
+                    } else if (c.etapa_funil === 'carrinho_aberto') {
+                        etapa = 'carrinho_aberto';
+                    } else if (c.etapa_funil === 'qualificacao') {
+                        etapa = 'qualificacao';
+                    }
+
+                    const titulo = `Atendimento - ${c.nome || 'Cliente'}`;
+
+                    await this.executar(`
+                        INSERT INTO tb_crm_oportunidades (
+                            cliente_id, id_cliente, titulo, valor_estimado, etapa, status, origem, criado_em, atualizado_em
+                        ) VALUES ($1, $2, $3, $4, $5, $6, 'whatsapp_bot', $7, $8)
+                    `, [
+                        c.id,
+                        c.id_cliente,
+                        titulo,
+                        valor,
+                        etapa,
+                        status,
+                        c.criado_em || new Date(),
+                        c.atualizado_em || new Date()
+                    ]);
+                }
+                console.log('✅ [CRM Funil] Oportunidades do funil inicializadas com sucesso.');
+            }
+        } catch (err) {
+            console.warn('⚠️ [CRM Funil] Aviso na inicialização de oportunidades:', err.message);
         }
     }
 
