@@ -246,7 +246,7 @@ class CrmPipelineService {
             const busca = await DatabaseService.executar('SELECT * FROM tb_crm_clientes WHERE id = $1', [cliente_id]);
             clienteFinal = busca.rows[0];
         } else if (id_cliente) {
-            clienteFinal = await CrmClienteService.obterOuCriar(id_cliente);
+            clienteFinal = await CrmClienteService.obterOuCriar(id_cliente, dados.nome || null);
         }
 
         if (!clienteFinal) {
