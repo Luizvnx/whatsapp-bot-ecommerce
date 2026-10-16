@@ -1147,9 +1147,9 @@ router.post('/crm/oportunidades', async (req, res) => {
 // Atualização de etapa (Drag & Drop no Kanban)
 router.put('/crm/oportunidades/:id/etapa', async (req, res) => {
     try {
-        const { etapa, motivo_perda } = req.body;
+        const { etapa, motivo_perda, valor } = req.body;
         if (!etapa) return res.status(400).json({ success: false, message: 'Nova etapa obrigatória' });
-        const atualizada = await CrmPipelineService.atualizarEtapa(req.params.id, etapa, motivo_perda);
+        const atualizada = await CrmPipelineService.atualizarEtapa(req.params.id, etapa, motivo_perda, valor);
         res.json({ success: true, data: atualizada });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
@@ -1185,7 +1185,8 @@ const PaymentService = require('../services/payment/PaymentService');
 router.post('/crm/oportunidades/:id/confirmar-pagamento', async (req, res) => {
     try {
         const atendenteNome = req.user?.name || req.user?.login || 'Atendente';
-        const resultado = await PaymentService.confirmarPagamentoManual(req.params.id, atendenteNome);
+        const { valor } = req.body || {};
+        const resultado = await PaymentService.confirmarPagamentoManual(req.params.id, atendenteNome, valor);
         res.json({ success: true, message: 'Pagamento confirmado e venda finalizada com sucesso!', ...resultado });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
@@ -1196,7 +1197,8 @@ router.post('/crm/oportunidades/:id/confirmar-pagamento', async (req, res) => {
 router.post('/conversa/:id_cliente/confirmar-venda', async (req, res) => {
     try {
         const atendenteNome = req.user?.name || req.user?.login || 'Atendente';
-        const resultado = await PaymentService.confirmarPagamentoManual(req.params.id_cliente, atendenteNome);
+        const { valor } = req.body || {};
+        const resultado = await PaymentService.confirmarPagamentoManual(req.params.id_cliente, atendenteNome, valor);
         res.json({ success: true, message: 'Pagamento confirmado com sucesso!', ...resultado });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });

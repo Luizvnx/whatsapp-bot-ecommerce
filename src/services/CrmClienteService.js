@@ -82,15 +82,23 @@ class CrmClienteService {
      * Busca cliente por ID numérico ou JID do WhatsApp
      */
     static async obterPorIdOuJid(idOuJid) {
+        if (!idOuJid) return null;
         try {
-            const isNumeroId = Number.isInteger(Number(idOuJid)) && !String(idOuJid).includes('@');
-            const sql = isNumeroId
-                ? `SELECT * FROM tb_crm_clientes WHERE id = $1`
-                : `SELECT * FROM tb_crm_clientes WHERE id_cliente = $1`;
+            const str = String(idOuJid).trim();
+            const digitos = str.replace(/\D/g, '');
+            const isTelefoneOuJid = str.includes('@') || digitos.length >= 10;
 
-            const val = isNumeroId ? Number(idOuJid) : this.normalizarId(idOuJid);
-            const res = await DatabaseService.executar(sql, [val]);
-            return res.rows[0] || null;
+            if (isTelefoneOuJid) {
+                const idCanonico = this.normalizarId(str);
+                const sql = `SELECT * FROM tb_crm_clientes WHERE id_cliente = $1 OR telefone = $2 LIMIT 1`;
+                const res = await DatabaseService.executar(sql, [idCanonico, digitos]);
+                return res.rows[0] || null;
+            } else if (Number.isInteger(Number(str))) {
+                const sql = `SELECT * FROM tb_crm_clientes WHERE id = $1 LIMIT 1`;
+                const res = await DatabaseService.executar(sql, [Number(str)]);
+                return res.rows[0] || null;
+            }
+            return null;
         } catch (err) {
             console.error('[CrmClienteService] Erro ao obter cliente:', err.message);
             return null;

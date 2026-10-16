@@ -75,11 +75,13 @@ class PaymentService {
     /**
      * Confirmação MANUAL de pagamento por um atendente no painel/chat
      */
-    static async confirmarPagamentoManual(idOportunidadeOuCliente, atendenteNome = 'Atendente') {
+    static async confirmarPagamentoManual(idOportunidadeOuCliente, atendenteNome = 'Atendente', valorInformado = null) {
         try {
             let oportunidade = null;
             let idClienteFinal = null;
-            let valorFinal = 0.00;
+            let valorFinal = (valorInformado !== null && !isNaN(parseFloat(valorInformado)) && parseFloat(valorInformado) > 0)
+                ? parseFloat(valorInformado)
+                : 0.00;
             let opId = null;
 
             // Se for número (ID da oportunidade)
@@ -87,7 +89,9 @@ class PaymentService {
                 oportunidade = await CrmPipelineService.obterPorId(Number(idOportunidadeOuCliente));
                 if (oportunidade) {
                     idClienteFinal = oportunidade.id_cliente;
-                    valorFinal = parseFloat(oportunidade.valor_estimado) || 0.00;
+                    if (valorFinal <= 0) {
+                        valorFinal = parseFloat(oportunidade.valor_estimado) || 0.00;
+                    }
                     opId = oportunidade.id;
                 }
             } else {
@@ -102,7 +106,9 @@ class PaymentService {
                     if (buscaOp.rows.length > 0) {
                         oportunidade = buscaOp.rows[0];
                         opId = oportunidade.id;
-                        valorFinal = parseFloat(oportunidade.valor_estimado) || 0.00;
+                        if (valorFinal <= 0) {
+                            valorFinal = parseFloat(oportunidade.valor_estimado) || 0.00;
+                        }
                     }
                 }
             }
@@ -111,14 +117,22 @@ class PaymentService {
                 throw new Error('Identificador de cliente ou oportunidade não localizado.');
             }
 
-            // Se o valor estimado da oportunidade for 0, tenta buscar na última cobrança pendente
+            // Se o valor estimado da oportunidade for 0, tenta buscar na última cobrança pendente ou pedido
             if (valorFinal <= 0) {
                 const buscaCob = await DatabaseService.executar(
-                    `SELECT valor FROM tb_cobrancas_pix WHERE id_cliente = $1 AND status = 'pendente' ORDER BY criado_em DESC LIMIT 1`,
+                    `SELECT valor FROM tb_cobrancas_pix WHERE id_cliente = $1 ORDER BY criado_em DESC LIMIT 1`,
                     [idClienteFinal]
                 );
-                if (buscaCob.rows.length > 0) {
+                if (buscaCob.rows.length > 0 && parseFloat(buscaCob.rows[0].valor) > 0) {
                     valorFinal = parseFloat(buscaCob.rows[0].valor) || 0.00;
+                } else {
+                    const buscaPed = await DatabaseService.executar(
+                        `SELECT valor_total FROM tb_pedidos WHERE id_cliente = $1 ORDER BY id DESC LIMIT 1`,
+                        [idClienteFinal]
+                    );
+                    if (buscaPed.rows.length > 0 && parseFloat(buscaPed.rows[0].valor_total) > 0) {
+                        valorFinal = parseFloat(buscaPed.rows[0].valor_total) || 0.00;
+                    }
                 }
             }
 
@@ -260,7 +274,19 @@ class PaymentService {
 
         // 2. Move a oportunidade para 'pedido_fechado' / 'ganho'
         if (oportunidadeId) {
-            await CrmPipelineService.atualizarEtapa(oportunidadeId, 'pedido_fechado');
+            await DatabaseService.executar(`
+                UPDATE tb_crm_oportunidades 
+                SET etapa = 'pedido_fechado',
+                    status = 'ganho',
+                    data_fechamento = CURRENT_TIMESTAMP,
+                    valor_estimado = CASE WHEN $1::numeric > 0 THEN $1::numeric ELSE valor_estimado END,
+                    atualizado_em = CURRENT_TIMESTAMP
+                WHERE id = $2
+            `, [valorNum, oportunidadeId]);
+
+            try {
+                await CrmPipelineService.atualizarEtapa(oportunidadeId, 'pedido_fechado', null, valorNum);
+            } catch (_) {}
         } else {
             await CrmPipelineService.sincronizarEtapaComBot(idCanonico, 'pedido_fechado', { valor: valorNum });
         }

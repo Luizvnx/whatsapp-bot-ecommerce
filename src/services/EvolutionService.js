@@ -17,6 +17,123 @@ class EvolutionService {
     static cacheQrCode = null;
     static cacheStatus = null;
     static cacheStatusTimestamp = 0;
+    static lidToPhoneCache = new Map();
+
+    /**
+     * Registra o mapeamento entre um LID do WhatsApp e o telefone real (@s.whatsapp.net)
+     */
+    static registrarMapeamentoLid(lid, phoneJid) {
+        if (!lid || !phoneJid) return;
+        const lidLimpo = String(lid).split('@')[0].split(':')[0].replace(/\D/g, '');
+        const phoneLimpo = String(phoneJid).split('@')[0].split(':')[0].replace(/\D/g, '');
+        if (!lidLimpo || !phoneLimpo) return;
+        const phoneFinal = `${phoneLimpo}@s.whatsapp.net`;
+        this.lidToPhoneCache.set(lidLimpo, phoneFinal);
+        if (this.lidToPhoneCache.size > 5000) {
+            const firstKey = this.lidToPhoneCache.keys().next().value;
+            this.lidToPhoneCache.delete(firstKey);
+        }
+    }
+
+    /**
+     * Resolve um LID do WhatsApp (@lid) para o telefone canônico do cliente (@s.whatsapp.net)
+     * Busca: 1) Cache em memória -> 2) Banco de dados -> 3) Histórico da Evolution API -> 4) Contatos Evolution
+     */
+    static async resolverLidParaTelefone(lid) {
+        if (!lid || typeof lid !== 'string') return null;
+        const lidLimpo = lid.split('@')[0].split(':')[0].replace(/\D/g, '');
+        if (!lidLimpo) return null;
+
+        // 1. Consulta em memória
+        if (this.lidToPhoneCache.has(lidLimpo)) {
+            return this.lidToPhoneCache.get(lidLimpo);
+        }
+
+        // 2. Consulta no banco de dados local
+        try {
+            const DatabaseService = require('./DatabaseService');
+            const res = await DatabaseService.executar(
+                `SELECT id_cliente FROM tb_bot_sessoes WHERE dados_sessao->>'lid' = $1 LIMIT 1`,
+                [lidLimpo]
+            );
+            if (res?.rows?.length > 0 && res.rows[0].id_cliente) {
+                const phone = res.rows[0].id_cliente.includes('@s.whatsapp.net')
+                    ? res.rows[0].id_cliente
+                    : `${res.rows[0].id_cliente.split('@')[0]}@s.whatsapp.net`;
+                this.lidToPhoneCache.set(lidLimpo, phone);
+                return phone;
+            }
+        } catch (_) { }
+
+        // 3. Consulta mensagens na Evolution API para encontrar remoteJidAlt
+        try {
+            const url = `${this.baseUrl}/chat/findMessages/${this.instanceName}`;
+            const response = await axios.post(url, {
+                where: {
+                    key: {
+                        remoteJid: `${lidLimpo}@lid`
+                    }
+                },
+                take: 5
+            }, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 3000
+            });
+            const records = response.data?.messages?.records || response.data?.records || (Array.isArray(response.data) ? response.data : []);
+            for (const rec of records) {
+                const alt = rec.key?.remoteJidAlt || rec.remoteJidAlt;
+                if (alt && typeof alt === 'string' && alt.includes('@s.whatsapp.net')) {
+                    const phone = `${alt.split('@')[0].split(':')[0]}@s.whatsapp.net`;
+                    this.lidToPhoneCache.set(lidLimpo, phone);
+                    return phone;
+                }
+            }
+        } catch (_) { }
+
+        // 4. Consulta contatos na Evolution API
+        try {
+            const url = `${this.baseUrl}/chat/findContacts/${this.instanceName}`;
+            const response = await axios.post(url, {
+                where: {
+                    remoteJid: `${lidLimpo}@lid`
+                }
+            }, {
+                headers: {
+                    'apikey': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 3000
+            });
+            const contacts = Array.isArray(response.data) ? response.data : [response.data];
+            const lidContact = contacts.find(c => c && c.remoteJid && c.remoteJid.includes(lidLimpo));
+            if (lidContact?.pushName) {
+                const responseNome = await axios.post(url, {
+                    where: {
+                        pushName: lidContact.pushName
+                    }
+                }, {
+                    headers: {
+                        'apikey': this.apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 3000
+                });
+                const matches = Array.isArray(responseNome.data) ? responseNome.data : [responseNome.data];
+                for (const m of matches) {
+                    if (m?.remoteJid && m.remoteJid.includes('@s.whatsapp.net')) {
+                        const phone = `${m.remoteJid.split('@')[0].split(':')[0]}@s.whatsapp.net`;
+                        this.lidToPhoneCache.set(lidLimpo, phone);
+                        return phone;
+                    }
+                }
+            }
+        } catch (_) { }
+
+        return null;
+    }
 
     /**
      * Envia status de presença no WhatsApp ('composing' = digitando..., 'recording' = gravando áudio...)

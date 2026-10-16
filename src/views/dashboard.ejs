@@ -103,6 +103,32 @@
             background: #a8a29e;
         }
 
+        /* Rolagem Horizontal do Funil (Kanban) e Pedidos */
+        .custom-scrollbar-x {
+            overscroll-behavior-x: contain !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-x pan-y !important;
+        }
+
+        .custom-scrollbar-x::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .custom-scrollbar-x::-webkit-scrollbar-track {
+            background: #f5f5f4;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar-x::-webkit-scrollbar-thumb {
+            background: #d6d3d1;
+            border-radius: 4px;
+            border: 1px solid #e7e5e4;
+        }
+
+        .custom-scrollbar-x::-webkit-scrollbar-thumb:hover {
+            background: #78716c;
+        }
+
         .chat-bg {
             background-color: #f7f6f2;
             background-image: radial-gradient(#e5e4de 1px, transparent 1px);
@@ -698,7 +724,7 @@
 
     <!-- 3. ABA FUNIL DE VENDAS & PIPELINE (KANBAN) -->
     <div id="abaConteudoKanban"
-        class="hidden flex-1 overflow-hidden max-w-7xl mx-auto w-full p-2 sm:p-3 flex-col gap-3">
+        class="hidden flex-1 overflow-hidden w-full p-2 sm:p-3 flex-col gap-2.5">
         <!-- Métricas Rápidas do Funil -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 flex-shrink-0">
             <div class="bg-white border border-stone-200 rounded-md p-3 shadow-xs">
@@ -752,7 +778,7 @@
 
         <!-- Barra de Ferramentas & Filtros -->
         <div
-            class="bg-white border border-stone-200 rounded-md p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2.5 shadow-xs flex-shrink-0">
+            class="bg-white border border-stone-200 rounded-md p-2 sm:p-2.5 flex flex-wrap items-center justify-between gap-2 shadow-xs flex-shrink-0">
             <div class="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
                 <div class="relative flex-1 sm:max-w-xs">
                     <input type="text" id="buscaKanban" placeholder="Buscar cliente, telefone ou título..."
@@ -761,12 +787,26 @@
                 </div>
 
                 <select id="filtroStatusKanban" onchange="carregarKanban()"
-                    class="py-1.5 px-2.5 bg-stone-50 border border-stone-200 rounded-sm text-xs text-stone-800 focus:outline-none focus:bg-white focus:border-stone-900 transition">
-                    <option value="todos">Todos os Status</option>
-                    <option value="aberto" selected>Apenas Abertos</option>
-                    <option value="ganho">Apenas Ganhos</option>
+                    class="py-1.5 px-2.5 bg-stone-50 border border-stone-200 rounded-sm text-xs font-medium text-stone-800 focus:outline-none focus:bg-white focus:border-stone-900 transition cursor-pointer">
+                    <option value="todos" selected>Funil Completo (Todos os Status)</option>
+                    <option value="aberto">Apenas Em Negociação (Abertos)</option>
+                    <option value="ganho">Apenas Concluídos (Ganhos)</option>
                     <option value="perdido">Apenas Perdidos</option>
                 </select>
+
+                <!-- Controles de Navegação Horizontal do Quadro -->
+                <div class="flex items-center gap-1 bg-stone-100 p-0.5 rounded-sm border border-stone-200 ml-auto sm:ml-0">
+                    <button type="button" onclick="scrollKanban('left')" title="Rolar Funil para a esquerda"
+                        class="px-2 py-1 bg-white hover:bg-stone-50 active:bg-stone-200 text-stone-700 rounded-xs text-xs font-semibold transition flex items-center gap-1 cursor-pointer shadow-2xs border border-stone-200/60">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        <span class="hidden xl:inline text-[11px]">Início</span>
+                    </button>
+                    <button type="button" onclick="scrollKanban('right')" title="Rolar Funil para a direita (Ver Fechados & Pós-Venda)"
+                        class="px-2.5 py-1 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-xs text-xs font-semibold transition flex items-center gap-1 cursor-pointer shadow-2xs">
+                        <span class="text-[11px]">Ver Fechados & Pós-Venda</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
             </div>
 
             <div class="flex items-center gap-2">
@@ -780,7 +820,7 @@
                 </button>
 
                 <button type="button" onclick="abrirModalNovaOportunidade()"
-                    class="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                    class="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -789,10 +829,12 @@
             </div>
         </div>
 
-        <!-- Quadro Kanban (Scroll Horizontal e Drag & Drop) -->
+        <!-- Quadro Kanban (Scroll Horizontal e Drag & Drop com Auto-Scroll) -->
         <div
-            class="flex-1 bg-stone-100/60 border border-stone-200 rounded-md overflow-hidden p-2 sm:p-2.5 shadow-xs flex flex-col">
-            <div id="quadroKanbanColunas" class="flex-1 flex gap-3 overflow-x-auto custom-scrollbar pb-1">
+            class="flex-1 bg-stone-100/60 border border-stone-200 rounded-md overflow-hidden p-2 sm:p-2.5 shadow-xs flex flex-col min-h-0">
+            <div id="quadroKanbanColunas" 
+                 ondragover="kanbanQuadroDragOver(event)"
+                 class="flex-1 flex gap-3 overflow-x-auto custom-scrollbar-x pb-2 scroll-smooth select-none">
                 <div class="w-full text-center py-16 text-stone-400 font-mono text-xs">
                     ⏳ Carregando Funil de Vendas...
                 </div>
@@ -5010,7 +5052,7 @@
                     const quadro = document.getElementById('quadroKanbanColunas');
                     if (!quadro) return;
 
-                    const filtroStatus = document.getElementById('filtroStatusKanban')?.value || 'aberto';
+                    const filtroStatus = document.getElementById('filtroStatusKanban')?.value || 'todos';
                     const termo = document.getElementById('buscaKanban')?.value.trim() || '';
 
                     if (forcar || !dadosKanbanCache) {
@@ -5033,6 +5075,7 @@
                         dadosKanbanCache = json.data;
                         renderizarQuadroKanban(dadosKanbanCache);
                         atualizarMetricasCabecalhoKanban(dadosKanbanCache.metricasGerais);
+                        inicializarKanbanInteracoes();
                     } catch (err) {
                         console.error('Erro ao carregar kanban:', err);
                         quadro.innerHTML = `<div class="w-full text-center py-12 text-rose-500 font-mono text-xs">Erro de conexão com o servidor.</div>`;
@@ -5064,16 +5107,34 @@
                         const colData = colunas[etapa.id] || { cards: [], totalCards: 0, totalValorFormatado: 'R$ 0,00' };
                         const cards = colData.cards || [];
 
+                        // Destaque visual especial para as colunas finais de classificação
+                        const isPedidoFechado = etapa.id === 'pedido_fechado';
+                        const isPosVenda = etapa.id === 'pos_venda';
+
+                        let headerBg = 'bg-stone-50/70 border-b border-stone-200';
+                        let containerBorder = 'border-stone-200';
+                        let badgeBg = 'bg-stone-200/80 text-stone-700';
+
+                        if (isPedidoFechado) {
+                            headerBg = 'bg-emerald-50/80 border-b border-emerald-200';
+                            containerBorder = 'border-emerald-300 ring-1 ring-emerald-500/10';
+                            badgeBg = 'bg-emerald-200/80 text-emerald-900';
+                        } else if (isPosVenda) {
+                            headerBg = 'bg-cyan-50/80 border-b border-cyan-200';
+                            containerBorder = 'border-cyan-300 ring-1 ring-cyan-500/10';
+                            badgeBg = 'bg-cyan-200/80 text-cyan-900';
+                        }
+
                         html += `
-                    <div class="w-72 sm:w-80 flex-shrink-0 flex flex-col bg-white border border-stone-200 rounded-md shadow-xs h-full overflow-hidden select-none">
+                    <div id="kanbanColunaContainer_${etapa.id}" class="w-72 sm:w-80 flex-shrink-0 flex flex-col bg-white border ${containerBorder} rounded-md shadow-xs h-full overflow-hidden select-none">
                         <!-- Cabeçalho da Coluna -->
-                        <div class="p-2.5 sm:p-3 border-b border-stone-200 bg-stone-50/70 flex items-center justify-between">
+                        <div class="p-2.5 sm:p-3 ${headerBg} flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="w-2.5 h-2.5 rounded-full ${obterCorDotEtapa(etapa.id)}"></span>
                                 <h3 class="text-xs font-bold text-stone-900 leading-none">${etapa.titulo}</h3>
-                                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-stone-200/80 text-stone-700 font-semibold">${colData.totalCards}</span>
+                                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full ${badgeBg} font-bold">${colData.totalCards}</span>
                             </div>
-                            <span class="text-[11px] font-mono font-semibold text-stone-600">${colData.totalValorFormatado || 'R$ 0,00'}</span>
+                            <span class="text-[11px] font-mono font-semibold text-stone-700">${colData.totalValorFormatado || 'R$ 0,00'}</span>
                         </div>
 
                         <!-- Drop Zone de Cards -->
@@ -5081,10 +5142,11 @@
                              ondragover="kanbanDragOver(event)" 
                              ondragleave="kanbanDragLeave(event)" 
                              ondrop="kanbanDrop(event, '${etapa.id}')"
-                             class="flex-1 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-2 transition-colors min-h-[120px] bg-stone-50/30">
+                             class="flex-1 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-2 transition-colors min-h-[140px] bg-stone-50/30">
                             ${cards.length === 0 ? `
-                                <div class="h-24 border border-dashed border-stone-200 rounded-md flex items-center justify-center text-center p-3 text-[11px] text-stone-400 font-mono">
-                                    Nenhum lead nesta etapa
+                                <div class="h-28 border border-dashed ${isPedidoFechado || isPosVenda ? 'border-emerald-200 bg-emerald-50/20' : 'border-stone-200'} rounded-md flex flex-col items-center justify-center text-center p-3 text-[11px] text-stone-400 font-mono gap-1">
+                                    <span>${isPedidoFechado ? '🏁 Nenhuma venda fechada' : isPosVenda ? '🔄 Nenhum cliente em pós-venda' : 'Nenhum lead nesta etapa'}</span>
+                                    <span class="text-[9px] text-stone-400">Arraste cards para cá</span>
                                 </div>
                             ` : cards.map(card => renderizarCardKanban(card, etapa.id)).join('')}
                         </div>
@@ -5118,9 +5180,9 @@
 
                     let statusBadge = '';
                     if (isGanho) {
-                        statusBadge = '<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-xs bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold">Ganho</span>';
+                        statusBadge = '<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-xs bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold">Ganho</span>';
                     } else if (isPerdido) {
-                        statusBadge = '<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-xs bg-rose-100 text-rose-800 border border-rose-300 font-semibold">Perdido</span>';
+                        statusBadge = '<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-xs bg-rose-100 text-rose-800 border border-rose-300 font-bold">Perdido</span>';
                     }
 
                     return `
@@ -5163,40 +5225,47 @@
                         `).join('')}
                     </div>
 
-                    <!-- Rodapé do Card: Valor e Ações -->
-                    <div class="pt-2 border-t border-stone-100 flex items-center justify-between gap-1">
-                        <span class="text-xs font-mono font-bold text-stone-900">${valorFmt}</span>
+                    <!-- Rodapé do Card: 2 Linhas Limpas e Responsivas -->
+                    <div class="pt-2 border-t border-stone-100 flex flex-col gap-1.5">
+                        <!-- Linha 1: Valor em Destaque -->
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-xs font-mono font-bold text-stone-900">${valorFmt}</span>
+                            ${card.origem ? `<span class="text-[9px] font-mono text-stone-400 capitalize">${card.origem.replace('_', ' ')}</span>` : ''}
+                        </div>
 
-                        <div class="flex items-center gap-1">
-                            ${card.etapa === 'aguardando_pagamento' ? `
-                                <button type="button" onclick="confirmarPixPeloCard(${card.id})" title="Confirmar recebimento do Pix e finalizar venda"
-                                    class="px-2 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-sm text-[10px] font-semibold transition cursor-pointer flex items-center gap-1 shadow-xs">
-                                    <span>💰</span>
-                                    <span>Confirmar Pix</span>
+                        <!-- Linha 2: Ações & Mover (Sem Quebra de Layout) -->
+                        <div class="flex items-center justify-between gap-1 flex-wrap">
+                            <div class="flex items-center gap-1 flex-wrap">
+                                ${card.etapa === 'aguardando_pagamento' ? `
+                                    <button type="button" onclick="confirmarPixPeloCard(${card.id})" title="Confirmar recebimento do Pix e finalizar venda"
+                                        class="px-2 py-1 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-xs text-[10px] font-semibold transition cursor-pointer flex items-center gap-1 shadow-2xs">
+                                        <span>💰</span>
+                                        <span>Confirmar Pix</span>
+                                    </button>
+                                ` : ''}
+
+                                <!-- Botão Abrir Chat Diretamente -->
+                                <button type="button" onclick="abrirChatDoCard('${card.id_cliente}')" title="Abrir conversa no chat de atendimento"
+                                    class="px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-xs text-[10px] font-semibold transition cursor-pointer flex items-center gap-1 shadow-2xs">
+                                    <span>💬</span>
+                                    <span>Chat</span>
                                 </button>
-                            ` : ''}
 
-                            <!-- Botão Abrir Chat Diretamente -->
-                            <button type="button" onclick="abrirChatDoCard('${card.id_cliente}')" title="Abrir conversa no chat de atendimento"
-                                class="px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-sm text-[10px] font-semibold transition cursor-pointer flex items-center gap-1">
-                                <span>💬</span>
-                                <span class="hidden sm:inline">Chat</span>
-                            </button>
-
-                            <!-- Botão Editar -->
-                            <button type="button" onclick="abrirModalEditarOportunidade(${card.id})" title="Editar oportunidade"
-                                class="p-1 hover:bg-stone-100 rounded text-stone-500 hover:text-stone-900 transition cursor-pointer">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                            </button>
+                                <!-- Botão Editar -->
+                                <button type="button" onclick="abrirModalEditarOportunidade(${card.id})" title="Editar oportunidade"
+                                    class="p-1 hover:bg-stone-100 rounded text-stone-500 hover:text-stone-900 transition cursor-pointer">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                </button>
+                            </div>
 
                             <!-- Seletor Rápido de Etapa para Touch/Acessibilidade -->
-                            <select onchange="moverEtapaRapido(${card.id}, this.value)" title="Mover para outra etapa"
-                                class="text-[10px] py-0.5 px-1 bg-stone-50 border border-stone-200 rounded text-stone-700 cursor-pointer focus:outline-none">
+                            <select onchange="moverEtapaRapido(${card.id}, this.value)" title="Mover para outra etapa do funil"
+                                class="text-[10px] py-0.5 px-1 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded text-stone-700 cursor-pointer focus:outline-none max-w-[85px] truncate">
                                 <option value="" disabled selected>Mover...</option>
-                                <option value="novo_lead">1. Novo Lead</option>
-                                <option value="qualificacao">2. Qualificação</option>
+                                <option value="novo_lead">1. Lead</option>
+                                <option value="qualificacao">2. Qualif</option>
                                 <option value="carrinho_aberto">3. Carrinho</option>
-                                <option value="aguardando_pagamento">4. Pagamento</option>
+                                <option value="aguardando_pagamento">4. Pagto</option>
                                 <option value="pedido_fechado">5. Fechado</option>
                                 <option value="pos_venda">6. Pós-Venda</option>
                             </select>
@@ -5216,7 +5285,40 @@
                 }
 
                 // ==========================================
-                // HANDLERS DE DRAG & DROP HTML5
+                // NAVEGAÇÃO HORIZONTAL & CONTROLES DO KANBAN
+                // ==========================================
+                function scrollKanban(direcao) {
+                    const quadro = document.getElementById('quadroKanbanColunas');
+                    if (!quadro) return;
+                    const passo = 380;
+                    if (direcao === 'left') {
+                        quadro.scrollBy({ left: -passo, behavior: 'smooth' });
+                    } else if (direcao === 'right') {
+                        quadro.scrollBy({ left: passo, behavior: 'smooth' });
+                    }
+                }
+
+                function inicializarKanbanInteracoes() {
+                    const quadro = document.getElementById('quadroKanbanColunas');
+                    if (!quadro || quadro._kanbanWheelInited) return;
+                    quadro._kanbanWheelInited = true;
+
+                    // Mapeia rolagem vertical do mouse para scroll horizontal fluido
+                    quadro.addEventListener('wheel', (e) => {
+                        if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && !e.shiftKey) {
+                            const dropZone = e.target.closest('.overflow-y-auto');
+                            if (dropZone && (dropZone.scrollHeight > dropZone.clientHeight)) {
+                                const atTop = dropZone.scrollTop <= 0 && e.deltaY < 0;
+                                const atBottom = Math.ceil(dropZone.scrollTop + dropZone.clientHeight) >= dropZone.scrollHeight && e.deltaY > 0;
+                                if (!atTop && !atBottom) return; // deixa rolar vertical dentro dos cards
+                            }
+                            quadro.scrollLeft += e.deltaY * 0.9;
+                        }
+                    }, { passive: true });
+                }
+
+                // ==========================================
+                // HANDLERS DE DRAG & DROP HTML5 COM AUTO-SCROLL
                 // ==========================================
                 function kanbanDragStart(e, id) {
                     cardArrastadoId = id;
@@ -5233,11 +5335,30 @@
                 function kanbanDragOver(e) {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
-                    e.currentTarget.classList.add('bg-stone-200/60', 'ring-1', 'ring-amber-500/40');
+                    e.currentTarget.classList.add('bg-stone-200/60', 'ring-2', 'ring-amber-500/40');
+                    gerenciarAutoScrollKanban(e.clientX);
+                }
+
+                function kanbanQuadroDragOver(e) {
+                    e.preventDefault();
+                    gerenciarAutoScrollKanban(e.clientX);
+                }
+
+                function gerenciarAutoScrollKanban(mouseX) {
+                    const quadro = document.getElementById('quadroKanbanColunas');
+                    if (!quadro) return;
+                    const rect = quadro.getBoundingClientRect();
+                    const margemAtivacao = 90;
+
+                    if (mouseX > rect.right - margemAtivacao) {
+                        quadro.scrollLeft += 18;
+                    } else if (mouseX < rect.left + margemAtivacao) {
+                        quadro.scrollLeft -= 18;
+                    }
                 }
 
                 function kanbanDragLeave(e) {
-                    e.currentTarget.classList.remove('bg-stone-200/60', 'ring-1', 'ring-amber-500/40');
+                    e.currentTarget.classList.remove('bg-stone-200/60', 'ring-2', 'ring-amber-500/40');
                 }
 
                 async function kanbanDrop(e, novaEtapa) {
@@ -5253,11 +5374,32 @@
                 async function moverEtapaRapido(id, novaEtapa) {
                     if (!id || !novaEtapa) return;
 
+                    let valorInformado = undefined;
+                    if (novaEtapa === 'pedido_fechado') {
+                        let card = null;
+                        if (dadosKanbanCache && dadosKanbanCache.colunas) {
+                            for (const k of Object.keys(dadosKanbanCache.colunas)) {
+                                const achou = (dadosKanbanCache.colunas[k].cards || []).find(c => c.id == id);
+                                if (achou) { card = achou; break; }
+                            }
+                        }
+                        if (card && (!card.valor_estimado || parseFloat(card.valor_estimado) <= 0)) {
+                            const resp = prompt(`🎉 Fechamento de Venda!\nQual o valor total faturado desta venda (R$)?`, '0,00');
+                            if (resp !== null) {
+                                const v = parseFloat(resp.replace('R$', '').replace(/\./g, '').replace(',', '.').trim());
+                                if (!isNaN(v) && v > 0) valorInformado = v;
+                            }
+                        }
+                    }
+
                     try {
                         const res = await fetch(`/admin/crm/oportunidades/${id}/etapa`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ etapa: novaEtapa })
+                            body: JSON.stringify({ 
+                                etapa: novaEtapa,
+                                valor: valorInformado
+                            })
                         });
 
                         const json = await res.json();
@@ -5368,11 +5510,45 @@
                             subtitulo.textContent = `Cliente: ${op.cliente_nome || 'Cliente'} (${op.cliente_telefone || ''})`;
                         }
 
+                        inicializarListenersModalEditarOp();
                         alternarCampoMotivoPerda();
                         modal.classList.remove('hidden');
                     } catch (err) {
                         console.error('Erro ao abrir oportunidade:', err);
                         mostrarToast('Erro ao carregar dados da oportunidade', 'erro');
+                    }
+                }
+
+                function inicializarListenersModalEditarOp() {
+                    const selEtapa = document.getElementById('editOpEtapa');
+                    const selStatus = document.getElementById('editOpStatus');
+                    const inpValor = document.getElementById('editOpValor');
+
+                    if (selEtapa && !selEtapa._syncInited) {
+                        selEtapa._syncInited = true;
+                        selEtapa.addEventListener('change', function() {
+                            if (this.value === 'pedido_fechado' || this.value === 'pos_venda') {
+                                if (selStatus) selStatus.value = 'ganho';
+                                if (inpValor && (!inpValor.value || parseFloat(inpValor.value) <= 0)) {
+                                    inpValor.focus();
+                                    inpValor.classList.add('ring-2', 'ring-emerald-500');
+                                    setTimeout(() => inpValor.classList.remove('ring-2', 'ring-emerald-500'), 2500);
+                                }
+                            } else if (this.value !== 'pedido_fechado' && this.value !== 'pos_venda' && selStatus && selStatus.value === 'ganho') {
+                                selStatus.value = 'aberto';
+                            }
+                            alternarCampoMotivoPerda();
+                        });
+                    }
+
+                    if (selStatus && !selStatus._syncInited) {
+                        selStatus._syncInited = true;
+                        selStatus.addEventListener('change', function() {
+                            if (this.value === 'ganho' && selEtapa && selEtapa.value !== 'pedido_fechado' && selEtapa.value !== 'pos_venda') {
+                                selEtapa.value = 'pedido_fechado';
+                            }
+                            alternarCampoMotivoPerda();
+                        });
                     }
                 }
 
@@ -5399,12 +5575,17 @@
                     const titulo = document.getElementById('editOpTitulo')?.value.trim();
                     const valor = parseFloat(document.getElementById('editOpValor')?.value) || 0.00;
                     const etapa = document.getElementById('editOpEtapa')?.value;
-                    const status = document.getElementById('editOpStatus')?.value;
+                    let status = document.getElementById('editOpStatus')?.value;
                     const motivoPerda = document.getElementById('editOpMotivoPerda')?.value.trim();
 
                     if (!id || !titulo) {
                         mostrarToast('Título obrigatório', 'erro');
                         return;
+                    }
+
+                    // Se a etapa for fechada ou pós-venda, garante status ganho
+                    if ((etapa === 'pedido_fechado' || etapa === 'pos_venda') && status !== 'perdido') {
+                        status = 'ganho';
                     }
 
                     btn.disabled = true;
@@ -5461,10 +5642,30 @@
                 }
 
                 async function confirmarPixPeloCard(idOportunidade) {
-                    if (!confirm('Deseja confirmar o recebimento do Pix e fechar esta venda?')) return;
+                    let card = null;
+                    if (dadosKanbanCache && dadosKanbanCache.colunas) {
+                        for (const k of Object.keys(dadosKanbanCache.colunas)) {
+                            const achou = (dadosKanbanCache.colunas[k].cards || []).find(c => c.id == idOportunidade);
+                            if (achou) { card = achou; break; }
+                        }
+                    }
+
+                    let valorFinal = card ? (parseFloat(card.valor_estimado) || 0) : 0;
+                    if (valorFinal <= 0) {
+                        const resp = prompt('Confirmar Pagamento Pix:\nQual foi o valor exato recebido (R$)?', '0,00');
+                        if (resp === null) return;
+                        const v = parseFloat(resp.replace('R$', '').replace(/\./g, '').replace(',', '.').trim());
+                        if (!isNaN(v) && v > 0) valorFinal = v;
+                    } else {
+                        const valorFmt = card.valor_formatado || `R$ ${valorFinal.toFixed(2).replace('.', ',')}`;
+                        if (!confirm(`Deseja confirmar o recebimento do Pix no valor de ${valorFmt} e finalizar esta venda?`)) return;
+                    }
+
                     try {
                         const res = await fetch(`/admin/crm/oportunidades/${idOportunidade}/confirmar-pagamento`, {
-                            method: 'POST'
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ valor: valorFinal })
                         });
                         const json = await res.json();
                         if (json.success) {
@@ -5484,11 +5685,25 @@
                         return;
                     }
                     const nome = (conversaAtivaDados && conversaAtivaDados.nome_contato) ? conversaAtivaDados.nome_contato : 'o cliente';
-                    if (!confirm(`Deseja confirmar o pagamento Pix de ${nome} e finalizar a venda no CRM?`)) return;
+                    
+                    let valorSugerido = '0,00';
+                    if (conversaAtivaDados && conversaAtivaDados.dados_sessao && conversaAtivaDados.dados_sessao.carrinho) {
+                        const c = conversaAtivaDados.dados_sessao.carrinho;
+                        if (Array.isArray(c)) {
+                            const tot = c.reduce((acc, i) => acc + ((parseFloat(i.preco) || 0) * (parseInt(i.quantidade, 10) || 1)), 0);
+                            if (tot > 0) valorSugerido = tot.toFixed(2).replace('.', ',');
+                        }
+                    }
+
+                    const resp = prompt(`Confirmar Pix de ${nome} e finalizar venda no funil:\nInforme o valor total recebido (R$):`, valorSugerido);
+                    if (resp === null) return;
+                    const valorNum = parseFloat(resp.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
 
                     try {
                         const res = await fetch(`/admin/conversa/${encodeURIComponent(conversaAtivaId)}/confirmar-venda`, {
-                            method: 'POST'
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ valor: valorNum })
                         });
                         const json = await res.json();
                         if (json.success) {

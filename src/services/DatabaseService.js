@@ -218,6 +218,25 @@ class DatabaseService {
             await this.semearCatalogoSeVazio();
             await this.migrarSessoesParaCrmClientesSeVazio();
             await this.migrarOportunidadesIniciaisSeVazio();
+
+            // Auto-repara consistência de status e valores das oportunidades fechadas
+            try {
+                await this.executar(`
+                    UPDATE tb_crm_oportunidades 
+                    SET status = 'ganho', data_fechamento = COALESCE(data_fechamento, atualizado_em, CURRENT_TIMESTAMP)
+                    WHERE etapa IN ('pedido_fechado', 'pos_venda') AND status != 'ganho';
+                `);
+                await this.executar(`
+                    UPDATE tb_crm_oportunidades o
+                    SET valor_estimado = c.ltv
+                    FROM tb_crm_clientes c
+                    WHERE o.cliente_id = c.id 
+                      AND o.etapa IN ('pedido_fechado', 'pos_venda') 
+                      AND (o.valor_estimado IS NULL OR o.valor_estimado <= 0) 
+                      AND c.ltv > 0;
+                `);
+            } catch (_) {}
+
             console.log('📦 Banco de Dados pronto para uso.');
         } catch (error) {
             console.warn('⚠️ [DATABASE] PostgreSQL indisponível no momento (' + error.message + '). Operando em modo de fallback resiliente.');

@@ -27,11 +27,20 @@ function extrairBase64Valido(raw) {
 async function extrairDadosMensagem(message, fullData = null) {
     if (!message) return { texto: '', tipo: 'texto' };
     let msg = message;
-    while (msg?.ephemeralMessage?.message || msg?.viewOnceMessage?.message || msg?.viewOnceMessageV2?.message || msg?.documentWithCaptionMessage?.message) {
+    while (
+        msg?.ephemeralMessage?.message ||
+        msg?.viewOnceMessage?.message ||
+        msg?.viewOnceMessageV2?.message ||
+        msg?.documentWithCaptionMessage?.message ||
+        msg?.editedMessage?.message?.protocolMessage?.editedMessage ||
+        msg?.editedMessage?.message
+    ) {
         msg = msg.ephemeralMessage?.message
             || msg.viewOnceMessage?.message
             || msg.viewOnceMessageV2?.message
-            || msg.documentWithCaptionMessage?.message;
+            || msg.documentWithCaptionMessage?.message
+            || msg.editedMessage?.message?.protocolMessage?.editedMessage
+            || msg.editedMessage?.message;
     }
 
     if (msg?.stickerMessage) {
@@ -114,6 +123,28 @@ async function extrairDadosMensagem(message, fullData = null) {
             mediaUrl: msg.videoMessage.url || null,
             mimetype: msg.videoMessage.mimetype || 'video/mp4',
             mediaBase64: base64
+        };
+    }
+
+    if (msg?.contactMessage) {
+        return {
+            texto: `[👤 Contato: ${msg.contactMessage.displayName || 'Contato'}]`,
+            tipo: 'contato'
+        };
+    }
+
+    if (msg?.contactsArrayMessage) {
+        return {
+            texto: `[👥 Contatos (${msg.contactsArrayMessage.contacts?.length || 0})]`,
+            tipo: 'contato'
+        };
+    }
+
+    if (msg?.locationMessage || msg?.liveLocationMessage) {
+        const loc = msg.locationMessage || msg.liveLocationMessage;
+        return {
+            texto: `[📍 Localização: ${loc.name || loc.address || 'Localização compartilhada'}]`,
+            tipo: 'localizacao'
         };
     }
 
@@ -212,30 +243,73 @@ function extrairContextInfo(message, fullData = null) {
     };
 }
 
-function normalizarNumero(key, data) {
-    let remoteJid = key?.remoteJid || '';
+async function normalizarNumero(key, data) {
+    let remoteJid = key?.remoteJid || data?.key?.remoteJid || '';
+    const isFromMe = Boolean(key?.fromMe ?? data?.key?.fromMe ?? data?.fromMe);
+    const numeroLoja = (process.env.NUMERO_DA_LOJA || '557988125726').replace(/\D/g, '');
 
-    // Se o remoteJid for um LID interno do WhatsApp (ex: 23348113359018@lid), busca o JID real com número de telefone (@s.whatsapp.net)
-    if (remoteJid.includes('@lid')) {
-        const candidatos = [
-            data?.sender,
-            key?.participant,
-            data?.participant,
-            data?.key?.participant,
+    function isLoja(cand) {
+        if (!cand || typeof cand !== 'string') return false;
+        const digits = cand.split('@')[0].split(':')[0].replace(/\D/g, '');
+        return Boolean(digits && numeroLoja && digits === numeroLoja);
+    }
+
+    // 1. Candidatos explícitos de telefone real (@s.whatsapp.net)
+    // Se a mensagem foi enviada pelo celular do atendente (fromMe = true), o telefone do cliente está em remoteJidAlt ou remoteJid (NUNCA em sender, pois sender é a própria loja!)
+    let candidatos = [];
+    if (isFromMe) {
+        candidatos = [
+            key?.remoteJidAlt,
             data?.remoteJidAlt,
             data?.key?.remoteJidAlt,
+            data?.recipient,
+            data?.recipientAlt,
+            key?.recipient
+        ];
+        // Se remoteJid já for @s.whatsapp.net e não for o número da loja
+        if (remoteJid && remoteJid.includes('@s.whatsapp.net') && !isLoja(remoteJid)) {
+            candidatos.push(remoteJid);
+        }
+    } else {
+        // Mensagem recebida do cliente
+        candidatos = [
+            key?.remoteJidAlt,
+            data?.remoteJidAlt,
+            data?.key?.remoteJidAlt,
+            (remoteJid && remoteJid.includes('@s.whatsapp.net') && !isLoja(remoteJid)) ? remoteJid : null,
+            data?.sender,
+            data?.key?.participant,
+            data?.participant,
+            key?.participant,
             data?.senderAlt,
             data?.key?.senderAlt
         ];
-        for (const cand of candidatos) {
-            if (cand && typeof cand === 'string' && cand.includes('@s.whatsapp.net')) {
-                remoteJid = cand;
-                break;
-            }
+    }
+
+    // Procura o primeiro candidato válido que seja @s.whatsapp.net e NÃO seja o número da própria loja
+    for (const cand of candidatos) {
+        if (cand && typeof cand === 'string' && cand.includes('@s.whatsapp.net') && !isLoja(cand)) {
+            remoteJid = cand;
+            break;
         }
     }
 
-    if (remoteJid.includes(':') && remoteJid.includes('@')) {
+    // 2. Se ainda for um LID interno do WhatsApp (ex: 56023670861837@lid), busca resolver via cache/banco/Evolution
+    if (remoteJid && remoteJid.includes('@lid')) {
+        const phoneResolvido = await EvolutionService.resolverLidParaTelefone(remoteJid);
+        if (phoneResolvido) {
+            remoteJid = phoneResolvido;
+        }
+    }
+
+    // 3. Se temos o remoteJid com @s.whatsapp.net E a chave continha um @lid (ex: key.remoteJid era @lid), grava no cache de mapeamento
+    const originalJid = key?.remoteJid || data?.key?.remoteJid || '';
+    if (originalJid && originalJid.includes('@lid') && remoteJid && remoteJid.includes('@s.whatsapp.net') && !isLoja(remoteJid)) {
+        EvolutionService.registrarMapeamentoLid(originalJid, remoteJid);
+    }
+
+    // 4. Limpa sufixos de dispositivo (:0@s.whatsapp.net -> @s.whatsapp.net)
+    if (remoteJid && remoteJid.includes(':') && remoteJid.includes('@')) {
         const [usuario, dominio] = remoteJid.split('@');
         const usuarioLimpo = usuario.split(':')[0];
         remoteJid = `${usuarioLimpo}@${dominio}`;
@@ -244,6 +318,7 @@ function normalizarNumero(key, data) {
 }
 
 class WebhookController {
+    static normalizarNumero = normalizarNumero;
     static registrarMensagemEnviadaPeloSistema(msgId) {
         if (!msgId) return;
         mensagensEnviadasPeloSistemaCache.add(msgId);
@@ -320,7 +395,7 @@ class WebhookController {
                     const targetKey = item.key || item;
                     const targetMsgId = targetKey?.id || item?.id;
                     if (!targetMsgId) continue;
-                    const numeroReal = normalizarNumero(targetKey, item) || normalizarNumero(data?.key, data);
+                    const numeroReal = (await normalizarNumero(targetKey, item)) || (await normalizarNumero(data?.key, data));
                     const isFromMe = Boolean(targetKey?.fromMe ?? item?.fromMe);
                     const apagadaPor = isFromMe ? 'atendente' : 'cliente';
                     console.log(`🗑️ [Webhook] Mensagem ${targetMsgId} marcada como apagada (${apagadaPor}) em ${numeroReal || 'busca-global'}`);
@@ -343,7 +418,7 @@ class WebhookController {
                 const revokedKey = protoMsg.key;
                 const targetMsgId = revokedKey?.id;
                 if (targetMsgId) {
-                    const numeroReal = normalizarNumero(revokedKey || data.key, data);
+                    const numeroReal = await normalizarNumero(revokedKey || data.key, data);
                     const isFromMe = Boolean(revokedKey?.fromMe ?? data.key?.fromMe);
                     const apagadaPor = isFromMe ? 'atendente' : 'cliente';
                     console.log(`🗑️ [Webhook] Mensagem ${targetMsgId} revogada (protocolMessage) por ${apagadaPor} em ${numeroReal || 'busca-global'}`);
@@ -354,19 +429,12 @@ class WebhookController {
 
             // 3. Filtro de Desduplicação de Webhook por Message ID da Evolution/Baileys
             const msgId = data.key?.id;
-            if (msgId) {
-                if (mensagensWebhookProcessadasCache.has(msgId)) {
-                    return; // Já processou este evento de webhook para esta mensagem exata
-                }
-                mensagensWebhookProcessadasCache.add(msgId);
-                if (mensagensWebhookProcessadasCache.size > 5000) {
-                    const firstVal = mensagensWebhookProcessadasCache.values().next().value;
-                    mensagensWebhookProcessadasCache.delete(firstVal);
-                }
+            if (msgId && mensagensWebhookProcessadasCache.has(msgId)) {
+                return; // Já processou este evento de webhook para esta mensagem exata
             }
 
-            // 4. Extração e Normalização do Número do Cliente
-            const numeroReal = normalizarNumero(data.key, data);
+            // 4. Extração e Normalização do Número do Cliente (resolução profunda de LIDs e números)
+            const numeroReal = await normalizarNumero(data.key, data);
 
             // 5. Filtros de Segurança: Ignorar JIDs anônimos de dispositivo (@lid) sem telefone associado e status@broadcast
             if (!numeroReal || numeroReal.includes('@lid') || numeroReal.includes('status@broadcast')) {
@@ -379,6 +447,15 @@ class WebhookController {
             const nomeContato = (!isFromMe && SessionService.isNomeContatoValido(rawPushName)) ? rawPushName : null;
 
             if (!infoMsg.texto) return;
+
+            // Registra mensagem no cache de desduplicação apenas após confirmar conteúdo e destinatário válidos
+            if (msgId) {
+                mensagensWebhookProcessadasCache.add(msgId);
+                if (mensagensWebhookProcessadasCache.size > 5000) {
+                    const firstVal = mensagensWebhookProcessadasCache.values().next().value;
+                    mensagensWebhookProcessadasCache.delete(firstVal);
+                }
+            }
 
             // Extrai dados de mensagem citada/respondida se houver
             const infoQuoted = extrairContextInfo(data.message, data);
@@ -409,6 +486,10 @@ class WebhookController {
 
             console.log(`📩 [Webhook] Mensagem ${isFromMe ? 'ENVIADA (Dispositivo/Vendedor)' : 'RECEBIDA (Cliente)'} de ${numeroReal}: "${infoMsg.texto}" (${infoMsg.tipo})${quotedFormatado ? ` [Em resposta a: "${quotedFormatado.texto.substring(0, 25)}..."]` : ''}`);
 
+            const lidOrigem = (data.key?.remoteJid && data.key.remoteJid.includes('@lid'))
+                ? data.key.remoteJid.split('@')[0]
+                : null;
+
             // 1. Se a mensagem foi enviada pelo WhatsApp (pelo próprio robô, pelo painel administrativo ou pelo celular/WhatsApp Web do vendedor)
             if (isFromMe) {
                 // Se já estiver registrada no cache de envio do nosso sistema (Bot ou Painel)
@@ -427,17 +508,18 @@ class WebhookController {
                     return; // Eco descartado sem duplicar!
                 }
 
-                // Se não foi enviada pelo robô nem pelo painel, é o vendedor/atendente humano digitando diretamente no WhatsApp (celular ou Web)
+                // Se não foi enviada pelo robô nem pelo painel, é o vendedor/atendente humano digitando diretamente no celular ou WhatsApp Web
                 await SessionService.adicionarMensagem(numeroReal, 'atendente', infoMsg.texto, nomeContato, {
                     tipo: infoMsg.tipo,
                     mediaUrl: infoMsg.mediaUrl,
                     mediaBase64: infoMsg.mediaBase64,
                     fileName: infoMsg.fileName,
                     mimetype: infoMsg.mimetype,
-                    atendenteNome: 'Vendedor / WhatsApp',
+                    atendenteNome: 'Vendedor (Celular)',
                     messageId: msgId,
                     whatsappMessageId: msgId,
-                    quoted: quotedFormatado
+                    quoted: quotedFormatado,
+                    lid: lidOrigem
                 });
 
                 if (conversa.modo_atendimento !== 'humano') {
@@ -459,7 +541,8 @@ class WebhookController {
                 mimetype: infoMsg.mimetype,
                 messageId: msgId,
                 whatsappMessageId: msgId,
-                quoted: quotedFormatado
+                quoted: quotedFormatado,
+                lid: lidOrigem
             });
 
             const conversa = await SessionService.obterConversa(numeroReal);

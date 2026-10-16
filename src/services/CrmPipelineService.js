@@ -124,7 +124,15 @@ class CrmPipelineService {
 
             for (const row of res.rows) {
                 const etapaKey = colunas[row.etapa] ? row.etapa : 'novo_lead';
-                const valor = parseFloat(row.valor_estimado) || 0.00;
+                let valor = parseFloat(row.valor_estimado) || 0.00;
+
+                // Se a oportunidade foi fechada/ganha mas o valor estava 0, tenta fallback no LTV do cliente
+                const isEtapaGanha = (row.etapa === 'pedido_fechado' || row.etapa === 'pos_venda');
+                if (valor <= 0 && (isEtapaGanha || row.status === 'ganho') && parseFloat(row.cliente_ltv || 0) > 0) {
+                    valor = parseFloat(row.cliente_ltv);
+                }
+
+                const statusEfetivo = isEtapaGanha ? 'ganho' : row.status;
 
                 const card = {
                     id: row.id,
@@ -135,7 +143,7 @@ class CrmPipelineService {
                     valor_estimado: valor,
                     valor_formatado: valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
                     etapa: row.etapa,
-                    status: row.status,
+                    status: statusEfetivo,
                     motivo_perda: row.motivo_perda,
                     origem: row.origem,
                     dados_extras: row.dados_extras || {},
@@ -158,13 +166,13 @@ class CrmPipelineService {
                 colunas[etapaKey].totalValor += valor;
 
                 totalOportunidades++;
-                if (row.status === 'aberto') {
-                    totalValorFunil += valor;
-                } else if (row.status === 'ganho') {
+                if (statusEfetivo === 'ganho') {
                     valorGanho += valor;
                     totalGanhos++;
-                } else if (row.status === 'perdido') {
+                } else if (statusEfetivo === 'perdido') {
                     totalPerdidos++;
+                } else {
+                    totalValorFunil += valor;
                 }
             }
 
@@ -173,14 +181,16 @@ class CrmPipelineService {
                 colunas[key].totalValorFormatado = colunas[key].totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             });
 
-            const taxaConversao = (totalGanhos + totalPerdidos) > 0 
-                ? ((totalGanhos / (totalGanhos + totalPerdidos)) * 100).toFixed(1)
-                : '0.0';
+            // Se nenhum filtro restritivo foi aplicado, as métricas da lista são as globais.
+            // Se um filtro de status ou busca foi aplicado, busca métricas globais para que os cards
+            // executivos de KPI no topo (Vendas Concluídas, etc.) nunca zerem falsamente por causa do filtro da tabela!
+            let metricasGeraisRetorno;
+            if (!busca && (!status || status === 'todos') && !tag && !responsavel_id) {
+                const taxaConversao = (totalGanhos + totalPerdidos) > 0 
+                    ? ((totalGanhos / (totalGanhos + totalPerdidos)) * 100).toFixed(1)
+                    : '0.0';
 
-            return {
-                etapas: ETAPAS_FUNIL,
-                colunas,
-                metricasGerais: {
+                metricasGeraisRetorno = {
                     totalOportunidades,
                     totalValorFunil: totalValorFunil.toFixed(2),
                     totalValorFunilFormatado: totalValorFunil.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
@@ -189,7 +199,42 @@ class CrmPipelineService {
                     totalGanhos,
                     totalPerdidos,
                     taxaConversao
+                };
+            } else {
+                try {
+                    const globais = await this.obterMetricasPipeline();
+                    metricasGeraisRetorno = {
+                        totalOportunidades: globais.totalOportunidades,
+                        totalValorFunil: globais.valorAberto,
+                        totalValorFunilFormatado: parseFloat(globais.valorAberto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                        valorGanho: globais.valorGanho,
+                        valorGanhoFormatado: parseFloat(globais.valorGanho || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                        totalGanhos: globais.totalGanhas,
+                        totalPerdidos: globais.totalPerdidas,
+                        taxaConversao: globais.taxaConversao
+                    };
+                } catch (_) {
+                    const taxaConversao = (totalGanhos + totalPerdidos) > 0 
+                        ? ((totalGanhos / (totalGanhos + totalPerdidos)) * 100).toFixed(1)
+                        : '0.0';
+
+                    metricasGeraisRetorno = {
+                        totalOportunidades,
+                        totalValorFunil: totalValorFunil.toFixed(2),
+                        totalValorFunilFormatado: totalValorFunil.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                        valorGanho: valorGanho.toFixed(2),
+                        valorGanhoFormatado: valorGanho.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                        totalGanhos,
+                        totalPerdidos,
+                        taxaConversao
+                    };
                 }
+            }
+
+            return {
+                etapas: ETAPAS_FUNIL,
+                colunas,
+                metricasGerais: metricasGeraisRetorno
             };
         } catch (err) {
             console.error('[CrmPipelineService] Erro ao listar Kanban:', err.message);
@@ -306,7 +351,7 @@ class CrmPipelineService {
     /**
      * Atualiza a etapa do funil (Drag & Drop no Kanban ou avanço automático)
      */
-    static async atualizarEtapa(idOportunidade, novaEtapa, motivoPerda = null) {
+    static async atualizarEtapa(idOportunidade, novaEtapa, motivoPerda = null, valorFinal = null) {
         if (!ETAPAS_FUNIL.some(e => e.id === novaEtapa)) {
             throw new Error(`Etapa de funil inválida: ${novaEtapa}`);
         }
@@ -320,22 +365,54 @@ class CrmPipelineService {
             const op = busca.rows[0];
             let novoStatus = op.status;
             let dataFechamento = op.data_fechamento;
+            let valorNum = (valorFinal !== null && !isNaN(parseFloat(valorFinal)) && parseFloat(valorFinal) > 0)
+                ? parseFloat(valorFinal)
+                : (parseFloat(op.valor_estimado) || 0.00);
 
             if (novaEtapa === 'pedido_fechado' || novaEtapa === 'pos_venda') {
                 novoStatus = 'ganho';
                 dataFechamento = new Date();
+
+                // Se o valor estiver zerado ao fechar venda, tenta auto-recuperar de cobrança Pix pendente ou pedido
+                if (valorNum <= 0) {
+                    try {
+                        const buscaCob = await DatabaseService.executar(
+                            `SELECT valor FROM tb_cobrancas_pix WHERE id_cliente = $1 ORDER BY criado_em DESC LIMIT 1`,
+                            [op.id_cliente]
+                        );
+                        if (buscaCob.rows.length > 0 && parseFloat(buscaCob.rows[0].valor) > 0) {
+                            valorNum = parseFloat(buscaCob.rows[0].valor);
+                        } else {
+                            const buscaPed = await DatabaseService.executar(
+                                `SELECT valor_total FROM tb_pedidos WHERE id_cliente = $1 ORDER BY id DESC LIMIT 1`,
+                                [op.id_cliente]
+                            );
+                            if (buscaPed.rows.length > 0 && parseFloat(buscaPed.rows[0].valor_total) > 0) {
+                                valorNum = parseFloat(buscaPed.rows[0].valor_total);
+                            }
+                        }
+                    } catch (_) {}
+                }
             } else if (motivoPerda && motivoPerda.trim()) {
                 novoStatus = 'perdido';
                 dataFechamento = new Date();
             } else if (novoStatus === 'perdido' && !motivoPerda) {
                 novoStatus = 'aberto';
                 dataFechamento = null;
+            } else if (novoStatus === 'ganho' && novaEtapa !== 'pedido_fechado' && novaEtapa !== 'pos_venda') {
+                novoStatus = 'aberto';
+                dataFechamento = null;
             }
 
             const sql = `
                 UPDATE tb_crm_oportunidades 
-                SET etapa = $1, status = $2, motivo_perda = $3, data_fechamento = $4, atualizado_em = CURRENT_TIMESTAMP
-                WHERE id = $5
+                SET etapa = $1, 
+                    status = $2, 
+                    motivo_perda = $3, 
+                    data_fechamento = $4, 
+                    valor_estimado = CASE WHEN $5::numeric > 0 THEN $5::numeric ELSE valor_estimado END,
+                    atualizado_em = CURRENT_TIMESTAMP
+                WHERE id = $6
                 RETURNING *;
             `;
             const res = await DatabaseService.executar(sql, [
@@ -343,6 +420,7 @@ class CrmPipelineService {
                 novoStatus,
                 motivoPerda ? motivoPerda.trim() : null,
                 dataFechamento,
+                valorNum,
                 idOportunidade
             ]);
 
@@ -420,6 +498,12 @@ class CrmPipelineService {
             if (etapa !== undefined && ETAPAS_FUNIL.some(e => e.id === etapa)) {
                 params.push(etapa);
                 updates.push(`etapa = $${params.length}`);
+
+                // Se selecionou Pedido Fechado ou Pós-venda e o status não é explicitamente 'perdido',
+                // sincroniza obrigatoriamente para 'ganho' para não deixar venda concluída com status 'aberto'
+                if ((etapa === 'pedido_fechado' || etapa === 'pos_venda') && status !== 'perdido') {
+                    status = 'ganho';
+                }
             }
 
             if (status !== undefined) {
@@ -427,6 +511,8 @@ class CrmPipelineService {
                 updates.push(`status = $${params.length}`);
                 if (status === 'ganho' || status === 'perdido') {
                     updates.push(`data_fechamento = CURRENT_TIMESTAMP`);
+                } else if (status === 'aberto') {
+                    updates.push(`data_fechamento = NULL`);
                 }
             }
 
@@ -458,6 +544,24 @@ class CrmPipelineService {
                     'UPDATE tb_crm_clientes SET etapa_funil = $1, atualizado_em = CURRENT_TIMESTAMP WHERE id = $2',
                     [etapa, atualizada.cliente_id]
                 );
+            }
+
+            // Se a oportunidade foi marcada como ganha/concluída, sincroniza perfil do cliente
+            if (atualizada && atualizada.status === 'ganho') {
+                try {
+                    await DatabaseService.executar(
+                        `UPDATE tb_crm_clientes SET status = 'cliente' WHERE id = $1`,
+                        [atualizada.cliente_id]
+                    );
+                    const vCompra = parseFloat(atualizada.valor_estimado) || 0.00;
+                    if (vCompra > 0) {
+                        await CrmClienteService.registrarCompra(atualizada.id_cliente, vCompra);
+                        await CrmClienteService.adicionarTag(atualizada.id_cliente, 'pedido_realizado');
+                        await CrmClienteService.removerTag(atualizada.id_cliente, 'aguardando_pix');
+                    }
+                } catch (eGanho) {
+                    console.warn('[CrmPipelineService] Aviso ao consolidar cliente ganho:', eGanho.message);
+                }
             }
 
             try {
@@ -625,12 +729,17 @@ class CrmPipelineService {
             const sql = `
                 SELECT 
                     count(*) as total_oportunidades,
-                    count(*) FILTER (WHERE status = 'aberto') as total_abertas,
-                    count(*) FILTER (WHERE status = 'ganho') as total_ganhas,
-                    count(*) FILTER (WHERE status = 'perdido') as total_perdidas,
-                    COALESCE(SUM(valor_estimado) FILTER (WHERE status = 'aberto'), 0) as valor_aberto,
-                    COALESCE(SUM(valor_estimado) FILTER (WHERE status = 'ganho'), 0) as valor_ganho
-                FROM tb_crm_oportunidades;
+                    count(*) FILTER (WHERE o.status = 'aberto' AND o.etapa NOT IN ('pedido_fechado', 'pos_venda')) as total_abertas,
+                    count(*) FILTER (WHERE o.status = 'ganho' OR o.etapa IN ('pedido_fechado', 'pos_venda')) as total_ganhas,
+                    count(*) FILTER (WHERE o.status = 'perdido') as total_perdidas,
+                    COALESCE(SUM(o.valor_estimado) FILTER (WHERE o.status = 'aberto' AND o.etapa NOT IN ('pedido_fechado', 'pos_venda')), 0) as valor_aberto,
+                    COALESCE(SUM(CASE 
+                        WHEN o.valor_estimado > 0 THEN o.valor_estimado 
+                        WHEN c.ltv > 0 THEN c.ltv 
+                        ELSE 0 
+                    END) FILTER (WHERE o.status = 'ganho' OR o.etapa IN ('pedido_fechado', 'pos_venda')), 0) as valor_ganho
+                FROM tb_crm_oportunidades o
+                LEFT JOIN tb_crm_clientes c ON o.cliente_id = c.id;
             `;
             const res = await DatabaseService.executar(sql);
             const r = res.rows[0];

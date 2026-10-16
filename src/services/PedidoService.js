@@ -309,13 +309,16 @@ _Gerencie e despache este pedido no Painel Trem Delivery do Apiário._`;
                 'em_preparo': 'aguardando_pagamento',
                 'saiu_entrega': 'aguardando_pagamento',
                 'pronto': 'aguardando_pagamento',
-                'entregue': 'fechamento',
-                'cancelado': 'fechamento'
+                'entregue': 'pedido_fechado',
+                'cancelado': 'qualificacao'
             };
             const statusKanban = status === 'entregue' ? 'ganho' : (status === 'cancelado' ? 'perdido' : 'aberto');
             await DatabaseService.executar(`
                 UPDATE tb_crm_oportunidades 
-                SET etapa = COALESCE($1, etapa), status = $2, atualizado_em = CURRENT_TIMESTAMP
+                SET etapa = COALESCE($1, etapa), 
+                    status = $2, 
+                    data_fechamento = CASE WHEN $2 = 'ganho' OR $2 = 'perdido' THEN CURRENT_TIMESTAMP ELSE NULL END,
+                    atualizado_em = CURRENT_TIMESTAMP
                 WHERE dados_extras->>'codigo_pedido' = $3;
             `, [etapaMap[status], statusKanban, codigo]);
         } catch (crmErr) {

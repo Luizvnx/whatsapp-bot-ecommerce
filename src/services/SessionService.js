@@ -258,6 +258,14 @@ class SessionService {
                 conversa.historicoMensagens = [];
             }
 
+            if (extraData.lid) {
+                conversa.lid = extraData.lid;
+                try {
+                    const EvolutionService = require('./EvolutionService');
+                    EvolutionService.registrarMapeamentoLid(extraData.lid, idCanonico);
+                } catch (_) { }
+            }
+
             const idMsg = extraData.messageId || extraData.id || (Date.now().toString() + '_' + Math.random().toString(36).substr(2, 5));
             const whatsappMsgId = extraData.whatsappMessageId || extraData.messageId || null;
 

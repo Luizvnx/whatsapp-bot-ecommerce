@@ -87,12 +87,24 @@ class BotController {
         return texto;
     }
 
-    static processarNumeroProfundo(key, data) {
-        let remoteJid = key?.remoteJid || '';
-        if (remoteJid.includes('@lid')) {
-            if (data?.sender && data.sender.includes('@s.whatsapp.net')) {
+    static async processarNumeroProfundo(key, data) {
+        try {
+            const WebhookController = require('./WebhookController');
+            if (typeof WebhookController.normalizarNumero === 'function') {
+                return await WebhookController.normalizarNumero(key, data);
+            }
+        } catch (_) { }
+
+        let remoteJid = key?.remoteJid || data?.key?.remoteJid || '';
+        const isFromMe = Boolean(key?.fromMe ?? data?.key?.fromMe);
+        const numeroLoja = (process.env.NUMERO_DA_LOJA || '557988125726').replace(/\D/g, '');
+        const alt = key?.remoteJidAlt || data?.remoteJidAlt || data?.key?.remoteJidAlt;
+        if (alt && alt.includes('@s.whatsapp.net')) {
+            remoteJid = alt;
+        } else if (remoteJid.includes('@lid') && !isFromMe) {
+            if (data?.sender && data.sender.includes('@s.whatsapp.net') && !data.sender.includes(numeroLoja)) {
                 remoteJid = data.sender;
-            } else if (key?.participant && key.participant.includes('@s.whatsapp.net')) {
+            } else if (key?.participant && key.participant.includes('@s.whatsapp.net') && !key.participant.includes(numeroLoja)) {
                 remoteJid = key.participant;
             }
         }
@@ -108,7 +120,7 @@ class BotController {
         if (!data?.key || !data?.message) return;
 
         let sessao;
-        let numeroReal = this.processarNumeroProfundo(data.key, data);
+        let numeroReal = await this.processarNumeroProfundo(data.key, data);
 
         try {
             // 1. Busca a sessão do cliente
