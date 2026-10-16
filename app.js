@@ -17,17 +17,27 @@ const server = http.createServer(app);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src', 'views'));
 
-// Arquivos estáticos da pasta pública do painel e do novo site desacoplado
+// Arquivos estáticos da pasta pública do painel
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'site')));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// ROTA PÚBLICA DO SITE INSTITUCIONAL E CATÁLOGO
+// CORS para permitir requisições do site hospedado na Hostinger
+app.use('/api/catalogo', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
+// API pública para o site/catálogo externo na Hostinger
 app.use('/api/catalogo', catalogoRoutes);
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'site', 'index.html')));
-app.get('/catalogo', (req, res) => res.sendFile(path.join(__dirname, 'site', 'catalogo.html')));
+app.get('/', (req, res) => res.redirect('/admin'));
+app.get('/catalogo', (req, res) => res.redirect('https://apiariofavodemel.com.br/catalogo'));
 
 // ROTA DE LOGIN (GET)
 app.get('/login', (req, res) => {
