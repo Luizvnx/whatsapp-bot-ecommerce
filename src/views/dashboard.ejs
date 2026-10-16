@@ -497,6 +497,159 @@
         </section>
     </main>
 
+    
+    <!-- =========================================================================
+         1.5 ABA GESTOR DE PEDIDOS (TREM DELIVERY)
+         ========================================================================= -->
+    <div id="abaConteudoPedidos"
+        class="hidden flex-1 overflow-hidden max-w-7xl mx-auto w-full p-2 sm:p-3 flex-col gap-3">
+        <!-- Barra de Cabeçalho e Métricas do Gestor -->
+        <div
+            class="bg-white border border-stone-200 rounded-md p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs flex-shrink-0">
+            <div>
+                <div class="flex items-center gap-2">
+                    <h2 class="text-sm sm:text-base font-serif font-bold text-stone-900 leading-tight">
+                        Gestor de Pedidos (Trem Delivery)
+                    </h2>
+                    <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded uppercase tracking-wider">
+                        Tempo Real
+                    </span>
+                </div>
+                <p class="text-[11px] sm:text-xs text-stone-500 font-mono mt-0.5">
+                    Pedidos recebidos online integrados com o catálogo e WhatsApp da loja
+                </p>
+            </div>
+
+            <!-- Controles e Filtros Rápidos -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <div class="relative">
+                    <input type="text" id="buscaPedidosTrem" placeholder="Buscar pedido, cliente, fone..."
+                        oninput="filtrarPedidosTremLocal()"
+                        class="px-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-sm text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-900 transition w-44 sm:w-60">
+                </div>
+
+                <!-- Botão de Toggle de Alerta Sonoro -->
+                <button type="button" id="btnSomPedidos" onclick="alternarSomPedidos()"
+                    title="Ativar/Desativar som de novos pedidos"
+                    class="px-2.5 py-1.5 bg-stone-50 hover:bg-stone-100 text-stone-700 border border-stone-200 rounded-sm text-xs font-medium transition flex items-center gap-1.5">
+                    <span id="iconeSomPedidos">🔔</span>
+                    <span id="textoSomPedidos" class="hidden sm:inline">Som Ativo</span>
+                </button>
+
+                <!-- Botão Recarregar -->
+                <button type="button" onclick="carregarPedidosTremDelivery(true)"
+                    class="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 font-semibold rounded-sm text-xs transition shadow-xs flex items-center gap-1">
+                    <span>Atualizar</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Cards com Resumo de Métricas do Dia -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-shrink-0">
+            <div class="bg-amber-50/70 border border-amber-200 rounded p-2.5 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-amber-800 tracking-wider">Novos Pendentes</span>
+                    <div id="statPedidosNovos" class="text-xl font-bold font-mono text-amber-900 leading-tight">0</div>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-amber-200/80 flex items-center justify-center text-amber-900 text-sm font-bold">🟡</div>
+            </div>
+
+            <div class="bg-blue-50/70 border border-blue-200 rounded p-2.5 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-blue-800 tracking-wider">Em Preparo</span>
+                    <div id="statPedidosPreparo" class="text-xl font-bold font-mono text-blue-900 leading-tight">0</div>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-blue-200/80 flex items-center justify-center text-blue-900 text-sm font-bold">🔵</div>
+            </div>
+
+            <div class="bg-purple-50/70 border border-purple-200 rounded p-2.5 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-purple-800 tracking-wider">A Caminho / Pronto</span>
+                    <div id="statPedidosRota" class="text-xl font-bold font-mono text-purple-900 leading-tight">0</div>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-purple-200/80 flex items-center justify-center text-purple-900 text-sm font-bold">🛵</div>
+            </div>
+
+            <div class="bg-emerald-50/70 border border-emerald-200 rounded p-2.5 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-emerald-800 tracking-wider">Concluídos Hoje</span>
+                    <div id="statPedidosConcluidos" class="text-xl font-bold font-mono text-emerald-900 leading-tight">0</div>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-emerald-200/80 flex items-center justify-center text-emerald-900 text-sm font-bold">🟢</div>
+            </div>
+        </div>
+
+        <!-- Quadro Kanban Trem Delivery (5 Colunas com Scroll Horizontal Suave) -->
+        <div class="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2">
+            <div class="flex gap-3 h-full min-w-[1200px]">
+                <!-- 1. Coluna: NOVOS PEDIDOS -->
+                <div class="flex-1 flex flex-col bg-stone-100/90 border border-amber-300 rounded-md overflow-hidden shadow-xs">
+                    <div class="p-2.5 bg-amber-500 text-white flex items-center justify-between flex-shrink-0 font-bold text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span>🟡 Novos Pedidos</span>
+                            <span id="badgeColNovos" class="px-1.5 py-0.2 bg-white/30 rounded-full font-mono text-[10px]">0</span>
+                        </div>
+                    </div>
+                    <div id="colunaPedidosNovos" class="flex-1 p-2 overflow-y-auto space-y-2 custom-scrollbar">
+                        <div class="text-center py-8 text-stone-400 text-xs font-mono">Nenhum novo pedido pendente</div>
+                    </div>
+                </div>
+
+                <!-- 2. Coluna: EM PREPARAÇÃO -->
+                <div class="flex-1 flex flex-col bg-stone-100/90 border border-blue-300 rounded-md overflow-hidden shadow-xs">
+                    <div class="p-2.5 bg-blue-600 text-white flex items-center justify-between flex-shrink-0 font-bold text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span>🔵 Em Preparação</span>
+                            <span id="badgeColPreparo" class="px-1.5 py-0.2 bg-white/30 rounded-full font-mono text-[10px]">0</span>
+                        </div>
+                    </div>
+                    <div id="colunaPedidosPreparo" class="flex-1 p-2 overflow-y-auto space-y-2 custom-scrollbar">
+                        <div class="text-center py-8 text-stone-400 text-xs font-mono">Nenhum pedido em preparo</div>
+                    </div>
+                </div>
+
+                <!-- 3. Coluna: A CAMINHO / PRONTO -->
+                <div class="flex-1 flex flex-col bg-stone-100/90 border border-purple-300 rounded-md overflow-hidden shadow-xs">
+                    <div class="p-2.5 bg-purple-600 text-white flex items-center justify-between flex-shrink-0 font-bold text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span>🛵 Saiu Entrega / Pronto</span>
+                            <span id="badgeColRota" class="px-1.5 py-0.2 bg-white/30 rounded-full font-mono text-[10px]">0</span>
+                        </div>
+                    </div>
+                    <div id="colunaPedidosRota" class="flex-1 p-2 overflow-y-auto space-y-2 custom-scrollbar">
+                        <div class="text-center py-8 text-stone-400 text-xs font-mono">Nenhum pedido em rota</div>
+                    </div>
+                </div>
+
+                <!-- 4. Coluna: CONCLUÍDOS -->
+                <div class="flex-1 flex flex-col bg-stone-100/90 border border-emerald-300 rounded-md overflow-hidden shadow-xs">
+                    <div class="p-2.5 bg-emerald-700 text-white flex items-center justify-between flex-shrink-0 font-bold text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span>🟢 Concluídos</span>
+                            <span id="badgeColConcluidos" class="px-1.5 py-0.2 bg-white/30 rounded-full font-mono text-[10px]">0</span>
+                        </div>
+                    </div>
+                    <div id="colunaPedidosConcluidos" class="flex-1 p-2 overflow-y-auto space-y-2 custom-scrollbar">
+                        <div class="text-center py-8 text-stone-400 text-xs font-mono">Nenhum pedido concluído</div>
+                    </div>
+                </div>
+
+                <!-- 5. Coluna: CANCELADOS -->
+                <div class="flex-1 flex flex-col bg-stone-100/90 border border-stone-300 rounded-md overflow-hidden shadow-xs opacity-80">
+                    <div class="p-2.5 bg-stone-600 text-white flex items-center justify-between flex-shrink-0 font-bold text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span>⚪ Cancelados</span>
+                            <span id="badgeColCancelados" class="px-1.5 py-0.2 bg-white/30 rounded-full font-mono text-[10px]">0</span>
+                        </div>
+                    </div>
+                    <div id="colunaPedidosCancelados" class="flex-1 p-2 overflow-y-auto space-y-2 custom-scrollbar">
+                        <div class="text-center py-8 text-stone-400 text-xs font-mono">Nenhum pedido cancelado</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 2. ABA CATÁLOGO & PRODUTOS -->
     <div id="abaConteudoCatalogo"
         class="hidden flex-1 overflow-hidden max-w-7xl mx-auto w-full p-2 sm:p-3 flex-col gap-3">
@@ -1727,6 +1880,16 @@
                         badge.className = 'hidden sm:flex items-center gap-1.5 text-[11px] font-mono font-medium bg-stone-50 px-2 py-1 rounded-sm border border-amber-300 text-amber-800';
                         badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-sm bg-stone-1000"></span><span>Reconectando...</span>';
                     }
+                });
+
+                socket.on('novo_pedido', (pedido) => {
+                    tocarChimeNovoPedido();
+                    mostrarToast('🍯 Novo Pedido recebido! #' + (pedido.codigo_pedido || '') + ' - R$ ' + parseFloat(pedido.total || 0).toFixed(2).replace('.', ','), 'sucesso');
+                    carregarPedidosTremDelivery();
+                });
+
+                socket.on('pedido_status_atualizado', (pedido) => {
+                    carregarPedidosTremDelivery();
                 });
 
                 socket.on('nova_mensagem', (data) => {
@@ -3631,6 +3794,283 @@
                 }
 
                 // ==========================================
+                
+                // =========================================================================
+                // GESTOR DE PEDIDOS (TREM DELIVERY) EM TEMPO REAL
+                // =========================================================================
+                let todosPedidosTrem = [];
+                let somPedidosAtivo = true;
+
+                function alternarSomPedidos() {
+                    somPedidosAtivo = !somPedidosAtivo;
+                    const icone = document.getElementById('iconeSomPedidos');
+                    const texto = document.getElementById('textoSomPedidos');
+                    if (icone) icone.textContent = somPedidosAtivo ? '🔔' : '🔕';
+                    if (texto) texto.textContent = somPedidosAtivo ? 'Som Ativo' : 'Silencioso';
+                    mostrarToast(somPedidosAtivo ? 'Alerta sonoro de novos pedidos ATIVADO!' : 'Alerta sonoro DESATIVADO.', 'info');
+                }
+
+                function tocarChimeNovoPedido() {
+                    if (!somPedidosAtivo) return;
+                    try {
+                        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(880, ctx.currentTime);
+                        osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.15);
+                        
+                        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+                        
+                        osc.start(ctx.currentTime);
+                        osc.stop(ctx.currentTime + 0.6);
+                    } catch (_) {}
+                }
+
+                async function carregarPedidosTremDelivery(forcar = false) {
+                    try {
+                        const res = await fetch('/admin/pedidos/listar?limite=100');
+                        const data = await res.json();
+                        if (data.success) {
+                            todosPedidosTrem = data.pedidos || [];
+                            renderizarQuadroPedidos(todosPedidosTrem);
+                            atualizarEstatisticasPedidos(todosPedidosTrem);
+                            if (forcar) mostrarToast('Pedidos atualizados!', 'sucesso');
+                        }
+                    } catch (err) {
+                        console.error('Erro ao carregar pedidos:', err);
+                    }
+                }
+
+                function filtrarPedidosTremLocal() {
+                    const termo = (document.getElementById('buscaPedidosTrem')?.value || '').toLowerCase().trim();
+                    if (!termo) {
+                        renderizarQuadroPedidos(todosPedidosTrem);
+                        return;
+                    }
+                    const filtrados = todosPedidosTrem.filter(p => {
+                        return (p.codigo_pedido || '').toLowerCase().includes(termo) ||
+                               (p.cliente_nome || '').toLowerCase().includes(termo) ||
+                               (p.cliente_telefone || '').includes(termo);
+                    });
+                    renderizarQuadroPedidos(filtrados);
+                }
+
+                function atualizarEstatisticasPedidos(pedidos) {
+                    const novos = pedidos.filter(p => p.status === 'novo').length;
+                    const preparo = pedidos.filter(p => p.status === 'em_preparo').length;
+                    const rota = pedidos.filter(p => p.status === 'saiu_entrega' || p.status === 'pronto').length;
+                    const concluidos = pedidos.filter(p => p.status === 'entregue').length;
+
+                    const elNovos = document.getElementById('statPedidosNovos');
+                    const elPreparo = document.getElementById('statPedidosPreparo');
+                    const elRota = document.getElementById('statPedidosRota');
+                    const elConcluidos = document.getElementById('statPedidosConcluidos');
+
+                    if (elNovos) elNovos.textContent = novos;
+                    if (elPreparo) elPreparo.textContent = preparo;
+                    if (elRota) elRota.textContent = rota;
+                    if (elConcluidos) elConcluidos.textContent = concluidos;
+
+                    const badgeDesk = document.getElementById('badgeContadorNovosPedidos');
+                    const badgeMobile = document.getElementById('badgeContadorNovosPedidosMobile');
+                    if (badgeDesk) {
+                        badgeDesk.textContent = novos;
+                        badgeDesk.classList.toggle('hidden', novos === 0);
+                    }
+                    if (badgeMobile) {
+                        badgeMobile.textContent = novos;
+                        badgeMobile.classList.toggle('hidden', novos === 0);
+                    }
+                }
+
+                function renderizarQuadroPedidos(pedidos) {
+                    const colNovos = document.getElementById('colunaPedidosNovos');
+                    const colPreparo = document.getElementById('colunaPedidosPreparo');
+                    const colRota = document.getElementById('colunaPedidosRota');
+                    const colConcluidos = document.getElementById('colunaPedidosConcluidos');
+                    const colCancelados = document.getElementById('colunaPedidosCancelados');
+
+                    if (!colNovos) return;
+
+                    const grupos = {
+                        novo: [],
+                        em_preparo: [],
+                        rota: [],
+                        entregue: [],
+                        cancelado: []
+                    };
+
+                    pedidos.forEach(p => {
+                        const st = p.status || 'novo';
+                        if (st === 'novo') grupos.novo.push(p);
+                        else if (st === 'em_preparo') grupos.em_preparo.push(p);
+                        else if (st === 'saiu_entrega' || st === 'pronto') grupos.rota.push(p);
+                        else if (st === 'entregue') grupos.entregue.push(p);
+                        else if (st === 'cancelado') grupos.cancelado.push(p);
+                        else grupos.novo.push(p);
+                    });
+
+                    document.getElementById('badgeColNovos').textContent = grupos.novo.length;
+                    document.getElementById('badgeColPreparo').textContent = grupos.em_preparo.length;
+                    document.getElementById('badgeColRota').textContent = grupos.rota.length;
+                    document.getElementById('badgeColConcluidos').textContent = grupos.entregue.length;
+                    document.getElementById('badgeColCancelados').textContent = grupos.cancelado.length;
+
+                    const renderLista = (container, lista, vazioMsg) => {
+                        if (lista.length === 0) {
+                            container.innerHTML = '<div class="text-center py-8 text-stone-400 text-xs font-mono">' + vazioMsg + '</div>';
+                            return;
+                        }
+                        container.innerHTML = lista.map(p => criarCardPedidoHtml(p)).join('');
+                    };
+
+                    renderLista(colNovos, grupos.novo, 'Nenhum novo pedido pendente');
+                    renderLista(colPreparo, grupos.em_preparo, 'Nenhum pedido em preparo');
+                    renderLista(colRota, grupos.rota, 'Nenhum pedido em rota');
+                    renderLista(colConcluidos, grupos.entregue, 'Nenhum pedido concluído');
+                    renderLista(colCancelados, grupos.cancelado, 'Nenhum pedido cancelado');
+                }
+
+                function criarCardPedidoHtml(p) {
+                    const dataObj = new Date(p.criado_em || Date.now());
+                    const horaStr = dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    const totalFormatado = parseFloat(p.total || 0).toFixed(2).replace('.', ',');
+                    
+                    const isEntrega = p.tipo_entrega === 'entrega';
+                    const tipoEntregaBadge = isEntrega
+                        ? '<span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold">🚚 Entrega</span>'
+                        : '<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">🏪 Retirada</span>';
+
+                    let endStr = '';
+                    if (isEntrega && p.endereco) {
+                        const end = typeof p.endereco === 'string' ? JSON.parse(p.endereco || '{}') : p.endereco;
+                        endStr = (end.rua || '') + ', ' + (end.numero || 's/n') + ' - ' + (end.bairro || '');
+                    }
+
+                    const itens = Array.isArray(p.itens) ? p.itens : (typeof p.itens === 'string' ? JSON.parse(p.itens || '[]') : []);
+                    const itensHtml = itens.map(i => {
+                        const sub = (parseFloat(i.preco || 0) * (i.quantidade || 1)).toFixed(2).replace('.', ',');
+                        return '<div class="flex justify-between text-[11px] text-stone-700"><span>' + i.quantidade + 'x ' + i.nome + '</span><span class="font-mono text-stone-500">R$ ' + sub + '</span></div>';
+                    }).join('');
+
+                    const zapNum = (p.cliente_telefone || '').replace(/\D/g, '');
+                    const zapLink = 'https://wa.me/55' + zapNum;
+
+                    let botoesAcao = '';
+                    if (p.status === 'novo') {
+                        botoesAcao = '<button onclick="alterarStatusPedidoTrem(\'' + p.codigo_pedido + '\', \'em_preparo\')" class="flex-1 py-1 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold transition">✅ Aceitar & Preparar</button><button onclick="alterarStatusPedidoTrem(\'' + p.codigo_pedido + '\', \'cancelado\')" class="py-1 px-2 bg-stone-200 hover:bg-red-100 hover:text-red-700 text-stone-600 rounded text-xs font-bold transition">✕</button>';
+                    } else if (p.status === 'em_preparo') {
+                        const proxStatus = isEntrega ? 'saiu_entrega' : 'pronto';
+                        const proxLabel = isEntrega ? '🛵 Despachar (Em Rota)' : '🏪 Pronto p/ Retirada';
+                        botoesAcao = '<button onclick="alterarStatusPedidoTrem(\'' + p.codigo_pedido + '\', \'' + proxStatus + '\')" class="flex-1 py-1 px-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-bold transition">' + proxLabel + '</button>';
+                    } else if (p.status === 'saiu_entrega' || p.status === 'pronto') {
+                        botoesAcao = '<button onclick="alterarStatusPedidoTrem(\'' + p.codigo_pedido + '\', \'entregue\')" class="flex-1 py-1 px-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-xs font-bold transition">🎉 Concluir Pedido</button>';
+                    }
+
+                    return '<div class="bg-white border border-stone-200 rounded p-3 shadow-xs flex flex-col gap-2 hover:border-stone-400 transition" id="cardPedido_' + p.codigo_pedido + '">' +
+                        '<div class="flex items-center justify-between border-b border-stone-100 pb-1.5">' +
+                            '<div class="flex items-center gap-1.5"><span class="font-mono font-bold text-xs text-stone-900">#' + p.codigo_pedido + '</span>' + tipoEntregaBadge + '</div>' +
+                            '<span class="text-[11px] font-mono text-stone-400">' + horaStr + '</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="font-bold text-xs text-stone-900 flex items-center justify-between">' +
+                                '<span>' + p.cliente_nome + '</span>' +
+                                '<a href="' + zapLink + '" target="_blank" class="text-emerald-700 hover:underline text-[11px] font-mono font-normal">💬 WhatsApp</a>' +
+                            '</div>' +
+                            (endStr ? '<p class="text-[11px] text-stone-500 truncate" title="' + endStr + '">📍 ' + endStr + '</p>' : '') +
+                        '</div>' +
+                        '<div class="bg-stone-50 rounded p-1.5 border border-stone-100 max-h-24 overflow-y-auto space-y-1 custom-scrollbar">' +
+                            itensHtml +
+                        '</div>' +
+                        '<div class="flex items-center justify-between text-xs pt-1 border-t border-stone-100">' +
+                            '<span class="font-bold uppercase tracking-wider text-[10px] text-stone-500">' + (p.forma_pagamento || 'PIX') + '</span>' +
+                            '<span class="font-bold font-mono text-sm text-stone-900">R$ ' + totalFormatado + '</span>' +
+                        '</div>' +
+                        '<div class="flex items-center gap-1.5 pt-1">' +
+                            botoesAcao +
+                            '<button onclick="imprimirComandaPedido(\'' + p.codigo_pedido + '\')" title="Imprimir Comanda Térmica 80mm" class="py-1 px-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded text-xs font-mono transition">🖨️</button>' +
+                        '</div>' +
+                    '</div>';
+                }
+
+                async function alterarStatusPedidoTrem(codigo, status) {
+                    try {
+                        const res = await fetch('/admin/pedidos/' + codigo + '/status', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: status, notificar_cliente: true })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            mostrarToast('Pedido #' + codigo + ' atualizado para ' + status + '!', 'sucesso');
+                            await carregarPedidosTremDelivery();
+                        } else {
+                            mostrarToast(data.message || 'Erro ao atualizar pedido.', 'erro');
+                        }
+                    } catch (err) {
+                        mostrarToast('Falha na comunicação ao atualizar status.', 'erro');
+                    }
+                }
+
+                function imprimirComandaPedido(codigo) {
+                    const p = todosPedidosTrem.find(x => x.codigo_pedido === codigo);
+                    if (!p) {
+                        mostrarToast('Pedido não encontrado para impressão.', 'erro');
+                        return;
+                    }
+                    const itens = Array.isArray(p.itens) ? p.itens : (typeof p.itens === 'string' ? JSON.parse(p.itens || '[]') : []);
+                    const itensTexto = itens.map(i => {
+                        const sub = (parseFloat(i.preco || 0) * (i.quantidade || 1)).toFixed(2).replace('.', ',');
+                        return '<tr><td style="padding: 2px 0;">' + i.quantidade + 'x ' + i.nome + '</td><td style="text-align: right; font-family: monospace;">R$ ' + sub + '</td></tr>';
+                    }).join('');
+
+                    const end = typeof p.endereco === 'string' ? JSON.parse(p.endereco || '{}') : (p.endereco || {});
+                    const endTexto = p.tipo_entrega === 'entrega' 
+                        ? (end.rua || '') + ', ' + (end.numero || 's/n') + ' - ' + (end.bairro || '') + '<br>' + (end.cidade || '') + (end.complemento ? ' (' + end.complemento + ')' : '')
+                        : 'Retirada no Apiário Favo de Mel';
+
+                    const win = window.open('', '_blank', 'width=380,height=600');
+                    win.document.write(
+                        '<html><head><title>Comanda #' + p.codigo_pedido + '</title>' +
+                        '<style>' +
+                        'body { font-family: "Courier New", monospace; font-size: 13px; margin: 0; padding: 12px; line-height: 1.3; color: #000; }' +
+                        '.center { text-align: center; }' +
+                        '.line { border-bottom: 1px dashed #000; margin: 8px 0; }' +
+                        'table { width: 100%; border-collapse: collapse; font-size: 12px; }' +
+                        '@media print { body { padding: 0; } }' +
+                        '</style></head><body>' +
+                        '<div class="center"><strong>APIÁRIO FAVO DE MEL</strong><br>Méis Nobres & Naturais<br>Tel: (79) 98812-5726</div>' +
+                        '<div class="line"></div>' +
+                        '<strong>PEDIDO: #' + p.codigo_pedido + '</strong><br>' +
+                        'Data: ' + new Date(p.criado_em).toLocaleString('pt-BR') + '<br>' +
+                        'Cliente: ' + p.cliente_nome + '<br>' +
+                        'WhatsApp: ' + p.cliente_telefone + '<br>' +
+                        '<div class="line"></div>' +
+                        '<strong>MODALIDADE:</strong> ' + (p.tipo_entrega === 'entrega' ? 'ENTREGA' : 'RETIRADA') + '<br>' +
+                        endTexto + '<br>' +
+                        '<div class="line"></div>' +
+                        '<strong>ITENS DO PEDIDO:</strong>' +
+                        '<table>' + itensTexto + '</table>' +
+                        '<div class="line"></div>' +
+                        '<div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">' +
+                        '<span>TOTAL:</span><span>R$ ' + parseFloat(p.total).toFixed(2).replace('.', ',') + '</span></div>' +
+                        '<div class="line"></div>' +
+                        '<strong>PAGAMENTO:</strong> ' + (p.forma_pagamento || 'PIX').toUpperCase() + '<br>' +
+                        (p.troco_para ? 'Troco para: R$ ' + p.troco_para + '<br>' : '') +
+                        (p.observacoes ? '<br>Obs: ' + p.observacoes + '<br>' : '') +
+                        '<div class="line"></div>' +
+                        '<div class="center" style="font-size: 11px;">Obrigado pela preferência!<br>favodemel_apis</div>' +
+                        '<script>window.onload = function() { window.print(); }<' + '/script>' +
+                        '</body></html>'
+                    );
+                    win.document.close();
+                }
+
                 // 13. NAVEGAÇÃO DE ABAS DO SISTEMA
                 // ==========================================
                 let abaAtivaGeral = 'atendimento';
@@ -3685,7 +4125,15 @@
                     if (abaKanban) { abaKanban.classList.add('hidden'); abaKanban.classList.remove('flex'); }
                     if (abaMetricas) { abaMetricas.classList.add('hidden'); abaMetricas.classList.remove('flex'); }
 
-                    if (nomeAba === 'atendimento') {
+                    if (nomeAba === 'pedidos') {
+                        activeBtn(btnPedidos);
+                        activeBtnMobile(btnPedidosMobile);
+                        if (abaPedidos) {
+                            abaPedidos.classList.remove('hidden');
+                            abaPedidos.classList.add('flex');
+                            carregarPedidosTremDelivery();
+                        }
+                    } else if (nomeAba === 'atendimento') {
                         activeBtn(btnAtendimento);
                         activeBtnMobile(btnAtendimentoMobile);
                         if (abaAtendimento) {

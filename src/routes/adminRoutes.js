@@ -5,6 +5,8 @@ const SessionService = require('../services/SessionService');
 const EvolutionService = require('../services/EvolutionService');
 const GeminiService = require('../services/GeminiService');
 const CatalogoService = require('../services/CatalogoService');
+const PedidoService = require('../services/PedidoService');
+const WebhookController = require('../controllers/WebhookController');
 const { atualizarPerfilUsuario, gerarTokenSessao } = require('../config/users');
 
 // 1. ROTA VISUAL: Renders Painel de Chat
@@ -180,6 +182,10 @@ router.post('/enviar-mensagem', async (req, res) => {
         const respostaEvolution = await EvolutionService.enviarMensagemText(numeroLimpo, textoFinal, quoted);
         const msgIdEvolution = respostaEvolution?.key?.id || null;
 
+        if (msgIdEvolution) {
+            WebhookController.registrarMensagemEnviadaPeloSistema(msgIdEvolution);
+        }
+
         // 2. Salva no histórico da conversa
         const mensagemRegistrada = await SessionService.adicionarMensagem(id_cliente, 'atendente', textoFinal, null, {
             tipo: 'texto',
@@ -212,6 +218,10 @@ router.post('/enviar-audio', async (req, res) => {
         // 1. Dispara áudio via Evolution API
         const respostaEvolution = await EvolutionService.enviarAudio(numeroLimpo, audioBase64, quoted);
         const msgIdEvolution = respostaEvolution?.key?.id || null;
+
+        if (msgIdEvolution) {
+            WebhookController.registrarMensagemEnviadaPeloSistema(msgIdEvolution);
+        }
 
         // 2. Salva no histórico como áudio
         const mensagemRegistrada = await SessionService.adicionarMensagem(id_cliente, 'atendente', textoHistorico, null, {
@@ -256,6 +266,10 @@ router.post('/enviar-midia', async (req, res) => {
             quoted: quoted || null
         });
         const msgIdEvolution = respostaEvolution?.key?.id || null;
+
+        if (msgIdEvolution) {
+            WebhookController.registrarMensagemEnviadaPeloSistema(msgIdEvolution);
+        }
 
         let tipoMensagem = 'imagem';
         if (mediatype === 'document') tipoMensagem = 'documento';
@@ -562,10 +576,16 @@ router.post('/novo-chat', async (req, res) => {
             const nomeAtendente = req.user?.name || 'Atendente';
             const textoFinal = mensagemInicial.trim();
 
-            await EvolutionService.enviarMensagemText(verif.numero, textoFinal);
+            const respEvolution = await EvolutionService.enviarMensagemText(verif.numero, textoFinal);
+            const msgIdEvolution = respEvolution?.key?.id || null;
+            if (msgIdEvolution) {
+                WebhookController.registrarMensagemEnviadaPeloSistema(msgIdEvolution);
+            }
             await SessionService.adicionarMensagem(idCliente, 'atendente', textoFinal, nomeFinal, {
                 tipo: 'texto',
-                atendenteNome: nomeAtendente
+                atendenteNome: nomeAtendente,
+                messageId: msgIdEvolution,
+                whatsappMessageId: msgIdEvolution
             });
         }
 
@@ -620,10 +640,16 @@ router.post('/novo-contato', async (req, res) => {
             const nomeAtendente = req.user?.name || 'Atendente';
             const textoFinal = mensagemInicial.trim();
 
-            await EvolutionService.enviarMensagemText(verif.numero, textoFinal);
+            const respEvolution = await EvolutionService.enviarMensagemText(verif.numero, textoFinal);
+            const msgIdEvolution = respEvolution?.key?.id || null;
+            if (msgIdEvolution) {
+                WebhookController.registrarMensagemEnviadaPeloSistema(msgIdEvolution);
+            }
             await SessionService.adicionarMensagem(idCliente, 'atendente', textoFinal, nomeFinal, {
                 tipo: 'texto',
-                atendenteNome: nomeAtendente
+                atendenteNome: nomeAtendente,
+                messageId: msgIdEvolution,
+                whatsappMessageId: msgIdEvolution
             });
         }
 
@@ -683,10 +709,16 @@ router.post('/novo-grupo', async (req, res) => {
             const nomeAtendente = req.user?.name || 'Atendente';
             const textoFinal = mensagemInicial.trim();
 
-            await EvolutionService.enviarMensagemText(grupoJid, textoFinal);
+            const respEvolution = await EvolutionService.enviarMensagemText(grupoJid, textoFinal);
+            const msgIdEvolution = respEvolution?.key?.id || null;
+            if (msgIdEvolution) {
+                WebhookController.registrarMensagemEnviadaPeloSistema(msgIdEvolution);
+            }
             await SessionService.adicionarMensagem(grupoJid, 'atendente', textoFinal, nomeGrupo.trim(), {
                 tipo: 'texto',
-                atendenteNome: nomeAtendente
+                atendenteNome: nomeAtendente,
+                messageId: msgIdEvolution,
+                whatsappMessageId: msgIdEvolution
             });
         }
 
@@ -1270,6 +1302,60 @@ router.get('/catalogo/fotos-disponiveis', (req, res) => {
         res.json({ success: true, fotos: files });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+
+// =========================================================================
+// GESTÃO DE PEDIDOS (TREM DELIVERY)
+// =========================================================================
+
+// Listar todos os pedidos para o painel de atendimento
+router.get('/pedidos/listar', async (req, res) => {
+    try {
+        const limite = parseInt(req.query.limite, 10) || 100;
+        const pedidos = await PedidoService.listarPedidos(limite);
+        res.json({ success: true, pedidos });
+    } catch (err) {
+        console.error('Erro ao listar pedidos no admin:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Obter pedido específico
+router.get('/pedidos/:codigo', async (req, res) => {
+    try {
+        const pedido = await PedidoService.obterPedidoPorCodigo(req.params.codigo);
+        if (!pedido) return res.status(404).json({ success: false, message: 'Pedido não encontrado.' });
+        res.json({ success: true, pedido });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Atualizar status do pedido (Trem Delivery: novo, em_preparo, saiu_entrega, pronto, entregue, cancelado)
+router.put('/pedidos/:codigo/status', async (req, res) => {
+    try {
+        const { codigo } = req.params;
+        const { status, notificar_cliente, motivo_cancelamento } = req.body;
+
+        if (!status) {
+            return res.status(400).json({ success: false, message: 'Status é obrigatório.' });
+        }
+
+        const pedidoAtualizado = await PedidoService.atualizarStatusPedido(codigo, status, {
+            notificar_cliente: notificar_cliente !== false,
+            motivo_cancelamento: motivo_cancelamento || ''
+        });
+
+        res.json({
+            success: true,
+            message: `Pedido #${codigo} atualizado para "${status}" com sucesso!`,
+            pedido: pedidoAtualizado
+        });
+    } catch (err) {
+        console.error('Erro ao atualizar status do pedido:', err);
+        res.status(400).json({ success: false, message: err.message });
     }
 });
 

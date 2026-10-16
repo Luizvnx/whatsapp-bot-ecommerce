@@ -2,8 +2,12 @@ const SessionService = require('../services/SessionService');
 const EvolutionService = require('../services/EvolutionService');
 const BotController = require('./BotController');
 
-// Cache em memória para desduplicação de mensagens por ID (evita duplicidade enviada pela Evolution API/Baileys)
-const mensagensProcessadasCache = new Set();
+// Cache em memória para desduplicação de webhooks por Message ID (evita processar o mesmo webhook recebido 2x da Evolution API/Baileys)
+const mensagensWebhookProcessadasCache = new Set();
+
+// Cache em memória para rastrear mensagens enviadas ativamente pelo nosso sistema (Robô e Painel Administrativo)
+// Mensagens aqui já foram gravadas no banco e emitidas via socket no momento do disparo. O eco via webhook deve ser ignorado para não duplicar.
+const mensagensEnviadasPeloSistemaCache = new Set();
 
 function extrairBase64Valido(raw) {
     if (!raw) return null;
@@ -240,13 +244,17 @@ function normalizarNumero(key, data) {
 }
 
 class WebhookController {
-    static registrarMensagemEnviadaPeloBot(msgId) {
+    static registrarMensagemEnviadaPeloSistema(msgId) {
         if (!msgId) return;
-        mensagensProcessadasCache.add(msgId);
-        if (mensagensProcessadasCache.size > 3000) {
-            const firstVal = mensagensProcessadasCache.values().next().value;
-            mensagensProcessadasCache.delete(firstVal);
+        mensagensEnviadasPeloSistemaCache.add(msgId);
+        if (mensagensEnviadasPeloSistemaCache.size > 5000) {
+            const firstVal = mensagensEnviadasPeloSistemaCache.values().next().value;
+            mensagensEnviadasPeloSistemaCache.delete(firstVal);
         }
+    }
+
+    static registrarMensagemEnviadaPeloBot(msgId) {
+        this.registrarMensagemEnviadaPeloSistema(msgId);
     }
 
     static async handleEvolutionWebhook(req, res) {
@@ -321,7 +329,13 @@ class WebhookController {
                 return;
             }
 
-            if ((eventLower !== 'messages.upsert' && eventLower !== 'messages_upsert') || !data?.key || !data?.message) return;
+            if (
+                (eventLower !== 'messages.upsert' && eventLower !== 'messages_upsert' && eventLower !== 'send.message' && eventLower !== 'send_message') ||
+                !data?.key ||
+                !data?.message
+            ) {
+                return;
+            }
 
             // 2. Tratamento de Protocol Message (Revoke / Exclusão embutida no messages.upsert)
             const protoMsg = data?.message?.protocolMessage;
@@ -338,24 +352,24 @@ class WebhookController {
                 }
             }
 
-            // 3. Filtro de Desduplicação por Message ID da Evolution/Baileys
+            // 3. Filtro de Desduplicação de Webhook por Message ID da Evolution/Baileys
             const msgId = data.key?.id;
             if (msgId) {
-                if (mensagensProcessadasCache.has(msgId)) {
-                    return; // Já processou esta mensagem exata
+                if (mensagensWebhookProcessadasCache.has(msgId)) {
+                    return; // Já processou este evento de webhook para esta mensagem exata
                 }
-                mensagensProcessadasCache.add(msgId);
-                if (mensagensProcessadasCache.size > 3000) {
-                    const firstVal = mensagensProcessadasCache.values().next().value;
-                    mensagensProcessadasCache.delete(firstVal);
+                mensagensWebhookProcessadasCache.add(msgId);
+                if (mensagensWebhookProcessadasCache.size > 5000) {
+                    const firstVal = mensagensWebhookProcessadasCache.values().next().value;
+                    mensagensWebhookProcessadasCache.delete(firstVal);
                 }
             }
 
             // 4. Extração e Normalização do Número do Cliente
             const numeroReal = normalizarNumero(data.key, data);
 
-            // 3. Filtro de Segurança: Ignorar JIDs anônimos de dispositivo (@lid) sem número de telefone associado
-            if (!numeroReal || numeroReal.includes('@lid')) {
+            // 5. Filtros de Segurança: Ignorar JIDs anônimos de dispositivo (@lid) sem telefone associado e status@broadcast
+            if (!numeroReal || numeroReal.includes('@lid') || numeroReal.includes('status@broadcast')) {
                 return;
             }
 
@@ -393,35 +407,34 @@ class WebhookController {
                 };
             }
 
-            console.log(`📩 [Webhook] Mensagem ${isFromMe ? 'ENVIADA (Dispositivo)' : 'RECEBIDA'} de ${numeroReal}: "${infoMsg.texto}" (${infoMsg.tipo})${quotedFormatado ? ` [Em resposta a: "${quotedFormatado.texto.substring(0, 25)}..."]` : ''}`);
+            console.log(`📩 [Webhook] Mensagem ${isFromMe ? 'ENVIADA (Dispositivo/Vendedor)' : 'RECEBIDA (Cliente)'} de ${numeroReal}: "${infoMsg.texto}" (${infoMsg.tipo})${quotedFormatado ? ` [Em resposta a: "${quotedFormatado.texto.substring(0, 25)}..."]` : ''}`);
 
-            // 1. Se a mensagem foi enviada pelo dispositivo (eco do próprio bot ou atendente humano digitando no celular)
+            // 1. Se a mensagem foi enviada pelo WhatsApp (pelo próprio robô, pelo painel administrativo ou pelo celular/WhatsApp Web do vendedor)
             if (isFromMe) {
-                // Se já estiver registrada no cache de envio do bot
-                if (msgId && mensagensProcessadasCache.has(msgId)) {
-                    return;
+                // Se já estiver registrada no cache de envio do nosso sistema (Bot ou Painel)
+                if (msgId && mensagensEnviadasPeloSistemaCache.has(msgId)) {
+                    return; // Mensagem já enviada e registrada pelo sistema localmente (sem duplicar)
                 }
 
-                // Verifica se a mensagem já foi gravada recentemente pelo bot no histórico
+                // Verifica se a mensagem já foi gravada previamente no histórico da conversa
                 const conversa = await SessionService.obterConversa(numeroReal);
-                const ultimasMsgs = (conversa.historicoMensagens || []).slice(-6);
+                const ultimasMsgs = (conversa.historicoMensagens || []).slice(-10);
                 const jaExiste = ultimasMsgs.some(m =>
-                    (msgId && (m.id === msgId || m.whatsappMessageId === msgId)) ||
-                    (m.remetente === 'atendente' && (m.texto || '').trim() === (infoMsg.texto || '').trim() && (Date.now() - new Date(m.timestamp || 0).getTime() < 30000))
+                    (msgId && (m.id === msgId || m.whatsappMessageId === msgId))
                 );
 
                 if (jaExiste) {
-                    if (msgId) mensagensProcessadasCache.add(msgId);
                     return; // Eco descartado sem duplicar!
                 }
 
-                // Se não era do bot, é um atendente humano digitando diretamente no WhatsApp
+                // Se não foi enviada pelo robô nem pelo painel, é o vendedor/atendente humano digitando diretamente no WhatsApp (celular ou Web)
                 await SessionService.adicionarMensagem(numeroReal, 'atendente', infoMsg.texto, nomeContato, {
                     tipo: infoMsg.tipo,
                     mediaUrl: infoMsg.mediaUrl,
                     mediaBase64: infoMsg.mediaBase64,
                     fileName: infoMsg.fileName,
                     mimetype: infoMsg.mimetype,
+                    atendenteNome: 'Vendedor / WhatsApp',
                     messageId: msgId,
                     whatsappMessageId: msgId,
                     quoted: quotedFormatado
@@ -430,6 +443,10 @@ class WebhookController {
                 if (conversa.modo_atendimento !== 'humano') {
                     await SessionService.alternarModoAtendimento(numeroReal, 'humano');
                 }
+
+                // Notifica o BotController para atualizar contexto de IA e tags de atendimento humano sem disparar resposta automática
+                data.message = { conversation: infoMsg.texto };
+                await BotController.processarMensagem(data);
                 return;
             }
 
@@ -445,7 +462,6 @@ class WebhookController {
                 quoted: quotedFormatado
             });
 
-            // 2. Se a mensagem veio do cliente
             const conversa = await SessionService.obterConversa(numeroReal);
             const modoAtual = conversa.modo_atendimento || 'bot';
             const textoCliente = (infoMsg.texto || '').toLowerCase().trim();
@@ -468,12 +484,6 @@ class WebhookController {
 
         } catch (err) {
             console.error('Erro ao processar webhook da Evolution:', err.message);
-        }
-    }
-
-    static registrarMensagemEnviadaPeloBot(msgId) {
-        if (msgId) {
-            mensagensProcessadasCache.add(msgId);
         }
     }
 }

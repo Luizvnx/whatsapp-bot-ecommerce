@@ -118,13 +118,16 @@ class CatalogoService {
             sql += ` ORDER BY c.ordem ASC, p.id ASC`;
 
             const res = await DatabaseService.executar(sql, params);
-            return res.rows.map(r => ({
-                ...r,
-                preco: parseFloat(r.preco)
-            }));
+            if (res.rows.length > 0) {
+                return res.rows.map(r => ({
+                    ...r,
+                    preco: parseFloat(r.preco)
+                }));
+            }
+            return CatalogoService.obterProdutosFallback(filtro);
         } catch (error) {
-            console.error('Erro ao listar produtos:', error.message);
-            throw error;
+            console.error('Erro ao listar produtos do banco, usando fallback:', error.message);
+            return CatalogoService.obterProdutosFallback(filtro);
         }
     }
 
@@ -257,13 +260,16 @@ class CatalogoService {
                 ORDER BY c.ordem ASC, c.id ASC;
             `;
             const res = await DatabaseService.executar(sql);
-            return res.rows.map(r => ({
-                ...r,
-                total_produtos: parseInt(r.total_produtos, 10)
-            }));
+            if (res.rows.length > 0) {
+                return res.rows.map(r => ({
+                    ...r,
+                    total_produtos: parseInt(r.total_produtos, 10)
+                }));
+            }
+            return CatalogoService.obterCategoriasFallback();
         } catch (error) {
-            console.error('Erro ao listar categorias:', error.message);
-            throw error;
+            console.error('Erro ao listar categorias do banco, usando fallback:', error.message);
+            return CatalogoService.obterCategoriasFallback();
         }
     }
 
@@ -360,6 +366,50 @@ class CatalogoService {
         }
         this.invalidarCache();
         return res.rows[0];
+    }
+
+
+
+    static obterCategoriasFallback() {
+        const cats = [];
+        for (const [k, v] of Object.entries(catalogoFallback.categorias || {})) {
+            cats.push({
+                id: parseInt(k, 10),
+                nome: v.nome,
+                descricao: v.descricao || '',
+                icone: '🍯',
+                ordem: parseInt(k, 10),
+                ativo: true,
+                total_produtos: Object.keys(v.produtos || {}).length
+            });
+        }
+        return cats;
+    }
+
+    static obterProdutosFallback(filtro = '') {
+        const prods = [];
+        let pId = 1;
+        const termo = (filtro || '').toLowerCase().trim();
+        for (const [catKey, catVal] of Object.entries(catalogoFallback.categorias || {})) {
+            for (const [pKey, pVal] of Object.entries(catVal.produtos || {})) {
+                const match = !termo || pVal.nome.toLowerCase().includes(termo) || (pVal.descricao && pVal.descricao.toLowerCase().includes(termo));
+                if (match) {
+                    prods.push({
+                        id: pId++,
+                        categoria_id: parseInt(catKey, 10),
+                        categoria_nome: catVal.nome,
+                        categoria_icone: '🍯',
+                        nome: pVal.nome,
+                        preco: parseFloat(pVal.preco),
+                        descricao: pVal.descricao || '',
+                        foto: null,
+                        estoque: 999,
+                        ativo: true
+                    });
+                }
+            }
+        }
+        return prods;
     }
 }
 

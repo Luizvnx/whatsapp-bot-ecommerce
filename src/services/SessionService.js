@@ -154,8 +154,12 @@ class SessionService {
                         const mesmoTexto = (anterior.texto || '').trim() === (atual.texto || '').trim();
                         const difTempo = Math.abs(new Date(atual.timestamp || 0).getTime() - new Date(anterior.timestamp || 0).getTime());
                         const mesmoId = atual.id && anterior.id && (atual.id === anterior.id || (atual.whatsappMessageId && atual.whatsappMessageId === anterior.whatsappMessageId));
+                        const idsDistintos = Boolean(anterior.whatsappMessageId && atual.whatsappMessageId && anterior.whatsappMessageId !== atual.whatsappMessageId);
 
-                        if (mesmoId || (mesmoRemetente && mesmoTexto && difTempo < 30000)) {
+                        if (mesmoId || (mesmoRemetente && mesmoTexto && difTempo < 30000 && !idsDistintos)) {
+                            if (!anterior.whatsappMessageId && atual.whatsappMessageId) {
+                                anterior.whatsappMessageId = atual.whatsappMessageId;
+                            }
                             continue;
                         }
                     }
@@ -279,8 +283,9 @@ class SessionService {
                 const mesmoRemetente = ultimaMsg.remetente === remetente;
                 const mesmoTexto = (ultimaMsg.texto || '').trim() === (texto || '').trim();
                 const difTempo = Math.abs(Date.now() - new Date(ultimaMsg.timestamp || 0).getTime());
+                const idsDiferentes = Boolean(ultimaMsg.whatsappMessageId && whatsappMsgId && ultimaMsg.whatsappMessageId !== whatsappMsgId);
 
-                if (mesmoRemetente && mesmoTexto && difTempo < 20000) {
+                if (mesmoRemetente && mesmoTexto && difTempo < 20000 && !idsDiferentes) {
                     if (!ultimaMsg.whatsappMessageId && whatsappMsgId) {
                         ultimaMsg.whatsappMessageId = whatsappMsgId;
                     }

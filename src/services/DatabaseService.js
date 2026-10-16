@@ -183,6 +183,7 @@ class DatabaseService {
             CREATE TABLE IF NOT EXISTS tb_pedidos (
                 id SERIAL PRIMARY KEY,
                 codigo_pedido VARCHAR(50) UNIQUE NOT NULL,
+                token_acesso VARCHAR(100),
                 cliente_nome VARCHAR(150) NOT NULL,
                 cliente_telefone VARCHAR(50) NOT NULL,
                 tipo_entrega VARCHAR(50) DEFAULT 'entrega',
@@ -200,6 +201,7 @@ class DatabaseService {
                 atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX IF NOT EXISTS idx_tb_pedidos_codigo ON tb_pedidos(codigo_pedido);
+            CREATE INDEX IF NOT EXISTS idx_tb_pedidos_token ON tb_pedidos(token_acesso);
             CREATE INDEX IF NOT EXISTS idx_tb_pedidos_telefone ON tb_pedidos(cliente_telefone);
             CREATE INDEX IF NOT EXISTS idx_tb_pedidos_status ON tb_pedidos(status);
         `;
@@ -211,13 +213,14 @@ class DatabaseService {
             await this.executar(sqlUsuarios);
             await this.executar(sqlCrm);
             await this.executar(sqlPedidos);
+            await this.executar("ALTER TABLE tb_pedidos ADD COLUMN IF NOT EXISTS token_acesso VARCHAR(100);");
+            await this.executar("CREATE INDEX IF NOT EXISTS idx_tb_pedidos_token ON tb_pedidos(token_acesso);");
             await this.semearCatalogoSeVazio();
             await this.migrarSessoesParaCrmClientesSeVazio();
             await this.migrarOportunidadesIniciaisSeVazio();
             console.log('📦 Banco de Dados pronto para uso.');
         } catch (error) {
-            console.error('Erro ao inicializar tabelas:', error.message);
-            throw error;
+            console.warn('⚠️ [DATABASE] PostgreSQL indisponível no momento (' + error.message + '). Operando em modo de fallback resiliente.');
         }
     }
 

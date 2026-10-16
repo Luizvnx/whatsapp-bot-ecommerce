@@ -72,6 +72,22 @@ class SocketService {
         if (!this.io) return;
         this.io.emit('pipeline_atualizado', dados);
     }
+
+    /**
+     * Emite notificação de novo pedido web para o painel de atendimento (Trem Delivery)
+     */
+    static emitirNovoPedido(pedido) {
+        if (!this.io) return;
+        this.io.emit('novo_pedido', pedido);
+    }
+
+    /**
+     * Emite atualização no status do pedido
+     */
+    static emitirStatusPedidoAtualizado(pedido) {
+        if (!this.io) return;
+        this.io.emit('pedido_status_atualizado', pedido);
+    }
 }
 
 module.exports = SocketService;

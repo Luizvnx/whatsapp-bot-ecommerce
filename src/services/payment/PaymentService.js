@@ -142,7 +142,21 @@ class PaymentService {
                 `Agradecemos muito pela preferência e confiança no *Apiário Favo de Mel*!`;
 
             try {
-                await EvolutionService.enviarMensagemText(numeroEnvio, textoConfirmacao);
+                const respWpp = await EvolutionService.enviarMensagemText(numeroEnvio, textoConfirmacao);
+                const msgIdPix = respWpp?.key?.id || null;
+                if (msgIdPix) {
+                    try {
+                        const WebhookController = require('../../controllers/WebhookController');
+                        WebhookController.registrarMensagemEnviadaPeloSistema(msgIdPix);
+                    } catch (_) {}
+                }
+                const SessionService = require('../SessionService');
+                await SessionService.adicionarMensagem(numeroEnvio, 'atendente', textoConfirmacao, null, {
+                    tipo: 'texto',
+                    atendenteNome: 'Bot Favo de Mel',
+                    messageId: msgIdPix,
+                    whatsappMessageId: msgIdPix
+                });
             } catch (wppErr) {
                 console.warn('⚠️ [PaymentService] Aviso ao enviar confirmação no WhatsApp:', wppErr.message);
             }
@@ -193,7 +207,24 @@ class PaymentService {
                             `Identificamos automaticamente o seu pagamento de *${valorFmt}*.\n` +
                             `Nosso apiário já está embalando o seu pedido! 🐝🍯`;
 
-                        EvolutionService.enviarMensagemText(numeroEnvio, msgAuto).catch(console.warn);
+                        EvolutionService.enviarMensagemText(numeroEnvio, msgAuto).then(async (respAuto) => {
+                            const msgIdAuto = respAuto?.key?.id || null;
+                            if (msgIdAuto) {
+                                try {
+                                    const WebhookController = require('../../controllers/WebhookController');
+                                    WebhookController.registrarMensagemEnviadaPeloSistema(msgIdAuto);
+                                } catch (_) {}
+                            }
+                            try {
+                                const SessionService = require('../SessionService');
+                                await SessionService.adicionarMensagem(numeroEnvio, 'atendente', msgAuto, null, {
+                                    tipo: 'texto',
+                                    atendenteNome: 'Bot Favo de Mel',
+                                    messageId: msgIdAuto,
+                                    whatsappMessageId: msgIdAuto
+                                });
+                            } catch (_) {}
+                        }).catch(console.warn);
                     }
                 }
             }
