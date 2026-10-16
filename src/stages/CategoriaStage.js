@@ -59,6 +59,8 @@ class CategoriaStage {
             });
         }
 
+        submenu += `\n🌐 *Catálogo com fotos & carrinho online:*\nhttps://apiariofavodemel.com.br/catalogo\n`;
+
         const produtosArray = Object.entries(categoriaEscolhida.produtos || {}).map(([chaveProd, prod]) => ({
             id: chaveProd,
             nome: prod.nome,

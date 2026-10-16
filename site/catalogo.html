@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Online | Apiário Favo de Mel</title>
+    <meta name="description" content="Catálogo Digital do Apiário Favo de Mel: Méis nobres, própolis verde e vermelha, favos, cosméticos e derivados apícolas. Monte seu pedido e receba pelo WhatsApp!">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/site-assets/logo-favo-de-mel.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/catalogo.css">
+</head>
+<body class="catalogo-body">
+
+    <!-- ==========================================================================
+         TOP HEADER DO CATÁLOGO
+         ========================================================================== -->
+    <header class="catalog-top-header">
+        <div class="container catalog-header-inner">
+            <div class="catalog-brand">
+                <a href="/" class="back-to-site" title="Voltar para a Página Principal">
+                    <span>←</span> Início
+                </a>
+                <a href="/catalogo">
+                    <img src="/assets/images/logo-favo-de-mel.png" alt="Apiário Favo de Mel" height="44">
+                </a>
+                <span class="store-status-pill">
+                    <span class="dot"></span> Aberto para Pedidos
+                </span>
+            </div>
+
+            <div class="catalog-header-actions">
+                <button id="cartTopBtn" class="cart-top-btn" aria-label="Abrir Carrinho">
+                    <span>🛒</span>
+                    <span id="cartTopTotal">R$ 0,00</span>
+                    <span id="cartTopBadge" class="cart-count-badge">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==========================================================================
+         BARRA DE CONTROLE: BUSCA E FILTROS DE CATEGORIA
+         ========================================================================== -->
+    <section class="catalog-controls">
+        <div class="container">
+            <!-- Barra de Busca -->
+            <div class="catalog-search-wrap">
+                <span class="catalog-search-icon">🔍</span>
+                <input type="text" id="catalogSearch" class="catalog-search-input" placeholder="Buscar méis, própolis, favos, cosméticos...">
+            </div>
+
+            <!-- Filtros de Categoria (Pills Deslizáveis) -->
+            <div id="categoriesPills" class="categories-pills-wrap">
+                <!-- Inserido dinamicamente pelo JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================================
+         VITRINE DE PRODUTOS
+         ========================================================================== -->
+    <main class="container catalog-main">
+        <div id="catalogGrid" class="catalog-grid">
+            <!-- Inserido dinamicamente pelo JS via API -->
+        </div>
+    </main>
+
+    <!-- ==========================================================================
+         BARRA FLUTUANTE DE CARRINHO (MOBILE & DESKTOP)
+         ========================================================================== -->
+    <div id="floatingCartBar" class="floating-cart-bar">
+        <div class="floating-cart-info">
+            <span id="floatingCartBadge" class="floating-cart-badge">0</span>
+            <div>
+                <div style="font-size: 0.775rem; opacity: 0.8; text-transform: uppercase; font-weight: 600;">Ver Pedido</div>
+                <div id="floatingCartTotal" class="floating-cart-total">R$ 0,00</div>
+            </div>
+        </div>
+        <div class="floating-cart-action">
+            <span>Avançar</span>
+            <span>→</span>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         GAVETA LATERAL DO CARRINHO (DRAWER)
+         ========================================================================== -->
+    <div id="cartDrawerOverlay" class="cart-drawer-overlay"></div>
+    <div id="cartDrawer" class="cart-drawer">
+        <div class="cart-drawer-header">
+            <h3><span>🛒</span> Seu Carrinho</h3>
+            <button id="btnCloseDrawer" class="btn-close-drawer" aria-label="Fechar Carrinho">✕</button>
+        </div>
+
+        <div class="cart-drawer-body">
+            <!-- Estado Vazio -->
+            <div id="cartEmptyState" class="cart-empty-state">
+                <div class="cart-empty-icon">🍯</div>
+                <h4 style="margin-bottom: 0.5rem; color: #2C231C;">Seu carrinho está vazio</h4>
+                <p style="font-size: 0.9rem;">Escolha os melhores méis e produtos naturais e adicione aqui.</p>
+            </div>
+
+            <!-- Lista de Itens -->
+            <div id="cartItemsList" class="cart-items-list">
+                <!-- Inserido dinamicamente pelo JS -->
+            </div>
+        </div>
+
+        <div id="cartDrawerFooter" class="cart-drawer-footer" style="display: none;">
+            <div class="cart-summary-line">
+                <span>Subtotal</span>
+                <span id="drawerSubtotal">R$ 0,00</span>
+            </div>
+            <div class="cart-summary-line">
+                <span>Taxa de Entrega</span>
+                <span style="color: #15803D; font-weight: 600;">A combinar</span>
+            </div>
+            <div class="cart-total-line">
+                <span>Total</span>
+                <span id="drawerTotal">R$ 0,00</span>
+            </div>
+            <button id="btnOpenCheckout" class="btn btn-primary btn-checkout-flow">
+                <span>⚡</span> Finalizar Pedido
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         MODAL DE CHECKOUT (ESTILO TREM DELIVERY)
+         ========================================================================== -->
+    <div id="checkoutModalOverlay" class="checkout-modal-overlay">
+        <div class="checkout-modal-box">
+            <div class="checkout-modal-header">
+                <h3><span>🐝</span> Finalizar Pedido no WhatsApp</h3>
+                <button id="btnCloseCheckout" class="btn-close-drawer">✕</button>
+            </div>
+
+            <div class="checkout-modal-body">
+                <!-- Visão do Formulário -->
+                <div id="checkoutFormView">
+                    <form id="formCheckout">
+                        <!-- 1. Dados Pessoais -->
+                        <div class="checkout-section-title">
+                            <span>👤</span> Seus Dados
+                        </div>
+                        <div class="form-group">
+                            <label for="checkoutNome">Seu Nome Completo *</label>
+                            <input type="text" id="checkoutNome" class="form-control" placeholder="Ex: Maria Silva" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="checkoutTelefone">Seu WhatsApp com DDD *</label>
+                            <input type="tel" id="checkoutTelefone" class="form-control" placeholder="(79) 99999-9999" required>
+                        </div>
+
+                        <!-- 2. Modalidade de Entrega -->
+                        <div class="checkout-section-title" style="margin-top: 1.5rem;">
+                            <span>🚚</span> Como deseja receber?
+                        </div>
+                        <div class="delivery-options-grid">
+                            <div class="delivery-opt-card active" data-type="entrega">
+                                <div class="delivery-opt-icon">🛵</div>
+                                <div class="delivery-opt-title">Entrega</div>
+                                <div class="delivery-opt-sub">Receba no seu endereço</div>
+                            </div>
+                            <div class="delivery-opt-card" data-type="retirada">
+                                <div class="delivery-opt-icon">🏪</div>
+                                <div class="delivery-opt-title">Retirada</div>
+                                <div class="delivery-opt-sub">Retire no Apiário</div>
+                            </div>
+                        </div>
+
+                        <!-- Campos de Endereço (se entrega) -->
+                        <div id="addressFieldsGroup">
+                            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
+                                <div class="form-group">
+                                    <label for="checkoutRua">Rua / Logradouro</label>
+                                    <input type="text" id="checkoutRua" class="form-control" placeholder="Rua, Avenida...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="checkoutNumero">Número</label>
+                                    <input type="text" id="checkoutNumero" class="form-control" placeholder="123">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div class="form-group">
+                                    <label for="checkoutBairro">Bairro</label>
+                                    <input type="text" id="checkoutBairro" class="form-control" placeholder="Bairro">
+                                </div>
+                                <div class="form-group">
+                                    <label for="checkoutCidade">Cidade</label>
+                                    <input type="text" id="checkoutCidade" class="form-control" placeholder="Cidade">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="checkoutComplemento">Complemento / Ponto de Referência</label>
+                                <input type="text" id="checkoutComplemento" class="form-control" placeholder="Apto, bloco, próximo a...">
+                            </div>
+                        </div>
+
+                        <!-- 3. Forma de Pagamento -->
+                        <div class="checkout-section-title" style="margin-top: 1.5rem;">
+                            <span>💳</span> Forma de Pagamento
+                        </div>
+                        <div class="payment-options-grid">
+                            <div class="payment-opt-card active" data-payment="pix">
+                                <div class="payment-opt-icon">⚡</div>
+                                <div class="payment-opt-title">PIX</div>
+                            </div>
+                            <div class="payment-opt-card" data-payment="cartao">
+                                <div class="payment-opt-icon">💳</div>
+                                <div class="payment-opt-title">Cartão</div>
+                            </div>
+                            <div class="payment-opt-card" data-payment="dinheiro">
+                                <div class="payment-opt-icon">💵</div>
+                                <div class="payment-opt-title">Dinheiro</div>
+                            </div>
+                        </div>
+
+                        <!-- Box de Detalhes do PIX -->
+                        <div id="pixDetailsBox" class="pix-details-box">
+                            <p style="font-size: 0.85rem; font-weight: 600; color: #2C231C; margin-bottom: 0.35rem;">
+                                Chave PIX Oficial (Telefone do Apiário):
+                            </p>
+                            <div class="pix-key-wrap">
+                                <span id="pixKeyValue" class="pix-key-val">79988125726</span>
+                                <button type="button" id="btnCopyPix" class="btn-copy-pix">Copiar Chave</button>
+                            </div>
+                            <p style="font-size: 0.775rem; color: #6E6359; margin: 0;">
+                                O comprovante será enviado diretamente na conversa do WhatsApp.
+                            </p>
+                        </div>
+
+                        <!-- Troco (se dinheiro) -->
+                        <div id="trocoGroup" class="form-group" style="display: none;">
+                            <label for="checkoutTroco">Precisa de troco para quanto? (Deixe em branco se não precisar)</label>
+                            <input type="text" id="checkoutTroco" class="form-control" placeholder="Ex: 50,00 ou 100,00">
+                        </div>
+
+                        <!-- 4. Observações -->
+                        <div class="form-group">
+                            <label for="checkoutObs">Observações do Pedido (Opcional)</label>
+                            <input type="text" id="checkoutObs" class="form-control" placeholder="Ex: Ligar ao chegar, mel mais claro...">
+                        </div>
+
+                        <!-- Resumo do Valor -->
+                        <div style="background: #FAF7F2; padding: 1rem; border-radius: 8px; margin: 1.5rem 0; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--color-border);">
+                            <span style="font-weight: 600;">Total a Pagar:</span>
+                            <span id="checkoutTotalDisplay" style="font-size: 1.4rem; font-weight: 800; color: var(--color-primary); font-family: var(--font-heading);">R$ 0,00</span>
+                        </div>
+
+                        <button type="submit" id="btnSubmitOrder" class="btn btn-whatsapp" style="width: 100%; padding: 1.1rem; font-size: 1.05rem;">
+                            <span>🍯</span> Confirmar Pedido no WhatsApp
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Visão de Sucesso -->
+                <div id="checkoutSuccessView" class="success-screen" style="display: none;">
+                    <div class="success-icon">🎉</div>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Pedido Enviado com Sucesso!</h3>
+                    <p style="color: #6E6359;">Uma cópia deste pedido foi salva e encaminhada para a nossa equipe.</p>
+                    
+                    <div id="successOrderCode" class="order-badge-pill">#FD-0000</div>
+                    
+                    <p style="font-size: 0.95rem; margin-bottom: 2rem;">
+                        Caso seu WhatsApp não tenha aberto automaticamente, clique no botão abaixo para conversar com nosso vendedor:
+                    </p>
+
+                    <a id="btnOpenWhatsAppOrder" href="#" target="_blank" class="btn btn-whatsapp" style="width: 100%; padding: 1rem; font-size: 1.05rem;">
+                        <span>💬</span> Abrir Pedido no WhatsApp
+                    </a>
+
+                    <button type="button" onclick="window.location.href='/catalogo'" class="btn btn-outline" style="width: 100%; margin-top: 1rem;">
+                        Fazer Outro Pedido
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/catalogo.js"></script>
+</body>
+</html>

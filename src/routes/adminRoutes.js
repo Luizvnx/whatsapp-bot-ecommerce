@@ -1186,4 +1186,91 @@ router.post('/conversa/:id_cliente/gerar-pix', async (req, res) => {
     }
 });
 
+// ==========================================
+// 21. ROTAS DE GESTÃO DO CATÁLOGO DE PRODUTOS
+// ==========================================
+const fs = require('fs');
+const path = require('path');
+
+// Listar todos os produtos com filtros e categorias
+router.get('/catalogo/produtos', async (req, res) => {
+    try {
+        const { busca } = req.query;
+        const produtos = await CatalogoService.listarTodosOsProdutos(busca);
+        const categorias = await CatalogoService.listarCategorias();
+        res.json({ success: true, produtos, categorias });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Criar novo produto (adiciona no banco e sincroniza instantaneamente)
+router.post('/catalogo/produtos', async (req, res) => {
+    try {
+        const { categoria_id, nome, preco, descricao, foto, estoque, ativo } = req.body;
+        const novoProduto = await CatalogoService.criarProduto({
+            categoria_id,
+            nome,
+            preco,
+            descricao,
+            foto,
+            estoque,
+            ativo: ativo !== undefined ? ativo : true
+        });
+        res.json({ success: true, message: 'Produto cadastrado com sucesso!', produto: novoProduto });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Atualizar produto existente
+router.put('/catalogo/produtos/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const produtoAtualizado = await CatalogoService.atualizarProduto(id, req.body);
+        res.json({ success: true, message: 'Produto atualizado com sucesso!', produto: produtoAtualizado });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Alternar status ativo/inativo do produto
+router.patch('/catalogo/produtos/:id/toggle', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const prod = await CatalogoService.obterProdutoPorId(id);
+        if (!prod) return res.status(404).json({ success: false, message: 'Produto não encontrado.' });
+
+        const atualizado = await CatalogoService.atualizarProduto(id, { ativo: !prod.ativo });
+        res.json({ success: true, message: `Produto ${atualizado.ativo ? 'ativado' : 'desativado'} com sucesso!`, produto: atualizado });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Excluir produto
+router.delete('/catalogo/produtos/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await CatalogoService.deletarProduto(id);
+        res.json({ success: true, message: 'Produto removido com sucesso!' });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+// Listar fotos reais disponíveis na pasta do site para seleção no cadastro
+router.get('/catalogo/fotos-disponiveis', (req, res) => {
+    try {
+        const dir = path.join(__dirname, '..', '..', 'site', 'assets', 'products');
+        if (!fs.existsSync(dir)) return res.json({ success: true, fotos: [] });
+        const files = fs.readdirSync(dir)
+            .filter(f => /\.(jpe?g|png|webp)$/i.test(f))
+            .map(f => `/assets/products/${f}`);
+        res.json({ success: true, fotos: files });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

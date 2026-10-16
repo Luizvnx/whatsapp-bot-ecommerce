@@ -9,15 +9,25 @@ const SocketService = require('./src/services/SocketService');
 
 const webhookRoutes = require('./src/routes/webhookRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
+const catalogoRoutes = require('./src/routes/catalogoRoutes');
 
 const app = express();
 const server = http.createServer(app);
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src', 'views'));
+
+// Arquivos estáticos da pasta pública do painel e do novo site desacoplado
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'site')));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// ROTA PÚBLICA DO SITE INSTITUCIONAL E CATÁLOGO
+app.use('/api/catalogo', catalogoRoutes);
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'site', 'index.html')));
+app.get('/catalogo', (req, res) => res.sendFile(path.join(__dirname, 'site', 'catalogo.html')));
 
 // ROTA DE LOGIN (GET)
 app.get('/login', (req, res) => {
@@ -59,7 +69,6 @@ app.get('/logout', (req, res) => {
     return res.redirect('/login');
 });
 
-app.get('/', (req, res) => res.redirect('/admin'));
 app.use('/webhook', webhookRoutes);
 app.use('/admin', authMiddleware, adminRoutes);
 
