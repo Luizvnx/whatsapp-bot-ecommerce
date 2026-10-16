@@ -179,12 +179,38 @@ class DatabaseService {
             CREATE INDEX IF NOT EXISTS idx_tb_cobrancas_pix_status ON tb_cobrancas_pix(status);
         `;
 
+        const sqlPedidos = `
+            CREATE TABLE IF NOT EXISTS tb_pedidos (
+                id SERIAL PRIMARY KEY,
+                codigo_pedido VARCHAR(50) UNIQUE NOT NULL,
+                cliente_nome VARCHAR(150) NOT NULL,
+                cliente_telefone VARCHAR(50) NOT NULL,
+                tipo_entrega VARCHAR(50) DEFAULT 'entrega',
+                endereco JSONB DEFAULT '{}',
+                forma_pagamento VARCHAR(50) DEFAULT 'pix',
+                troco_para VARCHAR(50),
+                observacoes TEXT,
+                itens JSONB NOT NULL,
+                subtotal NUMERIC(10, 2) NOT NULL,
+                taxa_entrega NUMERIC(10, 2) DEFAULT 0.00,
+                total NUMERIC(10, 2) NOT NULL,
+                status VARCHAR(50) DEFAULT 'novo',
+                origem VARCHAR(50) DEFAULT 'catalogo_web',
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_tb_pedidos_codigo ON tb_pedidos(codigo_pedido);
+            CREATE INDEX IF NOT EXISTS idx_tb_pedidos_telefone ON tb_pedidos(cliente_telefone);
+            CREATE INDEX IF NOT EXISTS idx_tb_pedidos_status ON tb_pedidos(status);
+        `;
+
         try {
             await this.executar(sqlSessoes);
             await this.executar(sqlConfig);
             await this.executar(sqlCatalogo);
             await this.executar(sqlUsuarios);
             await this.executar(sqlCrm);
+            await this.executar(sqlPedidos);
             await this.semearCatalogoSeVazio();
             await this.migrarSessoesParaCrmClientesSeVazio();
             await this.migrarOportunidadesIniciaisSeVazio();
