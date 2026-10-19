@@ -20,6 +20,46 @@ class SessionService {
     }
 
     /**
+     * Gera todas as variações conhecidas de formato para números brasileiros
+     * (com e sem DDI 55, com e sem o 9º dígito móvel, e com sufixo @s.whatsapp.net)
+     */
+    static gerarVariacoesTelefone(numeroOuId) {
+        if (!numeroOuId || typeof numeroOuId !== 'string') return [];
+        const limpo = numeroOuId.split('@')[0].split(':')[0].replace(/\D/g, '');
+        if (!limpo) return [];
+
+        const variacoes = new Set();
+        variacoes.add(limpo);
+        variacoes.add(`${limpo}@s.whatsapp.net`);
+
+        let ddd = null;
+        let base = null;
+
+        // Trata números brasileiros com DDI 55 (12 ou 13 dígitos)
+        if (limpo.startsWith('55') && (limpo.length === 12 || limpo.length === 13)) {
+            ddd = limpo.substring(2, 4);
+            base = limpo.length === 13 ? limpo.substring(5) : limpo.substring(4);
+        } else if (limpo.length === 10 || limpo.length === 11) {
+            // Sem DDI (10 ou 11 dígitos)
+            ddd = limpo.substring(0, 2);
+            base = limpo.length === 11 ? limpo.substring(3) : limpo.substring(2);
+        }
+
+        if (ddd && base && base.length === 8) {
+            variacoes.add(`55${ddd}${base}`);
+            variacoes.add(`55${ddd}${base}@s.whatsapp.net`);
+            variacoes.add(`55${ddd}9${base}`);
+            variacoes.add(`55${ddd}9${base}@s.whatsapp.net`);
+            variacoes.add(`${ddd}${base}`);
+            variacoes.add(`${ddd}${base}@s.whatsapp.net`);
+            variacoes.add(`${ddd}9${base}`);
+            variacoes.add(`${ddd}9${base}@s.whatsapp.net`);
+        }
+
+        return Array.from(variacoes);
+    }
+
+    /**
      * Executa operações para o mesmo cliente de forma estritamente sequencial
      */
     static async enfileirar(chave, fn) {
@@ -95,26 +135,32 @@ class SessionService {
      */
     static async obterConversa(numeroCliente) {
         const idCanonico = this.normalizarId(numeroCliente);
-        const numeroLimpo = idCanonico.split('@')[0];
         const agora = Date.now();
+        const variacoes = this.gerarVariacoesTelefone(numeroCliente);
 
-        // 1. Checa cache em memória para evitar queries desnecessárias e acelerar a resposta do bot
-        const cached = this.cacheConversas.get(idCanonico);
-        if (cached && (agora - cached.timestamp < this.CACHE_SESSAO_TTL)) {
-            return cached.dados;
+        // 1. Checa cache em memória para qualquer variação válida
+        for (const v of variacoes) {
+            const cached = this.cacheConversas.get(v);
+            if (cached && (agora - cached.timestamp < this.CACHE_SESSAO_TTL)) {
+                return cached.dados;
+            }
+        }
+        const cachedCanonico = this.cacheConversas.get(idCanonico);
+        if (cachedCanonico && (agora - cachedCanonico.timestamp < this.CACHE_SESSAO_TTL)) {
+            return cachedCanonico.dados;
         }
 
-        // Busca determinística pela sessão mais recente, cobrindo variações de sufixo
+        // Busca determinística pela sessão mais recente cobrindo todas as variações (com/sem 55, com/sem 9)
         const sql = `
             SELECT id_cliente, nome_contato, etapa, dados_sessao, ultima_msg 
             FROM tb_bot_sessoes 
-            WHERE id_cliente = $1 OR id_cliente = $2 
+            WHERE id_cliente = ANY($1) 
             ORDER BY ultima_msg DESC 
             LIMIT 1
         `;
         let result = { rows: [] };
         try {
-            result = await DatabaseService.executar(sql, [idCanonico, numeroLimpo]);
+            result = await DatabaseService.executar(sql, [variacoes]);
         } catch (dbErr) {
             console.warn(`⚠️ [SessionService] Falha ao consultar banco para ${idCanonico}:`, dbErr.message);
         }
@@ -122,7 +168,7 @@ class SessionService {
         if (result.rows.length > 0) {
             const row = result.rows[0];
             let dados = typeof row.dados_sessao === 'string' ? JSON.parse(row.dados_sessao) : (row.dados_sessao || {});
-            dados.id_cliente = idCanonico;
+            dados.id_cliente = row.id_cliente || idCanonico;
 
             let nomeFinal = this.isNomeContatoValido(row.nome_contato)
                 ? row.nome_contato.trim()
@@ -646,16 +692,17 @@ class SessionService {
 
     /**
      * Reinicia completamente o estágio de atendimento de um contato específico para o início do bot.
+     * Suporta variações de números brasileiros (com/sem 55, com/sem o 9º dígito).
      */
     static async reiniciarEstagioContato(numeroCliente) {
         const idCanonico = this.normalizarId(numeroCliente);
-        const numeroLimpo = idCanonico.split('@')[0];
-        const sem55 = numeroLimpo.replace(/^55/, '');
+        const variacoes = this.gerarVariacoesTelefone(numeroCliente);
 
-        // 1. Limpa cache em memória para forçar nova leitura limpa
+        // 1. Limpa cache em memória de todas as variações
+        for (const v of variacoes) {
+            this.cacheConversas.delete(v);
+        }
         this.cacheConversas.delete(idCanonico);
-        this.cacheConversas.delete(numeroLimpo);
-        this.cacheConversas.delete(sem55);
 
         // 2. Obtém e reinicia todos os campos de estágio e modo para o robô
         const dados = await this.obterConversa(idCanonico);
@@ -669,10 +716,12 @@ class SessionService {
         dados.processando = false;
         dados.ultimaInteracao = Date.now();
         delete dados.transferidoParaHumanoEm;
+        delete dados.ultimaMensagemEnviadaAoCliente;
 
-        await this.salvarConversa(idCanonico, dados);
+        const idAlvo = dados.id_cliente || idCanonico;
+        await this.salvarConversa(idAlvo, dados);
 
-        // 3. Atualiza explicitamente no banco de dados
+        // 3. Atualiza explicitamente no banco de dados para todas as variações
         try {
             const sql = `
                 UPDATE tb_bot_sessoes 
@@ -688,25 +737,25 @@ class SessionService {
                         '{carrinho}', '[]'::jsonb
                     ),
                     ultima_msg = CURRENT_TIMESTAMP
-                WHERE id_cliente LIKE $1 OR id_cliente LIKE $2 OR id_cliente LIKE $3
+                WHERE id_cliente = ANY($1)
             `;
-            await DatabaseService.executar(sql, [`%${numeroLimpo}%`, `%${sem55}%`, `%${idCanonico}%`]);
+            await DatabaseService.executar(sql, [variacoes]);
         } catch (_) { }
 
-        // 4. Atualiza etiquetas na Evolution API (remove '7' de humano e adiciona '8' de bot)
+        // 4. Atualiza etiquetas na Evolution API para todas as variações numéricas
         try {
             const EvolutionService = require('./EvolutionService');
-            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '7', 'remove').catch(() => {});
-            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '8', 'add').catch(() => {});
-            if (sem55 !== numeroLimpo) {
-                await EvolutionService.gerenciarEtiqueta(sem55, '7', 'remove').catch(() => {});
-                await EvolutionService.gerenciarEtiqueta(sem55, '8', 'add').catch(() => {});
+            for (const v of variacoes) {
+                if (!v.includes('@')) {
+                    await EvolutionService.gerenciarEtiqueta(v, '7', 'remove').catch(() => {});
+                    await EvolutionService.gerenciarEtiqueta(v, '8', 'add').catch(() => {});
+                }
             }
         } catch (_) { }
 
         if (SocketService.io) {
             SocketService.io.emit('modo_alterado', {
-                idCliente: idCanonico,
+                idCliente: idAlvo,
                 modo: 'bot'
             });
         }

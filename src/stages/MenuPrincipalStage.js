@@ -98,6 +98,26 @@ class MenuPrincipalStage {
             return await InicioStage.executar(msg, '', sessao);
         }
 
+        // 4.2 Mensagens curtas, pontuações, testes ou números fora do menu (ex: '.', '?', '!', 'teste', '4')
+        const isPontuacaoOuCurto = (
+            t === '.' || t === '..' || t === '...' ||
+            t === '?' || t === '??' || t === '!' ||
+            t === 'teste' || /^[0-9]+$/.test(t) ||
+            t.length <= 2
+        );
+
+        if (isPontuacaoOuCurto) {
+            sessao.errosConsecutivos = (sessao.errosConsecutivos || 0) + 1;
+            if (sessao.errosConsecutivos >= 2) {
+                const msgTransbordo = "Não consegui entender sua mensagem após algumas tentativas. Estou transferindo seu atendimento para nossa equipe humana! 🐝💛\n\n_(Para acessar o catálogo online: https://apiariofavodemel.com.br/catalogo ou digite *#* para voltar ao menu)_";
+                await msg.reply(msgTransbordo);
+                return await this.transferirParaHumano(msg, sessao);
+            }
+
+            const InicioStage = require('./InicioStage');
+            return await InicioStage.executar(msg, '', sessao);
+        }
+
         // 5. QUALQUER OUTRA COISA DIGITADA (TEXTO LIVRE / PERGUNTA):
         // Conforme a regra: a IA avalia se é dúvida sobre mel/loja para responder;
         // caso não seja relacionado ou seja pedido de atendente/humano, encaminha para atendimento humano.
