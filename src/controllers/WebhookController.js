@@ -549,16 +549,25 @@ class WebhookController {
             const modoAtual = conversa.modo_atendimento || 'bot';
             const textoCliente = (infoMsg.texto || '').toLowerCase().trim();
 
-            // Se o atendimento estiver 100% humano no momento:
-            if (modoAtual === 'humano') {
-                // Cliente pode reativar o bot a qualquer momento digitando /bot, menu ou #
+            // Se o atendimento estiver em modo humano:
+            if (modoAtual === 'humano' || conversa.etapa === 'em_atendimento_humano') {
+                // 1. Regra 24h: se passou 24h sem mensagens enviadas ao cliente, o robô reassume o atendimento automaticamente
+                if (SessionService.deveBotAssumirAtendimento(conversa)) {
+                    console.log(`⏱️ [WebhookController] 24h sem mensagens enviadas para ${numeroReal}. Bot reassumindo o atendimento!`);
+                    await SessionService.assumirAtendimentoPeloBot(numeroReal, conversa);
+                    data.message = { conversation: infoMsg.texto };
+                    await BotController.processarMensagem(data);
+                    return;
+                }
+
+                // 2. Cliente pode reativar o bot a qualquer momento digitando /bot, menu ou #
                 const comandosReativar = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', 'catalogo', 'catálogo', '0', 'inicio', 'início'];
                 if (comandosReativar.includes(textoCliente)) {
-                    await SessionService.alternarModoAtendimento(numeroReal, 'bot');
+                    await SessionService.assumirAtendimentoPeloBot(numeroReal, conversa);
                     data.message = { conversation: infoMsg.texto };
                     await BotController.processarMensagem(data);
                 }
-                return; // Respeita o atendimento humano
+                return; // Respeita o atendimento humano ativo
             }
 
             // 3. Modo Bot Ativo: Executa o cérebro do Bot Favo de Mel

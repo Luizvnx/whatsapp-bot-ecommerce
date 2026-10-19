@@ -31,13 +31,18 @@ CONHECIMENTO DA FAVO DE MEL:
   * Captura e Resgate Seguro de Abelhas (remoção ecológica de enxames de residências e empresas para preservação em apiário).
   * Consultoria Apícola e Manejo (capacitação para novos e experientes criadores).
 - Dica sobre mel: A cristalização é um fenômeno natural do mel 100% puro e cru, provando que ele não foi superaquecido ou adulterado.
+- Catálogo e compras online: https://apiariofavodemel.com.br/catalogo
 
 DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
-1. Responda de forma direta e concisa (máximo de 2 parágrafos curtos).
-2. Se o cliente perguntar preço ou como comprar, informe o valor e oriente a consultar o catálogo.
-3. Se for uma dúvida que você não saiba responder com certeza (ex: frete para CEP específico fora de Aracaju, pedidos de desconto em atacado grande, parcerias comerciais, reclamações ou assuntos fora do tema):
-   Defina "transferirHumano": true e informe cordialmente que vai transferir para um de nossos atendentes.
-4. NUNCA invente informações não confirmadas. NUNCA gere introduções como "Aqui está sua resposta", prefixos ou tags de raciocínio.`;
+1. Se a mensagem do cliente for uma dúvida legítima sobre mel, abelhas, produtos da colmeia, catálogo ou serviços da Favo de Mel:
+   - Defina "relacionadoComMelOuLoja": true e "transferirHumano": false.
+   - Responda de forma direta, clara e prestativa (máximo de 2 parágrafos curtos).
+   - Se for sobre compra ou preços, mencione o catálogo online: https://apiariofavodemel.com.br/catalogo.
+2. Se o cliente pedir para falar com um atendente/humano ou reclamar:
+   - Defina "transferirHumano": true e "intencao": "humano".
+3. Se o assunto NÃO for relacionado a mel, abelhas, produtos da colmeia, catálogo ou serviços da loja (ex: assuntos gerais, aluguel, piadas, assuntos aleatórios sem relação com mel):
+   - Defina "relacionadoComMelOuLoja": false, "transferirHumano": true e "intencao": "outro".
+4. NUNCA invente informações não confirmadas. NUNCA utilize emojis.`;
     }
 
     /**
@@ -53,7 +58,11 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
                 },
                 transferirHumano: {
                     type: 'BOOLEAN',
-                    description: 'True se a dúvida exigir intervenção de um atendente humano (atacado, frete para outros estados, reclamação, etc.).'
+                    description: 'True se a dúvida exigir intervenção de um atendente humano OU se o assunto não for sobre mel/produtos/loja.'
+                },
+                relacionadoComMelOuLoja: {
+                    type: 'BOOLEAN',
+                    description: 'True se a dúvida for sobre mel, abelhas, produtos da colmeia, catálogo ou serviços da Favo de Mel. False se for sobre qualquer outro assunto sem relação com mel/loja.'
                 },
                 intencao: {
                     type: 'STRING',
@@ -66,7 +75,7 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
                     description: 'Próxima ação recomendada para guiar o cliente no fluxo.'
                 }
             },
-            required: ['resposta', 'transferirHumano', 'intencao', 'sugerirAcao']
+            required: ['resposta', 'transferirHumano', 'relacionadoComMelOuLoja', 'intencao', 'sugerirAcao']
         };
     }
 
@@ -131,10 +140,12 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
                     const parsed = OutputSanitizer.extrairJsonSeguro(cand);
                     if (parsed && typeof parsed.resposta === 'string') {
                         const respostaLimpa = OutputSanitizer.higienizarMensagemWhatsApp(parsed.resposta);
+                        const relacionado = parsed.relacionadoComMelOuLoja !== false && parsed.intencao !== 'outro';
                         return {
                             resposta: respostaLimpa,
-                            transferirHumano: Boolean(parsed.transferirHumano),
-                            intencao: parsed.intencao || 'duvida_produto',
+                            transferirHumano: Boolean(parsed.transferirHumano) || !relacionado,
+                            relacionadoComMelOuLoja: relacionado,
+                            intencao: parsed.intencao || (relacionado ? 'duvida_produto' : 'outro'),
                             sugerirAcao: parsed.sugerirAcao || 'nenhuma'
                         };
                     }
@@ -144,6 +155,7 @@ DIRETRIZES DE SAÍDA E CONTROLE DE QUALIDADE:
                     return {
                         resposta: respostaTexto,
                         transferirHumano: this._verificarNecessidadeHumano(respostaTexto),
+                        relacionadoComMelOuLoja: true,
                         intencao: 'duvida_produto',
                         sugerirAcao: 'catalogo'
                     };

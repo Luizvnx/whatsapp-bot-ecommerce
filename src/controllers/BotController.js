@@ -161,20 +161,20 @@ class BotController {
                 return;
             }
 
-            // 5. Se o cliente estiver em atendimento humano, permite apenas comandos de reativação (/bot, /voltar, menu)
+            // 5. Se o cliente estiver em atendimento humano:
             if (sessao.etapa === 'em_atendimento_humano') {
+                // Se passou 24h sem nenhuma mensagem enviada ao cliente, o robô reassume o atendimento automaticamente
+                if (SessaoService.deveBotAssumirAtendimento(sessao)) {
+                    console.log(`⏱️ [BotController] 24h sem mensagens enviadas para ${numeroReal}. Bot reassumindo o atendimento!`);
+                    await SessaoService.assumirAtendimentoPeloBot(numeroReal, sessao);
+
+                    const InicioStage = require('../stages/InicioStage');
+                    return await InicioStage.executar(info, '', sessao);
+                }
+
                 const comandosRetorno = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', 'catalogo', 'catálogo', '0', 'inicio', 'início'];
                 if (comandosRetorno.includes(info.texto)) {
-                    sessao.etapa = 'menu_principal';
-                    sessao.errosConsecutivos = 0;
-                    sessao.categoriaSelecionada = null;
-                    sessao.produtoSelecionado = null;
-
-                    await SessaoService.alternarModoAtendimento(numeroReal, 'bot').catch(() => { });
-                    if (typeof EvolutionService.gerenciarEtiqueta === 'function') {
-                        await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => { });
-                        await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => { });
-                    }
+                    await SessaoService.assumirAtendimentoPeloBot(numeroReal, sessao);
 
                     const InicioStage = require('../stages/InicioStage');
                     return await InicioStage.executar(info, '', sessao);
@@ -397,6 +397,7 @@ class BotController {
 
             if (sessao.etapa !== 'em_atendimento_humano') {
                 sessao.etapa = 'em_atendimento_humano';
+                sessao.transferidoParaHumanoEm = new Date().toISOString();
                 const numeroLimpoParaTag = numeroReal.split('@')[0];
                 await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '8', 'remove').catch(() => { });
                 await EvolutionService.gerenciarEtiqueta(numeroLimpoParaTag, '7', 'add').catch(() => { });
@@ -424,13 +425,17 @@ class BotController {
         }
 
         if (texto === 'carrinho' || texto === '/carrinho') {
-            await this._exibirResumoCarrinho(sessao, reply);
+            await reply("🛒 *Compras & Carrinho Online - Favo de Mel* 🍯\n\nAgora todos os pedidos e carrinho são gerenciados diretamente pelo nosso site:\n👉 https://apiariofavodemel.com.br/catalogo\n\n_(Digite *#* a qualquer momento para ver o menu principal.)_");
             return true;
         }
 
         return false; // Não interceptou nenhum comando
     }
 
+    /*
+    // =========================================================================
+    // FLUXO ANTERIOR DE RESUMO DE CARRINHO NO CHAT (PRESERVADO / COMENTADO)
+    // =========================================================================
     static async _exibirResumoCarrinho(sessao, reply) {
         if (!sessao.carrinho || sessao.carrinho.length === 0) {
             await reply("🛒 *Seu carrinho está vazio no momento!*\n\nDigite *#* para ver o nosso menu de produtos e começar a comprar. 🍯");
@@ -452,6 +457,8 @@ class BotController {
         await reply(resumo);
         sessao.etapa = 'carrinho_opcoes';
     }
+    // =========================================================================
+    */
 }
 
 module.exports = BotController;

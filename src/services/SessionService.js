@@ -112,7 +112,12 @@ class SessionService {
             ORDER BY ultima_msg DESC 
             LIMIT 1
         `;
-        const result = await DatabaseService.executar(sql, [idCanonico, numeroLimpo]);
+        let result = { rows: [] };
+        try {
+            result = await DatabaseService.executar(sql, [idCanonico, numeroLimpo]);
+        } catch (dbErr) {
+            console.warn(`⚠️ [SessionService] Falha ao consultar banco para ${idCanonico}:`, dbErr.message);
+        }
 
         if (result.rows.length > 0) {
             const row = result.rows[0];
@@ -226,11 +231,15 @@ class SessionService {
                 ultima_msg = CURRENT_TIMESTAMP;
         `;
 
-        await DatabaseService.executar(sql, [
-            idCanonico,
-            nomeParaSalvar,
-            JSON.stringify(dadosConversa)
-        ]);
+        try {
+            await DatabaseService.executar(sql, [
+                idCanonico,
+                nomeParaSalvar,
+                JSON.stringify(dadosConversa)
+            ]);
+        } catch (dbErr) {
+            console.warn(`⚠️ [SessionService] Falha ao persistir no banco para ${idCanonico}:`, dbErr.message);
+        }
 
         // Sincroniza o cliente com o CRM (Fase 1) e o Funil de Vendas (Fase 2) em segundo plano
         try {
@@ -373,6 +382,11 @@ class SessionService {
                 conversa.historicoMensagens = conversa.historicoMensagens.slice(-3000);
             }
 
+            if (remetente === 'atendente') {
+                conversa.ultimaMensagemEnviadaAoCliente = novaMensagem.timestamp;
+            }
+            conversa.ultimaInteracao = Date.now();
+
             await this.salvarConversa(idCanonico, conversa);
 
             // Transmite via WebSocket em tempo real para todos os atendentes
@@ -393,6 +407,11 @@ class SessionService {
         const idCanonico = this.normalizarId(numeroCliente);
         const conversa = await this.obterConversa(idCanonico);
         conversa.modo_atendimento = modo; // 'humano' ou 'copiloto'
+        if (modo === 'humano') {
+            conversa.transferidoParaHumanoEm = new Date().toISOString();
+        } else {
+            delete conversa.transferidoParaHumanoEm;
+        }
         await this.salvarConversa(idCanonico, conversa);
 
         if (SocketService.io) {
@@ -483,6 +502,11 @@ class SessionService {
         conversa.etapa = novaEtapa;
         conversa.processando = false;
         conversa.ultimaInteracao = Date.now();
+        if (novaEtapa === 'em_atendimento_humano') {
+            conversa.transferidoParaHumanoEm = new Date().toISOString();
+        } else {
+            delete conversa.transferidoParaHumanoEm;
+        }
         if (resetarCarrinho) {
             conversa.carrinho = [];
         }
@@ -503,12 +527,227 @@ class SessionService {
         let expirou = false;
         if (sessao.ultimaInteracao && (Date.now() - sessao.ultimaInteracao > TEMPO_LIMITE)) {
             sessao.etapa = 'menu_principal';
+            sessao.modo_atendimento = 'bot';
             sessao.carrinho = [];
             sessao.historicoIa = [];
+            sessao.errosConsecutivos = 0;
+            delete sessao.transferidoParaHumanoEm;
             expirou = true;
         }
         sessao.ultimaInteracao = Date.now();
         return expirou;
+    }
+
+    /**
+     * Retorna o timestamp (em milissegundos) da última mensagem enviada ao cliente (pelo atendente, vendedor ou bot)
+     */
+    static obterTimestampUltimaMensagemEnviada(conversa) {
+        if (!conversa) return null;
+
+        // 1. Timestamp explícito de última mensagem enviada ao cliente
+        if (conversa.ultimaMensagemEnviadaAoCliente) {
+            const t = new Date(conversa.ultimaMensagemEnviadaAoCliente).getTime();
+            if (!isNaN(t) && t > 0) return t;
+        }
+
+        // 2. Busca no histórico de mensagens a mensagem mais recente enviada ao cliente (remetente === 'atendente')
+        if (Array.isArray(conversa.historicoMensagens) && conversa.historicoMensagens.length > 0) {
+            for (let i = conversa.historicoMensagens.length - 1; i >= 0; i--) {
+                const m = conversa.historicoMensagens[i];
+                if (m.remetente === 'atendente') {
+                    const t = new Date(m.timestamp).getTime();
+                    if (!isNaN(t) && t > 0) return t;
+                }
+            }
+        }
+
+        // 3. Fallback: momento em que foi transferido para atendimento humano
+        if (conversa.transferidoParaHumanoEm) {
+            const t = new Date(conversa.transferidoParaHumanoEm).getTime();
+            if (!isNaN(t) && t > 0) return t;
+        }
+
+        // 4. Fallbacks adicionais de marco temporal
+        if (conversa.ultimaInteracao) {
+            const t = Number(conversa.ultimaInteracao);
+            if (!isNaN(t) && t > 0) return t;
+        }
+        if (conversa.criadoEm) {
+            const t = new Date(conversa.criadoEm).getTime();
+            if (!isNaN(t) && t > 0) return t;
+        }
+
+        return null;
+    }
+
+    /**
+     * Avalia se o atendimento humano expirou por ausência de mensagens enviadas ao cliente por mais de 24 horas.
+     * Retorna true se o bot deve reassumir o atendimento.
+     */
+    static deveBotAssumirAtendimento(conversa) {
+        if (!conversa) return false;
+
+        const isHumano = (conversa.modo_atendimento === 'humano' || conversa.etapa === 'em_atendimento_humano');
+        if (!isHumano) return false;
+
+        const TEMPO_LIMITE_24H = 24 * 60 * 60 * 1000;
+        const timestampUltima = this.obterTimestampUltimaMensagemEnviada(conversa);
+
+        if (!timestampUltima) {
+            // Se está marcado como humano mas não há nenhum registro de envio prévio, o robô deve assumir
+            return true;
+        }
+
+        return (Date.now() - timestampUltima) >= TEMPO_LIMITE_24H;
+    }
+
+    /**
+     * Reassume o atendimento pelo robô, redefinindo o modo para 'bot', etapa para 'menu_principal',
+     * limpando erros/contexto temporário e sincronizando com WebSocket e tags da Evolution API.
+     */
+    static async assumirAtendimentoPeloBot(numeroCliente, conversa = null) {
+        const idCanonico = this.normalizarId(numeroCliente);
+        return await this.enfileirar(idCanonico, async () => {
+            const dados = conversa || await this.obterConversa(idCanonico);
+            dados.modo_atendimento = 'bot';
+            dados.etapa = 'menu_principal';
+            dados.errosConsecutivos = 0;
+            dados.categoriaSelecionada = null;
+            dados.produtoSelecionado = null;
+            dados.ultimaInteracao = Date.now();
+            dados.processando = false;
+            delete dados.transferidoParaHumanoEm;
+
+            if (Array.isArray(dados.historicoIa)) {
+                dados.historicoIa = [];
+            }
+
+            await this.salvarConversa(idCanonico, dados);
+
+            if (SocketService.io) {
+                SocketService.io.emit('modo_alterado', {
+                    idCliente: idCanonico,
+                    modo: 'bot'
+                });
+            }
+
+            try {
+                const EvolutionService = require('./EvolutionService');
+                const numeroLimpo = idCanonico.split('@')[0];
+                if (typeof EvolutionService.gerenciarEtiqueta === 'function') {
+                    await EvolutionService.gerenciarEtiqueta(numeroLimpo, '7', 'remove').catch(() => {});
+                    await EvolutionService.gerenciarEtiqueta(numeroLimpo, '8', 'add').catch(() => {});
+                }
+            } catch (_) { }
+
+            return dados;
+        });
+    }
+
+    /**
+     * Reinicia completamente o estágio de atendimento de um contato específico para o início do bot.
+     */
+    static async reiniciarEstagioContato(numeroCliente) {
+        const idCanonico = this.normalizarId(numeroCliente);
+        const numeroLimpo = idCanonico.split('@')[0];
+        const sem55 = numeroLimpo.replace(/^55/, '');
+
+        // 1. Limpa cache em memória para forçar nova leitura limpa
+        this.cacheConversas.delete(idCanonico);
+        this.cacheConversas.delete(numeroLimpo);
+        this.cacheConversas.delete(sem55);
+
+        // 2. Obtém e reinicia todos os campos de estágio e modo para o robô
+        const dados = await this.obterConversa(idCanonico);
+        dados.modo_atendimento = 'bot';
+        dados.etapa = 'menu_principal';
+        dados.errosConsecutivos = 0;
+        dados.categoriaSelecionada = null;
+        dados.produtoSelecionado = null;
+        dados.carrinho = [];
+        dados.historicoIa = [];
+        dados.processando = false;
+        dados.ultimaInteracao = Date.now();
+        delete dados.transferidoParaHumanoEm;
+
+        await this.salvarConversa(idCanonico, dados);
+
+        // 3. Atualiza explicitamente no banco de dados
+        try {
+            const sql = `
+                UPDATE tb_bot_sessoes 
+                SET etapa = 'atendimento',
+                    dados_sessao = jsonb_set(
+                        jsonb_set(
+                            jsonb_set(
+                                jsonb_set(dados_sessao, '{modo_atendimento}', '"bot"'),
+                                '{etapa}', '"menu_principal"'
+                            ),
+                            '{errosConsecutivos}', '0'
+                        ),
+                        '{carrinho}', '[]'::jsonb
+                    ),
+                    ultima_msg = CURRENT_TIMESTAMP
+                WHERE id_cliente LIKE $1 OR id_cliente LIKE $2 OR id_cliente LIKE $3
+            `;
+            await DatabaseService.executar(sql, [`%${numeroLimpo}%`, `%${sem55}%`, `%${idCanonico}%`]);
+        } catch (_) { }
+
+        // 4. Atualiza etiquetas na Evolution API (remove '7' de humano e adiciona '8' de bot)
+        try {
+            const EvolutionService = require('./EvolutionService');
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '7', 'remove').catch(() => {});
+            await EvolutionService.gerenciarEtiqueta(numeroLimpo, '8', 'add').catch(() => {});
+            if (sem55 !== numeroLimpo) {
+                await EvolutionService.gerenciarEtiqueta(sem55, '7', 'remove').catch(() => {});
+                await EvolutionService.gerenciarEtiqueta(sem55, '8', 'add').catch(() => {});
+            }
+        } catch (_) { }
+
+        if (SocketService.io) {
+            SocketService.io.emit('modo_alterado', {
+                idCliente: idCanonico,
+                modo: 'bot'
+            });
+        }
+
+        return dados;
+    }
+
+    /**
+     * Varre sessões ativas no banco de dados para identificar atendimentos humanos
+     * que estão há mais de 24 horas sem mensagens enviadas ao cliente, reassumindo-os pelo robô.
+     */
+    static async verificarSessoesHumanoExpiradas() {
+        try {
+            const sql = `
+                SELECT id_cliente, dados_sessao 
+                FROM tb_bot_sessoes 
+                WHERE etapa = 'em_atendimento_humano' 
+                   OR dados_sessao->>'etapa' = 'em_atendimento_humano'
+                   OR dados_sessao->>'modo_atendimento' = 'humano'
+            `;
+            const result = await DatabaseService.executar(sql, []);
+            let countAssumidos = 0;
+
+            for (const row of result.rows) {
+                const dados = typeof row.dados_sessao === 'string' ? JSON.parse(row.dados_sessao) : (row.dados_sessao || {});
+                dados.id_cliente = row.id_cliente;
+
+                if (this.deveBotAssumirAtendimento(dados)) {
+                    console.log(`⏱️ [SessaoExpirada24h] Reassumindo atendimento de ${row.id_cliente} após 24h sem envios.`);
+                    await this.assumirAtendimentoPeloBot(row.id_cliente, dados);
+                    countAssumidos++;
+                }
+            }
+
+            if (countAssumidos > 0) {
+                console.log(`✅ [SessionService] ${countAssumidos} atendimentos humanos inativos reassumidos pelo bot.`);
+            }
+            return countAssumidos;
+        } catch (err) {
+            return 0;
+        }
     }
 
     // Métodos mantidos para retrocompatibilidade de chamadas legadas caso existam

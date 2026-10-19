@@ -4,7 +4,19 @@
         "ajudaHumana": "Se precisar de ajuda humana em qualquer momento, digite */humano*."
     },
     "inicio": {
-        "boasVindas": "🐝 *Olá! Bem-vindo(a) à Favo de Mel!* 🍯\n\nSomos especialistas em produtos puros da colmeia, resgate ecológico de abelhas e consultoria apícola em Aracaju.\n\nComo posso te ajudar hoje? *Digite o número da opção:*\n\n*1️⃣* - 🍯 *Comprar Mel e Produtos da Colmeia*\n*2️⃣* - 🐝 *Captura e Resgate de Abelhas*\n*3️⃣* - 👨‍🌾 *Consultoria e Manejo Apícola*\n*4️⃣* - ❓ *Tirar Dúvidas sobre Nossos Produtos/Serviços*"
+        "boasVindas": "🐝 *Olá! Bem-vindo(a) ao Apiário Favo de Mel!* 🍯✨\n\nSomos especialistas em méis puros da colmeia, derivados naturais, resgate de abelhas e apicultura em Sergipe.\n\nComo podemos te ajudar hoje? *Escolha uma das opções abaixo:*\n\n*1️⃣* - 🛍️ *Conhecer Catálogo & Comprar Online*\n*2️⃣* - ❓ *Tirar Dúvidas sobre Mel & Abelhas*\n*3️⃣* - 🐝 *Outros Serviços (Retirada de Abelhas, Revenda & Atendimento)*\n\n_(Responda com o número ou clique no botão desejado)_"
+    },
+    "catalogo": {
+        "apresentacao": "🍯 *Catálogo & Loja Online - Apiário Favo de Mel* 🐝\n\nConheça toda a nossa linha de méis puros, favos frescos, própolis e produtos naturais colhidos com todo o cuidado direto do apiário!\n\nVocê pode conferir todos os produtos, preços e fazer seu pedido com total facilidade pelo nosso site com entrega rápida:\n👉 *https://apiariofavodemel.com.br/catalogo*\n\n📦 *Como comprar:*\n1. Acesse o link acima e escolha seus produtos\n2. Adicione ao carrinho e informe seu endereço\n3. Finalize com entrega em Aracaju/região ou retirada!\n\n_(Se precisar de ajuda ou tiver alguma dúvida, é só chamar por aqui! Digite *#* para ver o menu.)_"
+    },
+    "duvidas": {
+        "transferencia": "🍯 *Dúvidas sobre Mel & Produtos da Colmeia* 🐝\n\nPerfeito! Já transferi sua conversa para a nossa equipe de especialistas. Em instantes um atendente humano irá te responder por aqui para tirar todas as suas dúvidas! 💛\n\n_(Caso queira consultar nosso catálogo online enquanto aguarda: https://apiariofavodemel.com.br/catalogo ou digite *#* para voltar ao menu.)_"
+    },
+    "outrosServicos": {
+        "transferencia": "🐝 *Outros Serviços & Atendimento Personalizado* 👨‍🌾\n\nEntendido! Seja para retirada e resgate seguro de abelhas, revenda de produtos no atacado ou outras parcerias comerciais, nossa equipe já foi notificada. Um atendente humano responderá você por aqui em instantes! 💛\n\n_(Para acessar nosso catálogo online: https://apiariofavodemel.com.br/catalogo ou digite *#* para o menu.)_"
+    },
+    "atendimentoGeral": {
+        "transferencia": "Olá! Recebi sua mensagem e transferi seu atendimento para a nossa equipe humana para te auxiliar da melhor forma. Em instantes um de nossos atendentes irá falar com você aqui no WhatsApp! 🐝💛\n\n👉 *Nosso Catálogo Online:* https://apiariofavodemel.com.br/catalogo\n_(Digite *#* a qualquer momento para ver o menu.)_"
     },
     "produtos": {
         "escolhaCategoria": "🍯 *Produtos da Colmeia - Favo de Mel*\n\nEscolha uma categoria para ver os itens disponíveis:\n\n*1️⃣* - 🍯 *Méis Especiais e Tradicionais* (Jataí, Uruçu, Favo, Puro...)\n*2️⃣* - 🌿 *Própolis e Geleia Real* (Extratos, in natura e cápsulas)\n*3️⃣* - 🍷 *Bebidas & Artesanais* (Hidromel, Molhos com Mel, Cera...)\n\n👉 *Digite o número da categoria* ou *#* para voltar ao menu.",
@@ -29,6 +41,7 @@
     },
     "erros": {
         "opcaoInvalida": "⚠️ Opção não reconhecida. Por favor, digite o número correspondente à opção desejada ou *#* para voltar ao menu principal.",
-        "transferenciaHumano": "🔇 Transferindo para um de nossos especialistas. Por favor, aguarde um momento que já vamos te responder por aqui! 🐝🍯"
+        "transferenciaHumano": "🔇 Transferindo para um de nossos especialistas. Por favor, aguarde um momento que já vamos te responder por aqui! 🐝🍯",
+        "sessaoExpirada": "⏳ Sua sessão anterior expirou por inatividade. Digite qualquer mensagem ou *#* para reiniciar o atendimento."
     }
 }

@@ -6,7 +6,8 @@
     "start": "node app.js",
     "dev": "node app.js",
     "reset-whatsapp": "node scripts/reset_whatsapp_session.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "reset-contato": "node scripts/resetar_contato.js",
+    "test": "node tests/test_all_flows.js && node tests/test_atendimento_humano_24h.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -83,6 +83,7 @@ app.use('/webhook', webhookRoutes);
 app.use('/admin', authMiddleware, adminRoutes);
 
 const iniciarRotinasDeLimpeza = () => {
+    // 1. Limpeza diária de sessões inativas há mais de 7 dias
     setInterval(async () => {
         try {
             if (typeof DatabaseService.limparSessoesInativas === 'function') {
@@ -92,6 +93,18 @@ const iniciarRotinasDeLimpeza = () => {
             console.error('Erro na rotina de limpeza:', err.message);
         }
     }, 24 * 60 * 60 * 1000);
+
+    // 2. Verificação periódica (a cada 15 min): o bot reassume atendimentos humanos sem mensagens enviadas ao cliente há mais de 24h
+    setInterval(async () => {
+        try {
+            const SessionService = require('./src/services/SessionService');
+            if (typeof SessionService.verificarSessoesHumanoExpiradas === 'function') {
+                await SessionService.verificarSessoesHumanoExpiradas();
+            }
+        } catch (err) {
+            console.error('Erro na verificação de atendimentos humanos expirados (24h):', err.message);
+        }
+    }, 15 * 60 * 1000);
 };
 
 const bootstrap = async () => {
