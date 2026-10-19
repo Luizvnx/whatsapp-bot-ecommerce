@@ -63,43 +63,27 @@ class MenuPrincipalStage {
             sessao.errosConsecutivos = 0;
 
             const title = "🍯 Catálogo & Loja Online - Apiário Favo de Mel 🐝";
-            const description = "Conheça toda a nossa linha de méis puros, favos frescos, própolis e produtos naturais colhidos com todo o cuidado direto do apiário!\n\nVocê pode conferir todos os produtos, fotos, preços e fazer seu pedido com total facilidade pelo nosso site com entrega rápida:\n👉 https://apiariofavodemel.com.br/catalogo\n\n📦 *Como comprar:*\n1. Clique no botão abaixo ou acesse o link\n2. Adicione ao carrinho e informe seu endereço\n3. Finalize com entrega em Aracaju/região ou retirada!\n\n_(Para voltar ao menu inicial a qualquer momento, digite *#* ou *menu*)_";
-            const fallback = `*${title}*\n\n${description}\n\n👉 https://apiariofavodemel.com.br/catalogo`;
+            const description = "Conheça toda a nossa linha de méis 100% puros e crus, favos frescos, própolis verde e vermelha, geleia real e produtos naturais colhidos com todo o cuidado direto do nosso apiário!\n\n👉 *Acesse nossa loja online para ver fotos, preços e comprar com entrega rápida:*\nhttps://apiariofavodemel.com.br/catalogo\n\n📦 *Entregamos com rapidez em toda Aracaju e enviamos para todo o Brasil!*";
+            const fallback = `*${title}*\n\n${description}\n\n_(Para ver outras opções ou voltar ao menu inicial, escolha abaixo ou digite *#*)_`;
 
-            // 1. Envia Card com Botão CTA URL Nativo Clicável do WhatsApp
+            // Envia card com menu interativo de navegação (botões do tipo reply que funcionam perfeitamente em todos os celulares)
             if (typeof msg.replyButtons === 'function') {
                 await msg.replyButtons({
                     title,
                     description,
                     footer: "Apiário Favo de Mel",
                     buttons: [
-                        {
-                            type: "url",
-                            displayText: "🛍️ Abrir Loja Online",
-                            url: "https://apiariofavodemel.com.br/catalogo"
-                        }
+                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
+                        { type: "reply", displayText: "❓ Dúvidas sobre Mel", id: "2" },
+                        { type: "reply", displayText: "🐝 Outros Serviços", id: "3" }
                     ]
                 }, fallback);
             } else {
                 await msg.reply(fallback);
             }
 
-            // 2. Envia também o link puro isolado em texto para garantir visualização direta em qualquer aparelho
+            // Envia também o link puro isolado em texto para garantir geração de preview e clique direto em qualquer aparelho
             await msg.reply("https://apiariofavodemel.com.br/catalogo");
-
-            // 3. Envia o menu interativo com botão de Voltar ao Início (sem precisar digitar #)
-            if (typeof msg.replyButtons === 'function') {
-                await msg.replyButtons({
-                    title: "",
-                    description: "Deseja ver outras opções de atendimento ou voltar ao início?",
-                    footer: "Apiário Favo de Mel",
-                    buttons: [
-                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
-                        { type: "reply", displayText: "❓ Dúvidas sobre Mel", id: "2" },
-                        { type: "reply", displayText: "🐝 Outros Serviços", id: "3" }
-                    ]
-                }, "_(Para voltar ao menu inicial, clique no botão acima ou digite *#*)_");
-            }
             return;
         }
 

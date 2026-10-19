@@ -597,12 +597,32 @@ class WebhookController {
                     return;
                 }
 
-                // 2. Cliente pode reativar o bot a qualquer momento digitando /bot, menu ou #
-                const comandosReativar = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', 'catalogo', 'catálogo', '0', 'inicio', 'início'];
-                if (comandosReativar.includes(textoCliente)) {
+                // 2. Cliente pode reativar o bot a qualquer momento ao pedir catálogo, menu ou dúvidas
+                const comandosReativar = [
+                    '#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', '0', 'inicio', 'início',
+                    'voltar ao inicio', 'voltar ao início', 'voltar ao menu',
+                    '🔙 voltar ao início', '🔙 voltar ao inicio', '🔙 voltar ao menu',
+                    '1', 'catalogo', 'catálogo', '/catalogo', '/catálogo', 'link', '/link', 'site', '/site',
+                    'loja', '/loja', 'loja online', 'loja virtual',
+                    'ver catalogo', 'ver catálogo', 'conhecer catalogo', 'conhecer catálogo', 'abrir catalogo', 'abrir catálogo',
+                    '🛍️ ver catálogo', '🛍️ ver catalogo', '🛍️ conhecer catálogo', '🛍️ conhecer catalogo',
+                    '2', 'duvidas', 'dúvidas', 'duvidas sobre mel', 'dúvidas sobre mel',
+                    '❓ dúvidas sobre mel', '❓ duvidas sobre mel'
+                ];
+                const pedeCatalogoOuMenu = (
+                    comandosReativar.includes(textoCliente) ||
+                    textoCliente.startsWith('ver catalogo') ||
+                    textoCliente.startsWith('ver catálogo') ||
+                    textoCliente.startsWith('manda o link') ||
+                    textoCliente.startsWith('o link')
+                );
+
+                if (pedeCatalogoOuMenu) {
+                    console.log(`🤖 [WebhookController] Cliente solicitou reativação com comando "${textoCliente}". Bot reassumindo!`);
                     await SessionService.assumirAtendimentoPeloBot(numeroReal, conversa);
                     data.message = { conversation: infoMsg.texto };
                     await BotController.processarMensagem(data);
+                    return;
                 }
                 return; // Respeita o atendimento humano ativo
             }

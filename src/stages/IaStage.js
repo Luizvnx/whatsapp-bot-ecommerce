@@ -68,37 +68,32 @@ class IaStage {
             'mel', 'abelha', 'jatai', 'jataí', 'urucu', 'uruçu', 'moca branca', 'moça branca',
             'propolis', 'própolis', 'favo', 'geleia', 'polen', 'pólen', 'cera',
             'hidromel', 'melato', 'bracatinga', 'cristaliz', 'puro', 'pureza', 'revenda', 'atacado',
-            'preco', 'preço', 'valor', 'loja', 'entrega', 'frete', 'aracaju', 'catalogo', 'catálogo'
+            'preco', 'preço', 'valor', 'loja', 'entrega', 'frete', 'aracaju', 'catalogo', 'catálogo',
+            'onde', 'endereço', 'horário', 'horario', 'comprar', 'pagar', 'pix', 'cartao', 'cartão'
         ];
         const contemTermoMel = termosMelSeguros.some(termo => t.includes(termo));
 
-        // 6. Consciência de Atuação: se for pedido de atendente, ou assunto sem relação NENHUMA com mel/loja
-        const ehAssuntoSemRelacao = (
-            (!contemTermoMel && retorno.relacionadoComMelOuLoja === false) ||
-            retorno.intencao === 'outro' ||
-            retorno.intencao === 'humano' ||
-            retorno.transferirHumano === true
-        );
+        // 6. Pedido explícito de atendimento humano
+        const termosPedirHumano = [
+            'atendente', 'humano', 'falar com alguém', 'falar com alguem',
+            'atendente humano', 'equipe', 'suporte', 'falar com uma pessoa', 'falar com atendente'
+        ];
+        const pediuHumanoDireto = termosPedirHumano.some(termo => t.includes(termo));
 
-        if (ehAssuntoSemRelacao && !contemTermoMel) {
-            const avisoTransbordo = "Nosso assistente virtual responde exclusivamente dúvidas sobre mel puro, própolis, revenda e produtos da Favo de Mel. Estou transferindo seu atendimento para a nossa equipe humana! 🐝💛\n\n👉 *Nosso Catálogo Online:* https://apiariofavodemel.com.br/catalogo";
-            if (typeof msg.replyButtons === 'function') {
-                await msg.replyButtons({
-                    title: "🐝 Atendimento Humano",
-                    description: avisoTransbordo,
-                    footer: "Apiário Favo de Mel",
-                    buttons: [
-                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
-                        { type: "reply", displayText: "🛍️ Ver Catálogo", id: "1" }
-                    ]
-                }, avisoTransbordo);
-            } else {
-                await msg.reply(avisoTransbordo);
-            }
+        if (pediuHumanoDireto || retorno.intencao === 'humano') {
+            const avisoTransbordo = "Com certeza! Já estou transferindo seu atendimento para a nossa equipe humana. Em instantes um de nossos atendentes irá te responder por aqui! 🐝💛\n\n👉 *Nosso Catálogo Online:* https://apiariofavodemel.com.br/catalogo";
+            await msg.reply(avisoTransbordo);
             return await MenuPrincipalStage.transferirParaHumano(msg, sessao);
         }
 
-        // 7. A IA responde a dúvida legítima sobre mel/produtos/loja/revenda:
+        // 7. Assunto sem relação nenhuma com mel ou produtos da Favo de Mel
+        if (retorno.relacionadoComMelOuLoja === false && !contemTermoMel) {
+            const avisoForaEscopo = "Sou a assistente virtual da Favo de Mel e respondo dúvidas sobre nossos méis puros, própolis, produtos da colmeia e serviços do apiário. Se precisar de suporte personalizado, estou transferindo você para a nossa equipe humana! 🐝💛\n\n👉 *Catálogo Online:* https://apiariofavodemel.com.br/catalogo";
+            await msg.reply(avisoForaEscopo);
+            return await MenuPrincipalStage.transferirParaHumano(msg, sessao);
+        }
+
+        // 8. Resposta legítima da IA: diálogo fluido, humanizado e acolhedor (sem sobrecarga de menus)
         sessao.historicoIa.push({ role: 'user', parts: [{ text: texto }] });
         sessao.historicoIa.push({ role: 'model', parts: [{ text: retorno.resposta }] });
 
@@ -106,25 +101,17 @@ class IaStage {
             sessao.historicoIa = sessao.historicoIa.slice(-20);
         }
 
-        // Mantém a sessão conversando com a IA para continuidade
+        // Mantém a sessão conversando com a IA para continuidade do diálogo
         sessao.etapa = 'conversando_com_ia';
         sessao.errosConsecutivos = 0;
 
-        const fallback = `${retorno.resposta}\n\n👉 *Catálogo Online:* https://apiariofavodemel.com.br/catalogo\n_(Clique no botão ou digite *#* para voltar ao menu)_`;
-
-        if (typeof msg.replyButtons === 'function') {
-            return await msg.replyButtons({
-                title: "",
-                description: `${retorno.resposta}\n\n👉 *Catálogo Online:* https://apiariofavodemel.com.br/catalogo`,
-                footer: "Apiário Favo de Mel",
-                buttons: [
-                    { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
-                    { type: "reply", displayText: "🛍️ Ver Catálogo", id: "1" }
-                ]
-            }, fallback);
+        let respostaFinal = (retorno.resposta || '').trim();
+        if (!respostaFinal.includes('apiariofavodemel.com.br')) {
+            respostaFinal += `\n\n👉 *Nosso Catálogo Online:* https://apiariofavodemel.com.br/catalogo`;
         }
+        respostaFinal += `\n\n_(Para ver opções ou voltar ao menu inicial, digite *#* ou *menu*)_`;
 
-        return await msg.reply(fallback);
+        return await msg.reply(respostaFinal);
     }
 }
 

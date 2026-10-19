@@ -7,7 +7,7 @@
     "dev": "node app.js",
     "reset-whatsapp": "node scripts/reset_whatsapp_session.js",
     "reset-contato": "node scripts/resetar_contato.js",
-    "test": "node tests/test_all_flows.js && node tests/test_atendimento_humano_24h.js"
+    "test": "node tests/test_all_flows.js && node tests/test_atendimento_humano_24h.js && node tests/test_fluxo_completo_cliente.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

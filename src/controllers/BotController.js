@@ -183,6 +183,16 @@ class BotController {
                     return await MenuPrincipalStage.executar(info, '1', sessao);
                 }
 
+                const comandosRetornoDuvidas = [
+                    '2', 'duvidas', 'dúvidas', 'duvidas sobre mel', 'dúvidas sobre mel',
+                    '❓ dúvidas sobre mel', '❓ duvidas sobre mel'
+                ];
+                if (comandosRetornoDuvidas.includes(info.texto)) {
+                    await SessaoService.assumirAtendimentoPeloBot(numeroReal, sessao);
+                    const MenuPrincipalStage = require('../stages/MenuPrincipalStage');
+                    return await MenuPrincipalStage.executar(info, '2', sessao);
+                }
+
                 const comandosRetorno = [
                     '#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', '0', 'inicio', 'início',
                     'voltar ao inicio', 'voltar ao início', 'voltar ao menu',
