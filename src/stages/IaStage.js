@@ -35,11 +35,19 @@ class IaStage {
         const saudacoes = ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'opa', 'hey', 'alo', 'alô', 'oie', 'eai', 'e aí'];
         if (saudacoes.includes(t)) {
             sessao.etapa = 'conversando_com_ia';
-            return await msg.reply(
-                "Olá! 🐝🍯 Sou a assistente virtual da Favo de Mel.\n\n" +
-                "Pode me perguntar qualquer dúvida sobre nossos tipos de mel puro (Jataí, Uruçu, Melato, Silvestre), favos, própolis, benefícios para a saúde, localização da loja ou entregas!\n\n" +
-                "_(Se preferir voltar ao menu de opções, digite *#* ou *menu*)_"
-            );
+            const textoSaudacao = "Olá! 🐝🍯 Sou a assistente virtual da Favo de Mel.\n\nPode me perguntar qualquer dúvida sobre nossos tipos de mel puro (Jataí, Uruçu, Melato, Silvestre), pureza, cristalização, revenda no atacado, própolis, localização da loja ou entregas!";
+            if (typeof msg.replyButtons === 'function') {
+                return await msg.replyButtons({
+                    title: "🐝 Atendimento Favo de Mel",
+                    description: textoSaudacao,
+                    footer: "Apiário Favo de Mel",
+                    buttons: [
+                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
+                        { type: "reply", displayText: "🛍️ Ver Catálogo", id: "1" }
+                    ]
+                }, `${textoSaudacao}\n\n_(Para voltar ao menu inicial, clique no botão ou digite *#*)_`);
+            }
+            return await msg.reply(`${textoSaudacao}\n\n_(Para voltar ao menu inicial, digite *#*)_`);
         }
 
         if (!Array.isArray(sessao.historicoIa)) {
@@ -55,25 +63,42 @@ class IaStage {
         const retorno = await GeminiService.perguntar(texto, sessao.historicoIa);
         const MenuPrincipalStage = require('./MenuPrincipalStage');
 
-        // 6. Transferência humana: apenas se o cliente pediu atendente humano, assunto aleatório sem relação ou erro
-        const precisaTransferir = (
-            retorno.transferirHumano === true ||
-            retorno.relacionadoComMelOuLoja === false ||
+        // Palavras-chave de segurança que garantem relação com mel/loja/revenda
+        const termosMelSeguros = [
+            'mel', 'abelha', 'jatai', 'jataí', 'urucu', 'uruçu', 'moca branca', 'moça branca',
+            'propolis', 'própolis', 'favo', 'geleia', 'polen', 'pólen', 'cera',
+            'hidromel', 'melato', 'bracatinga', 'cristaliz', 'puro', 'pureza', 'revenda', 'atacado',
+            'preco', 'preço', 'valor', 'loja', 'entrega', 'frete', 'aracaju', 'catalogo', 'catálogo'
+        ];
+        const contemTermoMel = termosMelSeguros.some(termo => t.includes(termo));
+
+        // 6. Consciência de Atuação: se for pedido de atendente, ou assunto sem relação NENHUMA com mel/loja
+        const ehAssuntoSemRelacao = (
+            (!contemTermoMel && retorno.relacionadoComMelOuLoja === false) ||
             retorno.intencao === 'outro' ||
-            retorno.intencao === 'humano'
+            retorno.intencao === 'humano' ||
+            retorno.transferirHumano === true
         );
 
-        if (precisaTransferir) {
-            await msg.reply(
-                "Entendido! Estou transferindo seu atendimento para a nossa equipe humana. " +
-                "Em instantes um de nossos atendentes irá falar com você aqui no WhatsApp! 🐝💛\n\n" +
-                "👉 *Nosso Catálogo Online:* https://apiariofavodemel.com.br/catalogo\n" +
-                "_(Para voltar ao menu inicial, digite *#* ou *menu*)_"
-            );
+        if (ehAssuntoSemRelacao && !contemTermoMel) {
+            const avisoTransbordo = "Nosso assistente virtual responde exclusivamente dúvidas sobre mel puro, própolis, revenda e produtos da Favo de Mel. Estou transferindo seu atendimento para a nossa equipe humana! 🐝💛\n\n👉 *Nosso Catálogo Online:* https://apiariofavodemel.com.br/catalogo";
+            if (typeof msg.replyButtons === 'function') {
+                await msg.replyButtons({
+                    title: "🐝 Atendimento Humano",
+                    description: avisoTransbordo,
+                    footer: "Apiário Favo de Mel",
+                    buttons: [
+                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
+                        { type: "reply", displayText: "🛍️ Ver Catálogo", id: "1" }
+                    ]
+                }, avisoTransbordo);
+            } else {
+                await msg.reply(avisoTransbordo);
+            }
             return await MenuPrincipalStage.transferirParaHumano(msg, sessao);
         }
 
-        // 7. A IA respondeu a dúvida sobre mel/produtos/loja:
+        // 7. A IA responde a dúvida legítima sobre mel/produtos/loja/revenda:
         sessao.historicoIa.push({ role: 'user', parts: [{ text: texto }] });
         sessao.historicoIa.push({ role: 'model', parts: [{ text: retorno.resposta }] });
 
@@ -81,19 +106,25 @@ class IaStage {
             sessao.historicoIa = sessao.historicoIa.slice(-20);
         }
 
-        // CONSCIÊNCIA DE DIÁLOGO: Mantém o cliente no estágio de IA para continuidade da conversa!
+        // Mantém a sessão conversando com a IA para continuidade
         sessao.etapa = 'conversando_com_ia';
         sessao.errosConsecutivos = 0;
 
-        // Se a dúvida foi sobre preços, catálogo ou como comprar, enviamos a resposta com o link direto para comprar
-        if (retorno.intencao === 'preco_catalogo' || retorno.sugerirAcao === 'catalogo') {
-            const rodapeComprar = "\n\n👉 *Acesse nossa loja online para ver fotos e comprar:* https://apiariofavodemel.com.br/catalogo\n\n_(Fique à vontade para fazer outra pergunta, ou digite *#* para voltar ao menu inicial)_";
-            return await msg.reply(`${retorno.resposta}${rodapeComprar}`);
+        const fallback = `${retorno.resposta}\n\n👉 *Catálogo Online:* https://apiariofavodemel.com.br/catalogo\n_(Clique no botão ou digite *#* para voltar ao menu)_`;
+
+        if (typeof msg.replyButtons === 'function') {
+            return await msg.replyButtons({
+                title: "",
+                description: `${retorno.resposta}\n\n👉 *Catálogo Online:* https://apiariofavodemel.com.br/catalogo`,
+                footer: "Apiário Favo de Mel",
+                buttons: [
+                    { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
+                    { type: "reply", displayText: "🛍️ Ver Catálogo", id: "1" }
+                ]
+            }, fallback);
         }
 
-        // Para dúvidas normais: envia a resposta fluida da IA SEM disparar menus secundários invasivos
-        const rodape = "\n\n_(Fique à vontade para enviar outra dúvida, ou digite *#* para voltar ao menu inicial)_";
-        return await msg.reply(`${retorno.resposta}${rodape}`);
+        return await msg.reply(fallback);
     }
 }
 

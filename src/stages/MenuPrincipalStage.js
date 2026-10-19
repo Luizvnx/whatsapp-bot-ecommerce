@@ -86,6 +86,20 @@ class MenuPrincipalStage {
 
             // 2. Envia também o link puro isolado em texto para garantir visualização direta em qualquer aparelho
             await msg.reply("https://apiariofavodemel.com.br/catalogo");
+
+            // 3. Envia o menu interativo com botão de Voltar ao Início (sem precisar digitar #)
+            if (typeof msg.replyButtons === 'function') {
+                await msg.replyButtons({
+                    title: "",
+                    description: "Deseja ver outras opções de atendimento ou voltar ao início?",
+                    footer: "Apiário Favo de Mel",
+                    buttons: [
+                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
+                        { type: "reply", displayText: "❓ Dúvidas sobre Mel", id: "2" },
+                        { type: "reply", displayText: "🐝 Outros Serviços", id: "3" }
+                    ]
+                }, "_(Para voltar ao menu inicial, clique no botão acima ou digite *#*)_");
+            }
             return;
         }
 
@@ -102,9 +116,21 @@ class MenuPrincipalStage {
             sessao.etapa = 'conversando_com_ia';
             sessao.errosConsecutivos = 0;
 
-            const descDuvidas = "Pode enviar sua pergunta aqui mesmo! Você gostaria de saber sobre nossos tipos de mel puro (Jataí, Uruçu, Melato, Silvestre), cristalização, própolis ou benefícios?\n\nEnvie sua dúvida abaixo que vamos te responder! 💛\n\n_(Para voltar ao menu inicial a qualquer momento, basta digitar *#* ou *menu*)_";
+            const descDuvidas = "Pode enviar sua pergunta aqui mesmo! Você gostaria de saber sobre nossos tipos de mel puro (Jataí, Uruçu, Melato, Silvestre), pureza, cristalização, própolis, revenda ou benefícios?\n\nEnvie sua dúvida abaixo que vamos te responder! 💛";
 
-            return await msg.reply(`🍯 *Dúvidas sobre Mel & Produtos da Colmeia* 🐝\n\n${descDuvidas}`);
+            if (typeof msg.replyButtons === 'function') {
+                return await msg.replyButtons({
+                    title: "❓ Dúvidas sobre Mel & Produtos da Colmeia",
+                    description: descDuvidas,
+                    footer: "Apiário Favo de Mel",
+                    buttons: [
+                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
+                        { type: "reply", displayText: "🛍️ Ver Catálogo", id: "1" }
+                    ]
+                }, `🍯 *Dúvidas sobre Mel & Produtos da Colmeia* 🐝\n\n${descDuvidas}\n\n_(Para ver o menu de opções, digite *#*.)_`);
+            }
+
+            return await msg.reply(`🍯 *Dúvidas sobre Mel & Produtos da Colmeia* 🐝\n\n${descDuvidas}\n\n_(Para ver o menu de opções, digite *#*.)_`);
         }
 
         // 4. CLIQUE NO MENU INTERATIVO: Opção 3 - Outros Serviços

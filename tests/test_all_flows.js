@@ -231,10 +231,12 @@ async function runTests() {
         assert.strictEqual(sessao.etapa, 'menu_principal', 'HumanoStage com # deve retornar ao menu principal');
         assert(msg.respostas[0].includes('Apiário Favo de Mel'), 'Deve reenviar opções de boas-vindas');
 
-        const comandosRetorno = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', 'catalogo', 'catálogo', '0', 'inicio', 'início'];
+        const comandosRetorno = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', 'catalogo', 'catálogo', '0', 'inicio', 'início', '1', '🛍️ ver catálogo', '🛍️ ver catalogo'];
         assert(comandosRetorno.includes('#'));
         assert(comandosRetorno.includes('menu'));
-        console.log('✅ Teste 7: Reativação do menu durante atendimento humano OK');
+        assert(comandosRetorno.includes('1'), '1 deve ser aceito para reativar o bot no catálogo');
+        assert(comandosRetorno.includes('🛍️ ver catálogo'), 'Botão Ver Catálogo deve reativar o bot');
+        console.log('✅ Teste 7: Reativação do menu durante atendimento humano (inclusive botão 🛍️ Ver Catálogo) OK');
         passCount++;
     }
 

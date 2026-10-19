@@ -172,7 +172,11 @@ class BotController {
                     return await InicioStage.executar(info, '', sessao);
                 }
 
-                const comandosRetornoCatalogo = ['catalogo', 'catálogo', '/catalogo', '/catálogo', 'link', '/link', 'site', '/site', 'loja', '/loja'];
+                const comandosRetornoCatalogo = [
+                    '1', 'catalogo', 'catálogo', '/catalogo', '/catálogo', 'link', '/link', 'site', '/site', 'loja', '/loja',
+                    'ver catalogo', 'ver catálogo', 'conhecer catalogo', 'conhecer catálogo',
+                    '🛍️ ver catálogo', '🛍️ ver catalogo', '🛍️ conhecer catálogo', '🛍️ conhecer catalogo'
+                ];
                 if (comandosRetornoCatalogo.includes(info.texto)) {
                     await SessaoService.assumirAtendimentoPeloBot(numeroReal, sessao);
                     const MenuPrincipalStage = require('../stages/MenuPrincipalStage');
