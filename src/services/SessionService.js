@@ -15,8 +15,14 @@ class SessionService {
         if (!id || typeof id !== 'string') return id;
         const limpo = id.trim();
         if (limpo.includes('@lid') || limpo.includes('@g.us')) return limpo;
-        const numero = limpo.split('@')[0].split(':')[0].replace(/\D/g, '');
-        return numero ? `${numero}@s.whatsapp.net` : limpo;
+        let numero = limpo.split('@')[0].split(':')[0].replace(/\D/g, '');
+        if (!numero) return limpo;
+
+        // Se for número brasileiro sem DDI 55 (10 ou 11 dígitos, ex: 79988562587), normaliza com 55
+        if ((numero.length === 10 || numero.length === 11) && !numero.startsWith('55')) {
+            numero = `55${numero}`;
+        }
+        return `${numero}@s.whatsapp.net`;
     }
 
     /**
@@ -238,7 +244,10 @@ class SessionService {
      * Salva as informações e histórico da conversa no PostgreSQL
      */
     static async salvarConversa(numeroCliente, dadosConversa) {
-        const idCanonico = this.normalizarId(numeroCliente);
+        // Se a conversa já possui um id_cliente canônico registrado, preserva-o para não gerar duplicatas
+        const idCanonico = (dadosConversa && dadosConversa.id_cliente)
+            ? dadosConversa.id_cliente
+            : this.normalizarId(numeroCliente);
         dadosConversa.id_cliente = idCanonico;
 
         const nomeParaSalvar = this.isNomeContatoValido(dadosConversa.nome_contato)
@@ -740,6 +749,16 @@ class SessionService {
                 WHERE id_cliente = ANY($1)
             `;
             await DatabaseService.executar(sql, [variacoes]);
+
+            // 3.1. Elimina registros fantasmas/duplicados que não sejam o idAlvo
+            await DatabaseService.executar(
+                `DELETE FROM tb_bot_sessoes WHERE id_cliente = ANY($1) AND id_cliente != $2`,
+                [variacoes, idAlvo]
+            ).catch(() => {});
+            await DatabaseService.executar(
+                `DELETE FROM tb_crm_clientes WHERE id_cliente = ANY($1) AND id_cliente != $2`,
+                [variacoes, idAlvo]
+            ).catch(() => {});
         } catch (_) { }
 
         // 4. Atualiza etiquetas na Evolution API para todas as variações numéricas

@@ -506,18 +506,26 @@ class WebhookController {
             if (isFromMe) {
                 const textoTratado = (infoMsg.texto || '').trim();
 
-                // 1.1 Se já estiver registrada no cache de envio do nosso sistema (por ID ou por texto)
-                if ((msgId && mensagensEnviadasPeloSistemaCache.has(msgId)) || (textoTratado && textosEnviadosPeloSistemaCache.has(textoTratado))) {
-                    return; // Eco do sistema descartado sem duplicar e sem alterar modo!
+                // 1.1 Se já estiver registrada no cache de envio do nosso sistema por ID da mensagem
+                if (msgId && mensagensEnviadasPeloSistemaCache.has(msgId)) {
+                    return; // Eco de mensagem enviada pelo próprio painel/robô
                 }
 
-                // 1.2 Verifica se a mensagem já foi gravada previamente no histórico da conversa
+                // 1.2 Verifica se a mensagem exata já foi gravada previamente no histórico da conversa
                 const conversa = await SessionService.obterConversa(numeroReal);
                 const ultimasMsgs = (conversa.historicoMensagens || []).slice(-10);
-                const jaExiste = ultimasMsgs.some(m =>
-                    (msgId && (m.id === msgId || m.whatsappMessageId === msgId)) ||
-                    (m.remetente === 'atendente' && m.texto === textoTratado)
-                );
+                const jaExiste = ultimasMsgs.some(m => {
+                    // Verificação estrita por ID de mensagem do WhatsApp
+                    if (msgId && (m.id === msgId || m.whatsappMessageId === msgId)) {
+                        return true;
+                    }
+                    // Verificação de eco rápido (menos de 4 segundos) para evitar duplicatas sem bloquear novas mensagens reais
+                    if (m.remetente === 'atendente' && (m.texto || '').trim() === textoTratado) {
+                        const difTempo = Math.abs(Date.now() - new Date(m.timestamp || 0).getTime());
+                        if (difTempo < 4000) return true;
+                    }
+                    return false;
+                });
 
                 if (jaExiste) {
                     return; // Eco descartado sem duplicar!

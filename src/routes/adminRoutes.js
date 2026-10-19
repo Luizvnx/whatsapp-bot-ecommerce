@@ -18,7 +18,11 @@ router.get('/', (req, res) => {
 router.get('/conversas', async (req, res) => {
     try {
         const { busca, limite = 100 } = req.query;
-        let sql = `SELECT id_cliente, nome_contato, etapa, dados_sessao, ultima_msg FROM tb_bot_sessoes WHERE id_cliente NOT LIKE '%@lid%'`;
+        const numeroLoja = (process.env.NUMERO_DA_LOJA || '557988125726').replace(/\D/g, '');
+        let sql = `SELECT id_cliente, nome_contato, etapa, dados_sessao, ultima_msg 
+                   FROM tb_bot_sessoes 
+                   WHERE id_cliente NOT LIKE '%@lid%'
+                   AND id_cliente NOT LIKE '%${numeroLoja}%'`;
         const params = [];
 
         if (busca && busca.trim().length > 0) {
@@ -80,7 +84,36 @@ router.get('/conversas', async (req, res) => {
             };
         });
 
-        res.json({ success: true, data: conversasFormatadas });
+        // Desduplicação inteligente por telefone base (DDD + 8 últimos dígitos) e descarte de conversas vazias (0 msgs)
+        const mapaConversasUnicas = new Map();
+        for (const c of conversasFormatadas) {
+            // Descarta conversas fantasmas que não possuem mensagens
+            if (c.mensagensTotal === 0) continue;
+
+            const digits = c.numeroLimpo.replace(/\D/g, '');
+            let chaveUnica = digits;
+            if (digits.length >= 10) {
+                const ddd = digits.startsWith('55') ? digits.substring(2, 4) : digits.substring(0, 2);
+                const ultimos8 = digits.substring(digits.length - 8);
+                chaveUnica = `${ddd}_${ultimos8}`;
+            }
+
+            if (!mapaConversasUnicas.has(chaveUnica)) {
+                mapaConversasUnicas.set(chaveUnica, c);
+            } else {
+                const existente = mapaConversasUnicas.get(chaveUnica);
+                const existenteTemNomeReal = SessionService.isNomeContatoValido(existente.nome_contato) && !existente.nome_contato.startsWith('(');
+                const novoTemNomeReal = SessionService.isNomeContatoValido(c.nome_contato) && !c.nome_contato.startsWith('(');
+
+                // Prioriza o registro com nome real ou com maior quantidade de mensagens
+                if ((!existenteTemNomeReal && novoTemNomeReal) || (c.mensagensTotal > existente.mensagensTotal)) {
+                    mapaConversasUnicas.set(chaveUnica, c);
+                }
+            }
+        }
+
+        const listaFinal = Array.from(mapaConversasUnicas.values());
+        res.json({ success: true, data: listaFinal });
     } catch (err) {
         console.error('Erro ao buscar lista de conversas:', err);
         res.status(500).json({ success: false, message: "Erro interno no BD" });
