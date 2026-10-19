@@ -18,7 +18,12 @@ class MenuPrincipalStage {
         const t = (texto || '').toLowerCase().trim();
 
         // 1. Comando de retorno ao Início / Menu
-        if (t === '#' || t === 'menu' || t === '/menu' || t === 'voltar' || t === '/voltar' || t === 'inicio' || t === 'início' || t === '0') {
+        const termosVoltar = [
+            '#', 'menu', '/menu', 'voltar', '/voltar', 'inicio', 'início', '0',
+            'voltar ao inicio', 'voltar ao início', 'voltar ao menu',
+            '🔙 voltar ao início', '🔙 voltar ao inicio', '🔙 voltar ao menu'
+        ];
+        if (termosVoltar.some(term => t === term || t.includes(term))) {
             const InicioStage = require('./InicioStage');
             return await InicioStage.executar(msg, '', sessao);
         }
@@ -35,6 +40,10 @@ class MenuPrincipalStage {
             t === 'conhecer catálogo' ||
             t === '🛍️ conhecer catálogo' ||
             t === '🛍️ conhecer catalogo' ||
+            t === '🛍️ ver catálogo' ||
+            t === '🛍️ ver catalogo' ||
+            t === 'ver catalogo' ||
+            t === 'ver catálogo' ||
             termosCatalogo.some(term => t === term || t.includes(term))
         );
 
@@ -42,20 +51,45 @@ class MenuPrincipalStage {
             sessao.etapa = 'menu_principal';
             sessao.errosConsecutivos = 0;
 
-            const mensagemCatalogo = mensagens.catalogo?.apresentacao || 
-                "🍯 *Catálogo & Loja Online - Apiário Favo de Mel* 🐝\n\n" +
-                "Conheça toda a nossa linha de méis puros, favos frescos, própolis e produtos naturais colhidos com todo o cuidado direto do apiário!\n\n" +
-                "Você pode conferir todos os produtos, fotos, preços e fazer seu pedido com total facilidade pelo nosso site com entrega rápida:\n\n" +
-                "👉 *Acesse nossa loja online:*\nhttps://apiariofavodemel.com.br/catalogo\n\n" +
-                "📦 *Como comprar:*\n" +
-                "1. Acesse o link acima e escolha seus produtos\n" +
-                "2. Adicione ao carrinho e informe seu endereço\n" +
-                "3. Finalize com entrega em Aracaju/região ou retirada!\n\n" +
-                "_(Se precisar de ajuda ou tiver alguma dúvida, é só chamar por aqui! Digite *#* para ver o menu.)_";
+            const title = "🍯 Catálogo & Loja Online - Apiário Favo de Mel 🐝";
+            const description = "Conheça toda a nossa linha de méis puros, favos frescos, própolis e produtos naturais colhidos com todo o cuidado direto do apiário!\n\nVocê pode conferir todos os produtos, fotos, preços e fazer seu pedido com total facilidade pelo nosso site com entrega rápida:\n👉 https://apiariofavodemel.com.br/catalogo\n\n📦 *Como comprar:*\n1. Clique no botão abaixo ou acesse o link\n2. Adicione ao carrinho e informe seu endereço\n3. Finalize com entrega em Aracaju/região ou retirada!";
+            const fallback = `*${title}*\n\n${description}\n\n👉 https://apiariofavodemel.com.br/catalogo`;
 
-            await msg.reply(mensagemCatalogo);
-            // Envia o link direto isolado para garantir o preview card rico e clicável no WhatsApp
-            return await msg.reply("https://apiariofavodemel.com.br/catalogo");
+            // 1. Envia Card com Botão CTA URL Nativo Clicável do WhatsApp
+            if (typeof msg.replyButtons === 'function') {
+                await msg.replyButtons({
+                    title,
+                    description,
+                    footer: "Apiário Favo de Mel",
+                    buttons: [
+                        {
+                            type: "url",
+                            displayText: "🛍️ Abrir Loja Online",
+                            url: "https://apiariofavodemel.com.br/catalogo"
+                        }
+                    ]
+                }, fallback);
+            } else {
+                await msg.reply(fallback);
+            }
+
+            // 2. Envia também o link puro isolado em texto para garantir visualização direta em qualquer aparelho
+            await msg.reply("https://apiariofavodemel.com.br/catalogo");
+
+            // 3. Envia o menu interativo com botão de Voltar ao Início (sem precisar digitar #)
+            if (typeof msg.replyButtons === 'function') {
+                await msg.replyButtons({
+                    title: "",
+                    description: "Deseja ver outras opções de atendimento ou voltar ao início?",
+                    footer: "Apiário Favo de Mel",
+                    buttons: [
+                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
+                        { type: "reply", displayText: "❓ Dúvidas sobre Mel", id: "2" },
+                        { type: "reply", displayText: "🐝 Outros Serviços", id: "3" }
+                    ]
+                }, "_(Para voltar ao menu inicial, digite *#* ou clique no botão acima)_");
+            }
+            return;
         }
 
         // 3. CLIQUE NO MENU INTERATIVO: Opção 2 - Dúvidas sobre Mel
@@ -71,13 +105,21 @@ class MenuPrincipalStage {
             sessao.etapa = 'conversando_com_ia';
             sessao.errosConsecutivos = 0;
 
-            const mensagemDuvidas = 
-                "🍯 *Dúvidas sobre Mel & Produtos da Colmeia* 🐝\n\n" +
-                "Pode enviar sua dúvida aqui mesmo! Você gostaria de saber sobre nossos tipos de mel (Jataí, Uruçu, Melato), cristalização do mel puro, própolis ou benefícios?\n\n" +
-                "Envie sua pergunta abaixo que vamos te responder! 💛\n\n" +
-                "_(Para ver o menu de opções, digite *#*.)_";
+            const descDuvidas = "Pode enviar sua pergunta aqui mesmo! Você gostaria de saber sobre nossos tipos de mel (Jataí, Uruçu, Melato), cristalização do mel puro, própolis ou benefícios?\n\nEnvie sua dúvida abaixo que vamos te responder! 💛";
 
-            return await msg.reply(mensagemDuvidas);
+            if (typeof msg.replyButtons === 'function') {
+                return await msg.replyButtons({
+                    title: "❓ Dúvidas sobre Mel & Produtos da Colmeia",
+                    description: descDuvidas,
+                    footer: "Apiário Favo de Mel",
+                    buttons: [
+                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
+                        { type: "reply", displayText: "🛍️ Ver Catálogo", id: "1" }
+                    ]
+                }, `🍯 *Dúvidas sobre Mel & Produtos da Colmeia* 🐝\n\n${descDuvidas}\n\n_(Para ver o menu de opções, digite *#*.)_`);
+            }
+
+            return await msg.reply(`🍯 *Dúvidas sobre Mel & Produtos da Colmeia* 🐝\n\n${descDuvidas}\n\n_(Para ver o menu de opções, digite *#*.)_`);
         }
 
         // 4. CLIQUE NO MENU INTERATIVO: Opção 3 - Outros Serviços
@@ -90,12 +132,21 @@ class MenuPrincipalStage {
         );
 
         if (isCliqueOpcao3) {
-            const mensagemOutros = mensagens.outrosServicos?.transferencia || 
-                "🐝 *Outros Serviços & Atendimento Personalizado* 👨‍🌾\n\n" +
-                "Entendido! Seja para retirada e resgate seguro de abelhas, revenda de produtos no atacado ou outras parcerias comerciais, nossa equipe já foi notificada. Um atendente humano responderá você por aqui em instantes! 💛\n\n" +
-                "_(Para acessar nosso catálogo online: https://apiariofavodemel.com.br/catalogo ou digite *#* para o menu.)_";
+            const descOutros = "Entendido! Seja para retirada e resgate seguro de abelhas, revenda de produtos no atacado ou outras parcerias comerciais, nossa equipe já foi notificada. Um atendente humano responderá você por aqui em instantes! 💛\n\n_(Para acessar nosso catálogo online: https://apiariofavodemel.com.br/catalogo)_";
 
-            await msg.reply(mensagemOutros);
+            if (typeof msg.replyButtons === 'function') {
+                await msg.replyButtons({
+                    title: "🐝 Outros Serviços & Atendimento",
+                    description: descOutros,
+                    footer: "Apiário Favo de Mel",
+                    buttons: [
+                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
+                        { type: "reply", displayText: "🛍️ Ver Catálogo", id: "1" }
+                    ]
+                }, `🐝 *Outros Serviços & Atendimento Personalizado* 👨‍🌾\n\n${descOutros}\n\n_(Para ver o menu de opções, digite *#*.)_`);
+            } else {
+                await msg.reply(`🐝 *Outros Serviços & Atendimento Personalizado* 👨‍🌾\n\n${descOutros}\n\n_(Para ver o menu de opções, digite *#*.)_`);
+            }
             return await this.transferirParaHumano(msg, sessao);
         }
 

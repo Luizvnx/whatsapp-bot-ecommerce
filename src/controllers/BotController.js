@@ -179,7 +179,11 @@ class BotController {
                     return await MenuPrincipalStage.executar(info, '1', sessao);
                 }
 
-                const comandosRetorno = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', '0', 'inicio', 'início'];
+                const comandosRetorno = [
+                    '#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', '0', 'inicio', 'início',
+                    'voltar ao inicio', 'voltar ao início', 'voltar ao menu',
+                    '🔙 voltar ao início', '🔙 voltar ao inicio', '🔙 voltar ao menu'
+                ];
                 if (comandosRetorno.includes(info.texto)) {
                     await SessaoService.assumirAtendimentoPeloBot(numeroReal, sessao);
 
@@ -432,7 +436,11 @@ class BotController {
     static async _processarComandosCliente(info, sessao) {
         const { texto, numeroCliente, reply } = info;
 
-        const comandosGlobaisMenu = ['/bot', 'bot', '/menu', 'menu', '#', 'voltar', '/voltar', 'inicio', 'início'];
+        const comandosGlobaisMenu = [
+            '/bot', 'bot', '/menu', 'menu', '#', 'voltar', '/voltar', 'inicio', 'início',
+            'voltar ao inicio', 'voltar ao início', 'voltar ao menu',
+            '🔙 voltar ao início', '🔙 voltar ao inicio', '🔙 voltar ao menu'
+        ];
         if (comandosGlobaisMenu.includes(texto)) {
             sessao.etapa = 'menu_principal';
             sessao.errosConsecutivos = 0;

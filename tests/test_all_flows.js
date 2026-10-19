@@ -114,7 +114,12 @@ async function runTests() {
         await MenuPrincipalStage.executar(msg2, 'menu', sessao);
         assert.strictEqual(sessao.etapa, 'menu_principal');
         assert(msg2.respostas[0].includes('Apiário Favo de Mel'), 'Deve reenviar menu em menu');
-        console.log('✅ Teste 2: MenuPrincipalStage com # e menu OK');
+
+        const msg3 = criarMsgMock();
+        await MenuPrincipalStage.executar(msg3, '🔙 Voltar ao Início', sessao);
+        assert.strictEqual(sessao.etapa, 'menu_principal');
+        assert(msg3.respostas[0].includes('Apiário Favo de Mel'), 'Deve reenviar menu ao clicar em 🔙 Voltar ao Início');
+        console.log('✅ Teste 2: MenuPrincipalStage com #, menu e botão 🔙 Voltar ao Início OK');
         passCount++;
     }
 

@@ -19,7 +19,12 @@ class IaStage {
         const t = (texto || '').toLowerCase().trim();
 
         // Comandos de navegação
-        if (t === '#' || t === 'sair' || t === 'voltar' || t === 'menu' || t === '/menu' || t === 'inicio' || t === 'início') {
+        const termosVoltarIa = [
+            '#', 'sair', 'voltar', '/voltar', 'menu', '/menu', 'inicio', 'início', '0',
+            'voltar ao inicio', 'voltar ao início', 'voltar ao menu',
+            '🔙 voltar ao início', '🔙 voltar ao inicio', '🔙 voltar ao menu'
+        ];
+        if (termosVoltarIa.some(term => t === term || t.includes(term))) {
             sessao.etapa = 'menu_principal';
             const InicioStage = require('./InicioStage');
             return await InicioStage.executar(msg, '', sessao);
@@ -84,6 +89,18 @@ class IaStage {
 
         const rodape = "\n\n_(Para acessar nosso catálogo online: https://apiariofavodemel.com.br/catalogo | Digite *#* para o menu)_";
         await msg.reply(`${retorno.resposta}${rodape}`);
+
+        if (typeof msg.replyButtons === 'function') {
+            await msg.replyButtons({
+                title: "",
+                description: "Deseja ver o catálogo online ou voltar ao menu inicial?",
+                footer: "Apiário Favo de Mel",
+                buttons: [
+                    { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
+                    { type: "reply", displayText: "🛍️ Ver Catálogo", id: "1" }
+                ]
+            }, "_(Digite *#* para voltar ao menu inicial)_");
+        }
     }
 }
 

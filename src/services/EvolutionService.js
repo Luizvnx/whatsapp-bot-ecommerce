@@ -260,12 +260,21 @@ class EvolutionService {
         const url = `${this.baseUrl}/message/sendButtons/${this.instanceName}`;
         const numeroLimpo = (numero || '').replace(/\D/g, '');
 
-        // Evolution API v2 aceita no máximo 3 botões do tipo 'reply' com campo displayText
-        const botoesFormatados = (buttons || []).slice(0, 3).map((b, idx) => ({
-            type: 'reply',
-            displayText: String(b.displayText || b.text || b.titulo || `Opção ${idx + 1}`).substring(0, 24),
-            id: String(b.id || idx + 1)
-        }));
+        // Evolution API v2 aceita botões do tipo 'reply' ou 'url' (máximo 3)
+        const botoesFormatados = (buttons || []).slice(0, 3).map((b, idx) => {
+            if (b.type === 'url' && b.url) {
+                return {
+                    type: 'url',
+                    displayText: String(b.displayText || b.text || b.titulo || 'Acessar Link').substring(0, 24),
+                    url: String(b.url)
+                };
+            }
+            return {
+                type: 'reply',
+                displayText: String(b.displayText || b.text || b.titulo || `Opção ${idx + 1}`).substring(0, 24),
+                id: String(b.id || idx + 1)
+            };
+        });
 
         const payload = {
             number: numeroLimpo,
