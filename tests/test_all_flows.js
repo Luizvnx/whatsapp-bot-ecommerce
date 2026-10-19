@@ -192,13 +192,24 @@ async function runTests() {
     // 6.2 Assunto NÃO relacionado a Mel/Loja -> IA analisa e TRANSFERE para atendimento humano
     // ----------------------------------------------------
     {
-        // 6.1 Dúvida sobre Mel (IA Responde)
+        // 6.1 Dúvida sobre Mel (IA Responde e mantém o diálogo aberto)
         const sessaoDuvida = { etapa: 'menu_principal' };
         const msgDuvida = criarMsgMock();
         await MenuPrincipalStage.executar(msgDuvida, 'o mel de jatai cristaliza?', sessaoDuvida);
-        assert.strictEqual(sessaoDuvida.etapa, 'menu_principal');
+        assert.strictEqual(sessaoDuvida.etapa, 'conversando_com_ia', 'Deve manter o cliente conversando com a IA');
         assert(msgDuvida.respostas[0].includes('Mel de Jataí'), 'A IA deve responder a dúvida de mel');
         assert(msgDuvida.respostas[0].includes('https://apiariofavodemel.com.br/catalogo'), 'Deve incluir link do catálogo');
+
+        // 6.1.1 Segunda dúvida do cliente sem interrupção de menu (multi-turn)
+        const msgDuvida2 = criarMsgMock();
+        await IaStage.executar(msgDuvida2, 'e o própolis verde?', sessaoDuvida);
+        assert.strictEqual(sessaoDuvida.etapa, 'conversando_com_ia', 'Continua conversando com a IA no segundo turno');
+        assert(sessaoDuvida.historicoIa.length >= 2, 'Histórico da IA deve conter as mensagens');
+
+        // 6.1.2 Cliente digita # para voltar ao menu
+        const msgVoltar = criarMsgMock();
+        await IaStage.executar(msgVoltar, '#', sessaoDuvida);
+        assert.strictEqual(sessaoDuvida.etapa, 'menu_principal', 'Comando # deve retornar ao menu principal');
 
         // 6.2 Assunto não relacionado a mel / pedido de falar com atendente (IA Transfere para Humano)
         const sessaoOutro = { etapa: 'menu_principal' };
@@ -206,7 +217,7 @@ async function runTests() {
         await MenuPrincipalStage.executar(msgOutro, 'preciso alugar um carro para amanhã', sessaoOutro);
         assert.strictEqual(sessaoOutro.etapa, 'em_atendimento_humano', 'Assunto não relacionado deve transferir para humano');
         assert(msgOutro.respostas[0].includes('equipe humana'), 'Deve avisar que foi transferido para atendimento humano');
-        console.log('✅ Teste 6: Avaliação pela IA de Dúvidas sobre Mel (Responde) vs Outros Assuntos (Transfere) OK');
+        console.log('✅ Teste 6: Avaliação pela IA, Continuidade de Diálogo (Multi-turn) e Transbordo Humano OK');
         passCount++;
     }
 

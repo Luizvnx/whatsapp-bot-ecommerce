@@ -28,31 +28,42 @@ class MenuPrincipalStage {
             return await InicioStage.executar(msg, '', sessao);
         }
 
-        // 2. CLIQUE NO MENU INTERATIVO OU INTENÇÃO DE CATÁLOGO / COMPRA:
-        const termosCatalogo = [
-            'catalogo', 'catálogo', 'catalog', 'link', 'site', 'loja',
-            'comprar', 'compras', 'produto', 'produtos', 'preco', 'preço', 'precos', 'preços',
-            'fazer pedido', 'pedido', 'ver o catalogo', 'ver catalogo', 'ver catálogo'
+        // 2. CLIQUE NO MENU INTERATIVO OU PEDIDO DIRETO DE CATÁLOGO:
+        const comandosExatosCatalogo = [
+            '1', 'catalogo', 'catálogo', 'catalog', 'link', 'site',
+            'loja online', 'loja virtual',
+            'ver catalogo', 'ver catálogo', 'conhecer catalogo', 'conhecer catálogo',
+            'abrir catalogo', 'abrir catálogo', 'o link do catalogo', 'o link do catálogo',
+            'link do catalogo', 'link do catálogo', 'site da loja', 'site da favo de mel',
+            '🛍️ conhecer catálogo', '🛍️ conhecer catalogo', '🛍️ ver catálogo', '🛍️ ver catalogo'
         ];
-        const isCliqueOpcao1 = (
-            t === '1' ||
-            t === 'conhecer catalogo' ||
-            t === 'conhecer catálogo' ||
-            t === '🛍️ conhecer catálogo' ||
-            t === '🛍️ conhecer catalogo' ||
-            t === '🛍️ ver catálogo' ||
-            t === '🛍️ ver catalogo' ||
-            t === 'ver catalogo' ||
-            t === 'ver catálogo' ||
-            termosCatalogo.some(term => t === term || t.includes(term))
+
+        const isPedidoDiretoCatalogo = (
+            comandosExatosCatalogo.includes(t) ||
+            ((t.includes('catalogo') || t.includes('catálogo') || t.includes('link') || t.includes('site')) &&
+             (t.startsWith('ver ') || t.startsWith('abrir ') || t.startsWith('manda ') || t.startsWith('envia ') || t.startsWith('o link') || t.startsWith('quero ver')))
         );
+
+        // Se contiver ponto de interrogação ou palavras interrogativas de dúvida/preço/localização, NÃO é clique no menu de catálogo: deve ser respondido pela IA
+        const isPerguntaDeDuvida = (
+            t.includes('?') ||
+            t.includes('onde') ||
+            t.includes('qual') ||
+            t.includes('quanto') ||
+            t.includes('como') ||
+            t.includes('tem ') ||
+            t.includes('voces') ||
+            t.includes('vocês')
+        );
+
+        const isCliqueOpcao1 = isPedidoDiretoCatalogo && !isPerguntaDeDuvida;
 
         if (isCliqueOpcao1) {
             sessao.etapa = 'menu_principal';
             sessao.errosConsecutivos = 0;
 
             const title = "🍯 Catálogo & Loja Online - Apiário Favo de Mel 🐝";
-            const description = "Conheça toda a nossa linha de méis puros, favos frescos, própolis e produtos naturais colhidos com todo o cuidado direto do apiário!\n\nVocê pode conferir todos os produtos, fotos, preços e fazer seu pedido com total facilidade pelo nosso site com entrega rápida:\n👉 https://apiariofavodemel.com.br/catalogo\n\n📦 *Como comprar:*\n1. Clique no botão abaixo ou acesse o link\n2. Adicione ao carrinho e informe seu endereço\n3. Finalize com entrega em Aracaju/região ou retirada!";
+            const description = "Conheça toda a nossa linha de méis puros, favos frescos, própolis e produtos naturais colhidos com todo o cuidado direto do apiário!\n\nVocê pode conferir todos os produtos, fotos, preços e fazer seu pedido com total facilidade pelo nosso site com entrega rápida:\n👉 https://apiariofavodemel.com.br/catalogo\n\n📦 *Como comprar:*\n1. Clique no botão abaixo ou acesse o link\n2. Adicione ao carrinho e informe seu endereço\n3. Finalize com entrega em Aracaju/região ou retirada!\n\n_(Para voltar ao menu inicial a qualquer momento, digite *#* ou *menu*)_";
             const fallback = `*${title}*\n\n${description}\n\n👉 https://apiariofavodemel.com.br/catalogo`;
 
             // 1. Envia Card com Botão CTA URL Nativo Clicável do WhatsApp
@@ -75,20 +86,6 @@ class MenuPrincipalStage {
 
             // 2. Envia também o link puro isolado em texto para garantir visualização direta em qualquer aparelho
             await msg.reply("https://apiariofavodemel.com.br/catalogo");
-
-            // 3. Envia o menu interativo com botão de Voltar ao Início (sem precisar digitar #)
-            if (typeof msg.replyButtons === 'function') {
-                await msg.replyButtons({
-                    title: "",
-                    description: "Deseja ver outras opções de atendimento ou voltar ao início?",
-                    footer: "Apiário Favo de Mel",
-                    buttons: [
-                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
-                        { type: "reply", displayText: "❓ Dúvidas sobre Mel", id: "2" },
-                        { type: "reply", displayText: "🐝 Outros Serviços", id: "3" }
-                    ]
-                }, "_(Para voltar ao menu inicial, digite *#* ou clique no botão acima)_");
-            }
             return;
         }
 
@@ -105,21 +102,9 @@ class MenuPrincipalStage {
             sessao.etapa = 'conversando_com_ia';
             sessao.errosConsecutivos = 0;
 
-            const descDuvidas = "Pode enviar sua pergunta aqui mesmo! Você gostaria de saber sobre nossos tipos de mel (Jataí, Uruçu, Melato), cristalização do mel puro, própolis ou benefícios?\n\nEnvie sua dúvida abaixo que vamos te responder! 💛";
+            const descDuvidas = "Pode enviar sua pergunta aqui mesmo! Você gostaria de saber sobre nossos tipos de mel puro (Jataí, Uruçu, Melato, Silvestre), cristalização, própolis ou benefícios?\n\nEnvie sua dúvida abaixo que vamos te responder! 💛\n\n_(Para voltar ao menu inicial a qualquer momento, basta digitar *#* ou *menu*)_";
 
-            if (typeof msg.replyButtons === 'function') {
-                return await msg.replyButtons({
-                    title: "❓ Dúvidas sobre Mel & Produtos da Colmeia",
-                    description: descDuvidas,
-                    footer: "Apiário Favo de Mel",
-                    buttons: [
-                        { type: "reply", displayText: "🔙 Voltar ao Início", id: "#" },
-                        { type: "reply", displayText: "🛍️ Ver Catálogo", id: "1" }
-                    ]
-                }, `🍯 *Dúvidas sobre Mel & Produtos da Colmeia* 🐝\n\n${descDuvidas}\n\n_(Para ver o menu de opções, digite *#*.)_`);
-            }
-
-            return await msg.reply(`🍯 *Dúvidas sobre Mel & Produtos da Colmeia* 🐝\n\n${descDuvidas}\n\n_(Para ver o menu de opções, digite *#*.)_`);
+            return await msg.reply(`🍯 *Dúvidas sobre Mel & Produtos da Colmeia* 🐝\n\n${descDuvidas}`);
         }
 
         // 4. CLIQUE NO MENU INTERATIVO: Opção 3 - Outros Serviços
