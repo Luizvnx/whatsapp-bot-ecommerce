@@ -175,9 +175,11 @@ class EvolutionService {
             throw new Error('Número de destino inválido ou vazio para envio de mensagem.');
         }
 
+        const temUrl = /https?:\/\/[^\s]+/i.test(texto);
         const payload = {
             number: numeroFormatado,
-            text: texto
+            text: texto,
+            linkPreview: temUrl
         };
 
         if (quoted && (quoted.id || quoted.whatsappMessageId)) {

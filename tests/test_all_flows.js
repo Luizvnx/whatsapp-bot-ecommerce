@@ -132,7 +132,19 @@ async function runTests() {
         const msg2 = criarMsgMock();
         await MenuPrincipalStage.executar(msg2, '🛍️ Conhecer Catálogo', sessao);
         assert(msg2.respostas[0].includes('https://apiariofavodemel.com.br/catalogo'), 'Deve enviar link do catálogo via botão');
-        console.log('✅ Teste 3: Opção 1 (Catálogo Online) envia link do site OK');
+
+        // Teste digitando 'catalogo'
+        const msg3 = criarMsgMock();
+        await MenuPrincipalStage.executar(msg3, 'catalogo', sessao);
+        assert(msg3.respostas.some(r => r.includes('https://apiariofavodemel.com.br/catalogo')), 'Deve enviar catálogo ao digitar catalogo');
+
+        // Teste digitando 'o link do catalogo'
+        const msg4 = criarMsgMock();
+        await MenuPrincipalStage.executar(msg4, 'o link do catalogo', sessao);
+        assert(msg4.respostas.some(r => r.includes('https://apiariofavodemel.com.br/catalogo')), 'Deve enviar catálogo ao pedir o link do catalogo');
+        assert(msg4.respostas.some(r => r === 'https://apiariofavodemel.com.br/catalogo'), 'Deve enviar link isolado direto para preview');
+
+        console.log('✅ Teste 3: Opção 1 e palavras-chave (Catálogo Online, link, etc.) enviam link do site OK');
         passCount++;
     }
 

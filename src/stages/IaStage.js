@@ -25,7 +25,8 @@ class IaStage {
             return await InicioStage.executar(msg, '', sessao);
         }
 
-        if (t === '1' || t === 'catalogo' || t === 'catálogo') {
+        const termosCatalogoIa = ['catalogo', 'catálogo', 'catalog', 'link', 'site', 'loja', 'comprar', 'produto', 'produtos', 'preco', 'preço', 'pedido'];
+        if (t === '1' || termosCatalogoIa.some(term => t === term || t.includes(term))) {
             sessao.etapa = 'menu_principal';
             const MenuPrincipalStage = require('./MenuPrincipalStage');
             return await MenuPrincipalStage.executar(msg, '1', sessao);

@@ -23,13 +23,19 @@ class MenuPrincipalStage {
             return await InicioStage.executar(msg, '', sessao);
         }
 
-        // 2. CLIQUE NO MENU INTERATIVO: Opção 1 - Conhecer Catálogo
+        // 2. CLIQUE NO MENU INTERATIVO OU INTENÇÃO DE CATÁLOGO / COMPRA:
+        const termosCatalogo = [
+            'catalogo', 'catálogo', 'catalog', 'link', 'site', 'loja',
+            'comprar', 'compras', 'produto', 'produtos', 'preco', 'preço', 'precos', 'preços',
+            'fazer pedido', 'pedido', 'ver o catalogo', 'ver catalogo', 'ver catálogo'
+        ];
         const isCliqueOpcao1 = (
             t === '1' ||
             t === 'conhecer catalogo' ||
             t === 'conhecer catálogo' ||
             t === '🛍️ conhecer catálogo' ||
-            t === '🛍️ conhecer catalogo'
+            t === '🛍️ conhecer catalogo' ||
+            termosCatalogo.some(term => t === term || t.includes(term))
         );
 
         if (isCliqueOpcao1) {
@@ -38,16 +44,18 @@ class MenuPrincipalStage {
 
             const mensagemCatalogo = mensagens.catalogo?.apresentacao || 
                 "🍯 *Catálogo & Loja Online - Apiário Favo de Mel* 🐝\n\n" +
-                "Conheça toda a nossa linha de méis puros, favos frescos, própolis e produtos naturais colhidos direto do apiário!\n\n" +
-                "Você pode conferir todos os produtos, preços e fazer seu pedido com facilidade pelo nosso site com entrega rápida:\n\n" +
-                "👉 https://apiariofavodemel.com.br/catalogo\n\n" +
-                "📦 *Como funciona:*\n" +
-                "1. Acesse o link acima e adicione os itens ao carrinho\n" +
-                "2. Escolha entre entrega em Aracaju/região ou retirada\n" +
-                "3. Conclua seu pedido em poucos cliques com segurança!\n\n" +
-                "_(Se precisar de ajuda com seu pedido ou tiver dúvidas, é só chamar por aqui! Digite *#* para ver o menu.)_";
+                "Conheça toda a nossa linha de méis puros, favos frescos, própolis e produtos naturais colhidos com todo o cuidado direto do apiário!\n\n" +
+                "Você pode conferir todos os produtos, fotos, preços e fazer seu pedido com total facilidade pelo nosso site com entrega rápida:\n\n" +
+                "👉 *Acesse nossa loja online:*\nhttps://apiariofavodemel.com.br/catalogo\n\n" +
+                "📦 *Como comprar:*\n" +
+                "1. Acesse o link acima e escolha seus produtos\n" +
+                "2. Adicione ao carrinho e informe seu endereço\n" +
+                "3. Finalize com entrega em Aracaju/região ou retirada!\n\n" +
+                "_(Se precisar de ajuda ou tiver alguma dúvida, é só chamar por aqui! Digite *#* para ver o menu.)_";
 
-            return await msg.reply(mensagemCatalogo);
+            await msg.reply(mensagemCatalogo);
+            // Envia o link direto isolado para garantir o preview card rico e clicável no WhatsApp
+            return await msg.reply("https://apiariofavodemel.com.br/catalogo");
         }
 
         // 3. CLIQUE NO MENU INTERATIVO: Opção 2 - Dúvidas sobre Mel

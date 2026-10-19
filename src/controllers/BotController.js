@@ -172,7 +172,14 @@ class BotController {
                     return await InicioStage.executar(info, '', sessao);
                 }
 
-                const comandosRetorno = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', 'catalogo', 'catálogo', '0', 'inicio', 'início'];
+                const comandosRetornoCatalogo = ['catalogo', 'catálogo', '/catalogo', '/catálogo', 'link', '/link', 'site', '/site', 'loja', '/loja'];
+                if (comandosRetornoCatalogo.includes(info.texto)) {
+                    await SessaoService.assumirAtendimentoPeloBot(numeroReal, sessao);
+                    const MenuPrincipalStage = require('../stages/MenuPrincipalStage');
+                    return await MenuPrincipalStage.executar(info, '1', sessao);
+                }
+
+                const comandosRetorno = ['#', 'menu', '/menu', 'voltar', '/voltar', '/bot', 'bot', '0', 'inicio', 'início'];
                 if (comandosRetorno.includes(info.texto)) {
                     await SessaoService.assumirAtendimentoPeloBot(numeroReal, sessao);
 
@@ -441,8 +448,18 @@ class BotController {
             return true;
         }
 
+        const comandosGlobaisCatalogo = ['/catalogo', 'catalogo', '/catálogo', 'catálogo', '/link', 'link', '/site', 'site', '/loja', 'loja'];
+        if (comandosGlobaisCatalogo.includes(texto)) {
+            sessao.etapa = 'menu_principal';
+            sessao.errosConsecutivos = 0;
+            const MenuPrincipalStage = require('../stages/MenuPrincipalStage');
+            await MenuPrincipalStage.executar(info, '1', sessao);
+            return true;
+        }
+
         if (texto === 'carrinho' || texto === '/carrinho') {
             await reply("🛒 *Compras & Carrinho Online - Favo de Mel* 🍯\n\nAgora todos os pedidos e carrinho são gerenciados diretamente pelo nosso site:\n👉 https://apiariofavodemel.com.br/catalogo\n\n_(Digite *#* a qualquer momento para ver o menu principal.)_");
+            await reply("https://apiariofavodemel.com.br/catalogo");
             return true;
         }
 
