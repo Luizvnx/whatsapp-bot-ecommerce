@@ -247,13 +247,21 @@ class BotController {
                         sessao.historicoIa = sessao.historicoIa.slice(-30);
                     }
                 }
+                // Pré-registra o texto no cache antes do envio para eliminar race condition com o webhook
+                try {
+                    const WebhookController = require('./WebhookController');
+                    if (typeof WebhookController.registrarMensagemEnviadaPeloBot === 'function') {
+                        WebhookController.registrarMensagemEnviadaPeloBot(null, t);
+                    }
+                } catch (_) { }
+
                 const resp = await EvolutionService.enviarMensagemText(numeroCliente, t);
                 const msgId = resp?.key?.id || null;
                 if (msgId) {
                     try {
                         const WebhookController = require('./WebhookController');
                         if (typeof WebhookController.registrarMensagemEnviadaPeloBot === 'function') {
-                            WebhookController.registrarMensagemEnviadaPeloBot(msgId);
+                            WebhookController.registrarMensagemEnviadaPeloBot(msgId, t);
                         }
                     } catch (_) { }
                 }
@@ -300,13 +308,22 @@ class BotController {
                     });
                     if (sessao.historicoIa.length > 30) sessao.historicoIa = sessao.historicoIa.slice(-30);
                 }
+                // Pré-registra o texto no cache antes do envio para eliminar race condition com o webhook
+                try {
+                    const WebhookController = require('./WebhookController');
+                    if (typeof WebhookController.registrarMensagemEnviadaPeloBot === 'function') {
+                        WebhookController.registrarMensagemEnviadaPeloBot(null, textParaHistorico);
+                        if (fallbackText) WebhookController.registrarMensagemEnviadaPeloBot(null, fallbackText);
+                    }
+                } catch (_) { }
+
                 const resp = await EvolutionService.enviarBotoes(numeroCliente, options, fallbackText);
                 const msgId = resp?.key?.id || null;
                 if (msgId) {
                     try {
                         const WebhookController = require('./WebhookController');
                         if (typeof WebhookController.registrarMensagemEnviadaPeloBot === 'function') {
-                            WebhookController.registrarMensagemEnviadaPeloBot(msgId);
+                            WebhookController.registrarMensagemEnviadaPeloBot(msgId, textParaHistorico);
                         }
                     } catch (_) { }
                 }

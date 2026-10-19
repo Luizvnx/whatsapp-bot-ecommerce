@@ -39,8 +39,8 @@ class MenuPrincipalStage {
             const mensagemCatalogo = mensagens.catalogo?.apresentacao || 
                 "🍯 *Catálogo & Loja Online - Apiário Favo de Mel* 🐝\n\n" +
                 "Conheça toda a nossa linha de méis puros, favos frescos, própolis e produtos naturais colhidos direto do apiário!\n\n" +
-                "Você pode conferir todos os produtos, fotos, valores e fazer seu pedido com facilidade pelo nosso site com entrega rápida:\n" +
-                "👉 *https://apiariofavodemel.com.br/catalogo*\n\n" +
+                "Você pode conferir todos os produtos, preços e fazer seu pedido com facilidade pelo nosso site com entrega rápida:\n\n" +
+                "👉 https://apiariofavodemel.com.br/catalogo\n\n" +
                 "📦 *Como funciona:*\n" +
                 "1. Acesse o link acima e adicione os itens ao carrinho\n" +
                 "2. Escolha entre entrega em Aracaju/região ou retirada\n" +

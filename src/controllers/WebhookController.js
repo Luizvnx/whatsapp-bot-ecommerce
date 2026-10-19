@@ -8,6 +8,7 @@ const mensagensWebhookProcessadasCache = new Set();
 // Cache em memória para rastrear mensagens enviadas ativamente pelo nosso sistema (Robô e Painel Administrativo)
 // Mensagens aqui já foram gravadas no banco e emitidas via socket no momento do disparo. O eco via webhook deve ser ignorado para não duplicar.
 const mensagensEnviadasPeloSistemaCache = new Set();
+const textosEnviadosPeloSistemaCache = new Set();
 
 function extrairBase64Valido(raw) {
     if (!raw) return null;
@@ -319,17 +320,28 @@ async function normalizarNumero(key, data) {
 
 class WebhookController {
     static normalizarNumero = normalizarNumero;
-    static registrarMensagemEnviadaPeloSistema(msgId) {
-        if (!msgId) return;
-        mensagensEnviadasPeloSistemaCache.add(msgId);
-        if (mensagensEnviadasPeloSistemaCache.size > 5000) {
-            const firstVal = mensagensEnviadasPeloSistemaCache.values().next().value;
-            mensagensEnviadasPeloSistemaCache.delete(firstVal);
+    static registrarMensagemEnviadaPeloSistema(msgId, texto = null) {
+        if (msgId) {
+            mensagensEnviadasPeloSistemaCache.add(msgId);
+            if (mensagensEnviadasPeloSistemaCache.size > 5000) {
+                const firstVal = mensagensEnviadasPeloSistemaCache.values().next().value;
+                mensagensEnviadasPeloSistemaCache.delete(firstVal);
+            }
+        }
+        if (texto && typeof texto === 'string') {
+            const limpo = texto.trim();
+            if (limpo) {
+                textosEnviadosPeloSistemaCache.add(limpo);
+                if (textosEnviadosPeloSistemaCache.size > 1000) {
+                    const firstVal = textosEnviadosPeloSistemaCache.values().next().value;
+                    textosEnviadosPeloSistemaCache.delete(firstVal);
+                }
+            }
         }
     }
 
-    static registrarMensagemEnviadaPeloBot(msgId) {
-        this.registrarMensagemEnviadaPeloSistema(msgId);
+    static registrarMensagemEnviadaPeloBot(msgId, texto = null) {
+        this.registrarMensagemEnviadaPeloSistema(msgId, texto);
     }
 
     static async handleEvolutionWebhook(req, res) {
@@ -492,20 +504,37 @@ class WebhookController {
 
             // 1. Se a mensagem foi enviada pelo WhatsApp (pelo próprio robô, pelo painel administrativo ou pelo celular/WhatsApp Web do vendedor)
             if (isFromMe) {
-                // Se já estiver registrada no cache de envio do nosso sistema (Bot ou Painel)
-                if (msgId && mensagensEnviadasPeloSistemaCache.has(msgId)) {
-                    return; // Mensagem já enviada e registrada pelo sistema localmente (sem duplicar)
+                const textoTratado = (infoMsg.texto || '').trim();
+
+                // 1.1 Se já estiver registrada no cache de envio do nosso sistema (por ID ou por texto)
+                if ((msgId && mensagensEnviadasPeloSistemaCache.has(msgId)) || (textoTratado && textosEnviadosPeloSistemaCache.has(textoTratado))) {
+                    return; // Eco do sistema descartado sem duplicar e sem alterar modo!
                 }
 
-                // Verifica se a mensagem já foi gravada previamente no histórico da conversa
+                // 1.2 Verifica se a mensagem já foi gravada previamente no histórico da conversa
                 const conversa = await SessionService.obterConversa(numeroReal);
                 const ultimasMsgs = (conversa.historicoMensagens || []).slice(-10);
                 const jaExiste = ultimasMsgs.some(m =>
-                    (msgId && (m.id === msgId || m.whatsappMessageId === msgId))
+                    (msgId && (m.id === msgId || m.whatsappMessageId === msgId)) ||
+                    (m.remetente === 'atendente' && m.texto === textoTratado)
                 );
 
                 if (jaExiste) {
                     return; // Eco descartado sem duplicar!
+                }
+
+                // 1.3 Se o texto possui padrão ou assinatura do bot, é um eco de resposta do próprio robô.
+                // Descarta o eco sem alternar a conversa para modo humano!
+                const isTextoDoBot = [
+                    'apiário favo de mel', 'favo de mel', '🍯', '🐝', '👉 link:',
+                    'https://apiariofavodemel.com.br', 'conheça toda a nossa linha',
+                    'catálogo & loja online', 'dúvidas sobre mel', 'outros serviços & atendimento',
+                    'como funciona:', 'como comprar:', 'como podemos te ajudar hoje?',
+                    'conhecer catálogo & comprar online', 'produtos da colmeia', 'sua sessão anterior expirou'
+                ].some(padrao => textoTratado.toLowerCase().includes(padrao));
+
+                if (isTextoDoBot) {
+                    return; // Eco do bot descartado sem alternar para modo humano!
                 }
 
                 // Se não foi enviada pelo robô nem pelo painel, é o vendedor/atendente humano digitando diretamente no celular ou WhatsApp Web
