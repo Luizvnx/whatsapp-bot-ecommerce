@@ -93,7 +93,9 @@ class MenuPrincipalStage {
             t === 'duvidas sobre mel' ||
             t === 'dúvidas sobre mel' ||
             t === '❓ dúvidas sobre mel' ||
-            t === '❓ duvidas sobre mel'
+            t === '❓ duvidas sobre mel' ||
+            t === 'duvidas' ||
+            t === 'dúvidas'
         );
 
         if (isCliqueOpcao2) {
@@ -123,7 +125,12 @@ class MenuPrincipalStage {
             t === 'outros servicos' ||
             t === 'outros serviços' ||
             t === '🐝 outros serviços' ||
-            t === '🐝 outros servicos'
+            t === '🐝 outros servicos' ||
+            t === 'atendente' ||
+            t === 'humano' ||
+            t === 'atendente humano' ||
+            t === 'falar com atendente' ||
+            t === 'falar com humano'
         );
 
         if (isCliqueOpcao3) {
@@ -145,38 +152,14 @@ class MenuPrincipalStage {
             return await this.transferirParaHumano(msg, sessao);
         }
 
-        // 4.1 Saudação comum (Oi, Olá, Bom dia): reapresenta o menu de boas-vindas e opções
-        const saudacoes = ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'opa', 'hey', 'alo', 'alô', 'oie', 'eai', 'e aí'];
-        if (saudacoes.includes(t)) {
-            const InicioStage = require('./InicioStage');
-            return await InicioStage.executar(msg, '', sessao);
-        }
+        // 5. QUALQUER OUTRA MENSAGEM (O CLIENTE NÃO SELECIONOU 1, 2 OU 3):
+        // Conforme a regra de negócio definida: as boas-vindas são enviadas apenas na 1ª mensagem.
+        // Se o cliente enviar qualquer mensagem sem selecionar 1, 2 ou 3 (seja saudação, dúvida ou texto livre),
+        // o robô não repete o menu em looping: transfere imediatamente para a equipe humana.
+        const descTransferencia = "Olá! Recebi sua mensagem. Como você não selecionou uma das opções do menu, já estou transferindo seu atendimento para a nossa equipe humana para te auxiliar da melhor forma. Em instantes um de nossos atendentes irá te responder por aqui! 🐝💛\n\n👉 *Nosso Catálogo Online:*\nhttps://apiariofavodemel.com.br/catalogo\n\n_(Caso queira ver as opções do menu novamente, digite *#* a qualquer momento)_";
 
-        // 4.2 Mensagens curtas, pontuações, testes ou números fora do menu (ex: '.', '?', '!', 'teste', '4')
-        const isPontuacaoOuCurto = (
-            t === '.' || t === '..' || t === '...' ||
-            t === '?' || t === '??' || t === '!' ||
-            t === 'teste' || /^[0-9]+$/.test(t) ||
-            t.length <= 2
-        );
-
-        if (isPontuacaoOuCurto) {
-            sessao.errosConsecutivos = (sessao.errosConsecutivos || 0) + 1;
-            if (sessao.errosConsecutivos >= 2) {
-                const msgTransbordo = "Não consegui entender sua mensagem após algumas tentativas. Estou transferindo seu atendimento para nossa equipe humana! 🐝💛\n\n_(Para acessar o catálogo online: https://apiariofavodemel.com.br/catalogo ou digite *#* para voltar ao menu)_";
-                await msg.reply(msgTransbordo);
-                return await this.transferirParaHumano(msg, sessao);
-            }
-
-            const InicioStage = require('./InicioStage');
-            return await InicioStage.executar(msg, '', sessao);
-        }
-
-        // 5. QUALQUER OUTRA COISA DIGITADA (TEXTO LIVRE / PERGUNTA):
-        // Conforme a regra: a IA avalia se é dúvida sobre mel/loja para responder;
-        // caso não seja relacionado ou seja pedido de atendente/humano, encaminha para atendimento humano.
-        const IaStage = require('./IaStage');
-        return await IaStage.executar(msg, texto, sessao);
+        await msg.reply(descTransferencia);
+        return await this.transferirParaHumano(msg, sessao);
     }
 
     /**
@@ -184,6 +167,7 @@ class MenuPrincipalStage {
      */
     static async transferirParaHumano(msg, sessao) {
         sessao.etapa = 'em_atendimento_humano';
+        sessao.modo_atendimento = 'humano';
         sessao.errosConsecutivos = 0;
         sessao.transferidoParaHumanoEm = new Date().toISOString();
         sessao.ultimaMensagemEnviadaAoCliente = new Date().toISOString();

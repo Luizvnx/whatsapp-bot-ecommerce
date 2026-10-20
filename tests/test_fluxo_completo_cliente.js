@@ -166,6 +166,37 @@ async function runE2E() {
     assert(msg8.respostas.some(r => r.includes('https://apiariofavodemel.com.br/catalogo')), 'Deve entregar o catálogo imediatamente');
     console.log('   ✅ Cliente em atendimento humano teve o bot reativado e recebeu o catálogo imediatamente');
 
+    // 9. CENÁRIO CRÍTICO DO USUÁRIO: Cliente envia mensagens sem selecionar opção
+    // Não deve entrar em looping reenviando boas-vindas em cada mensagem!
+    console.log('👉 Passo 9: Cliente envia múltiplas mensagens separadas sem selecionar 1, 2 ou 3');
+    const sessaoSeparadas = {
+        id_cliente: '557988889999@s.whatsapp.net',
+        etapa: 'inicio',
+        modo_atendimento: 'bot',
+        historicoIa: []
+    };
+    
+    // 9.1 Mensagem 1: Cliente manda "Oi" -> Recebe boas-vindas
+    const msgSep1 = criarMsgMock(sessaoSeparadas);
+    await InicioStage.executar(msgSep1, 'Oi', sessaoSeparadas);
+    assert.strictEqual(sessaoSeparadas.etapa, 'menu_principal');
+    assert(msgSep1.respostas.some(r => r.includes('Apiário Favo de Mel')), 'Mensagem 1 deve enviar boas-vindas');
+
+    // 9.2 Mensagem 2: Cliente manda "tudo bem?" sem selecionar 1, 2 ou 3 -> Transfere para humano SEM repetir boas-vindas
+    const msgSep2 = criarMsgMock(sessaoSeparadas);
+    await MenuPrincipalStage.executar(msgSep2, 'tudo bem?', sessaoSeparadas);
+    assert.strictEqual(sessaoSeparadas.etapa, 'em_atendimento_humano', 'Mensagem 2 deve transferir para humano');
+    assert.strictEqual(sessaoSeparadas.modo_atendimento, 'humano');
+    assert(msgSep2.respostas.some(r => r.includes('equipe humana')), 'Mensagem 2 deve avisar transferência');
+    assert(!msgSep2.respostas.some(r => r.includes('Somos especialistas em produtos puros')), 'Mensagem 2 NÃO pode conter texto de boas-vindas');
+
+    // 9.3 Mensagens 3, 4 e 5: Cliente envia mensagens seguintes -> Bot permanece em silêncio (atendimento humano)
+    const msgSep3 = criarMsgMock(sessaoSeparadas);
+    // Simula mensagens no modo humano (o robô não dispara novas mensagens de boas-vindas)
+    const deveReassumir = SessionService.deveBotAssumirAtendimento(sessaoSeparadas);
+    assert.strictEqual(deveReassumir, false, 'Bot não deve reassumir atendimento humano recente');
+    console.log('   ✅ Cliente enviou mensagens separadas: Boas-vindas enviada apenas na 1ª mensagem e transferência humana ativada sem looping!');
+
     console.log('\n🎉 SUCESSO TOTAL! 100% DO FLUXO DO CLIENTE VALIDADO E BLINDADO CONTRA QUALQUER FALHA!');
 }
 

@@ -187,37 +187,44 @@ async function runTests() {
     }
 
     // ----------------------------------------------------
-    // TESTE 6: O cliente digitou qualquer outra coisa:
-    // 6.1 Dúvida sobre Mel/Produtos -> IA analisa e RESPONDE
-    // 6.2 Assunto NÃO relacionado a Mel/Loja -> IA analisa e TRANSFERE para atendimento humano
+    // ----------------------------------------------------
+    // TESTE 6: O cliente não selecionou 1, 2 ou 3 no Menu Principal:
+    // 6.1 Qualquer mensagem enviada sem escolher 1, 2 ou 3 -> Transfere IMEDIATAMENTE para humano (sem repetir boas-vindas)
+    // 6.2 Se o cliente escolher Opção 2 -> Entra no canal de IA e responde dúvidas normalmente
     // ----------------------------------------------------
     {
-        // 6.1 Dúvida sobre Mel (IA Responde e mantém o diálogo aberto)
+        // 6.1 Mensagem sem selecionar opção (Transfere direto para humano sem repetir boas-vindas)
+        const sessaoSemOpcao = { etapa: 'menu_principal' };
+        const msgSemOpcao = criarMsgMock();
+        await MenuPrincipalStage.executar(msgSemOpcao, 'olá tudo bem? como vocês trabalham?', sessaoSemOpcao);
+        assert.strictEqual(sessaoSemOpcao.etapa, 'em_atendimento_humano', 'Mensagem sem opção deve transferir imediatamente para humano');
+        assert(msgSemOpcao.respostas[0].includes('equipe humana'), 'Deve avisar que foi transferido para atendimento humano');
+        assert(!msgSemOpcao.respostas[0].includes('Somos especialistas em produtos puros'), 'NÃO deve repetir mensagem de boas-vindas');
+
+        // 6.2 Se o cliente escolher Opção 2 -> IA ativa e responde
         const sessaoDuvida = { etapa: 'menu_principal' };
+        const msgOpcao2 = criarMsgMock();
+        await MenuPrincipalStage.executar(msgOpcao2, '2', sessaoDuvida);
+        assert.strictEqual(sessaoDuvida.etapa, 'conversando_com_ia', 'Deve mudar para conversando_com_ia');
+
         const msgDuvida = criarMsgMock();
-        await MenuPrincipalStage.executar(msgDuvida, 'o mel de jatai cristaliza?', sessaoDuvida);
+        await IaStage.executar(msgDuvida, 'o mel de jatai cristaliza?', sessaoDuvida);
         assert.strictEqual(sessaoDuvida.etapa, 'conversando_com_ia', 'Deve manter o cliente conversando com a IA');
         assert(msgDuvida.respostas[0].includes('Mel de Jataí'), 'A IA deve responder a dúvida de mel');
         assert(msgDuvida.respostas[0].includes('https://apiariofavodemel.com.br/catalogo'), 'Deve incluir link do catálogo');
 
-        // 6.1.1 Segunda dúvida do cliente sem interrupção de menu (multi-turn)
+        // 6.3 Continuidade de diálogo na IA (multi-turn)
         const msgDuvida2 = criarMsgMock();
         await IaStage.executar(msgDuvida2, 'e o própolis verde?', sessaoDuvida);
         assert.strictEqual(sessaoDuvida.etapa, 'conversando_com_ia', 'Continua conversando com a IA no segundo turno');
         assert(sessaoDuvida.historicoIa.length >= 2, 'Histórico da IA deve conter as mensagens');
 
-        // 6.1.2 Cliente digita # para voltar ao menu
+        // 6.4 Cliente digita # para voltar ao menu
         const msgVoltar = criarMsgMock();
         await IaStage.executar(msgVoltar, '#', sessaoDuvida);
         assert.strictEqual(sessaoDuvida.etapa, 'menu_principal', 'Comando # deve retornar ao menu principal');
 
-        // 6.2 Assunto não relacionado a mel / pedido de falar com atendente (IA Transfere para Humano)
-        const sessaoOutro = { etapa: 'menu_principal' };
-        const msgOutro = criarMsgMock();
-        await MenuPrincipalStage.executar(msgOutro, 'preciso alugar um carro para amanhã', sessaoOutro);
-        assert.strictEqual(sessaoOutro.etapa, 'em_atendimento_humano', 'Assunto não relacionado deve transferir para humano');
-        assert(msgOutro.respostas[0].includes('equipe humana'), 'Deve avisar que foi transferido para atendimento humano');
-        console.log('✅ Teste 6: Avaliação pela IA, Continuidade de Diálogo (Multi-turn) e Transbordo Humano OK');
+        console.log('✅ Teste 6: Mensagem sem opção transfere direto para humano e Opção 2 conversa com IA OK');
         passCount++;
     }
 

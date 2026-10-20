@@ -5,6 +5,8 @@ class InicioStage {
         sessao.errosConsecutivos = 0;
         sessao.categoriaSelecionada = null;
         sessao.produtoSelecionado = null;
+        sessao.boasVindasEnviadas = true;
+        sessao.modo_atendimento = 'bot';
 
         const title = "🐝 Apiário Favo de Mel";
         const description = "Olá! Seja muito bem-vindo(a) ao *Apiário Favo de Mel*! 🍯✨\nSomos especialistas em produtos puros da colmeia, resgate ecológico de abelhas e consultoria apícola em Sergipe.\n\nComo podemos te ajudar hoje? Escolha uma das opções abaixo:";

@@ -6,7 +6,7 @@ class SessionService {
     static queues = new Map();
     // Cache em memória para leitura ultrarrápida intra-requisições (elimina queries redundantes)
     static cacheConversas = new Map();
-    static CACHE_SESSAO_TTL = 8000; // 8 segundos de cache
+    static CACHE_SESSAO_TTL = 30 * 60 * 1000; // 30 minutos de cache em memória
 
     /**
      * Normaliza qualquer identificador para o JID canônico do WhatsApp (@s.whatsapp.net)
@@ -229,9 +229,24 @@ class SessionService {
             return dados;
         }
 
+        // Fallback de resiliência: se o banco falhou/estiver inacessível mas havia dados no cache, preserva a sessão
+        for (const v of variacoes) {
+            const cached = this.cacheConversas.get(v);
+            if (cached && cached.dados) {
+                cached.timestamp = Date.now();
+                return cached.dados;
+            }
+        }
+        if (cachedCanonico && cachedCanonico.dados) {
+            cachedCanonico.timestamp = Date.now();
+            return cachedCanonico.dados;
+        }
+
         const conversaInicial = {
             id_cliente: idCanonico,
             nome_contato: this.formatarNumeroWhatsapp(idCanonico),
+            etapa: 'inicio',
+            modo_atendimento: 'bot',
             historicoMensagens: [],
             criadoEm: new Date().toISOString()
         };
@@ -649,8 +664,13 @@ class SessionService {
         const timestampUltima = this.obterTimestampUltimaMensagemEnviada(conversa);
 
         if (!timestampUltima) {
-            // Se está marcado como humano mas não há nenhum registro de envio prévio, o robô deve assumir
-            return true;
+            if (conversa.criadoEm) {
+                const tCriado = new Date(conversa.criadoEm).getTime();
+                if (!isNaN(tCriado) && tCriado > 0) {
+                    return (Date.now() - tCriado) >= TEMPO_LIMITE_24H;
+                }
+            }
+            return false;
         }
 
         return (Date.now() - timestampUltima) >= TEMPO_LIMITE_24H;
