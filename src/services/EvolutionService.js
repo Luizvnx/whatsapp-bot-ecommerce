@@ -164,7 +164,7 @@ class EvolutionService {
     /**
      * Envia uma mensagem de texto simples para um número (com suporte a resposta/citação)
      */
-    static async enviarMensagemText(numero, texto, quoted = null) {
+    static async enviarMensagemText(numero, texto, quoted = null, linkPreview = false) {
         const url = `${this.baseUrl}/message/sendText/${this.instanceName}`;
 
         let numeroFormatado = String(numero || '').trim();
@@ -175,11 +175,14 @@ class EvolutionService {
             throw new Error('Número de destino inválido ou vazio para envio de mensagem.');
         }
 
-        const temUrl = /https?:\/\/[^\s]+/i.test(texto);
+        // WhatsApp / Baileys descarta mensagens extendedTextMessage com linkPreview quando
+        // as chaves de thumbnail/mídia geradas falham na validação criptográfica do cliente mobile.
+        // Mantemos linkPreview como false para que a mensagem de texto chegue 100% íntegra e
+        // o link continue perfeitamente clicável em todos os dispositivos.
         const payload = {
             number: numeroFormatado,
             text: texto,
-            linkPreview: temUrl
+            linkPreview: Boolean(linkPreview)
         };
 
         if (quoted && (quoted.id || quoted.whatsappMessageId)) {
