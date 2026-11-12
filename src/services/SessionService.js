@@ -593,10 +593,20 @@ class SessionService {
     }
 
     static verificarExpiracao(sessao) {
+        if (!sessao) return false;
+
+        // Atendimentos humanos e vendas fechadas NÃO expiram para modo bot.
+        // O cliente em atendimento humano permanece com o robô em silêncio absoluto.
+        const isHumano = (sessao.modo_atendimento === 'humano' || sessao.etapa === 'em_atendimento_humano');
+        if (isHumano) {
+            sessao.ultimaInteracao = Date.now();
+            return false;
+        }
+
         const TEMPO_LIMITE = 24 * 60 * 60 * 1000;
         let expirou = false;
         if (sessao.ultimaInteracao && (Date.now() - sessao.ultimaInteracao > TEMPO_LIMITE)) {
-            sessao.etapa = 'menu_principal';
+            sessao.etapa = 'inicio';
             sessao.modo_atendimento = 'bot';
             sessao.carrinho = [];
             sessao.historicoIa = [];
@@ -651,29 +661,13 @@ class SessionService {
     }
 
     /**
-     * Avalia se o atendimento humano expirou por ausência de mensagens enviadas ao cliente por mais de 24 horas.
-     * Retorna true se o bot deve reassumir o atendimento.
+     * Avalia se o atendimento humano expirou.
+     * Retorna SEMPRE false: conversas em atendimento humano e vendas fechadas devem
+     * permanecer sob responsabilidade humana, mantendo o robô em silêncio absoluto.
+     * O robô só reassume se o cliente digitar explicitamente um comando (#, menu, catalogo, 1, etc.).
      */
     static deveBotAssumirAtendimento(conversa) {
-        if (!conversa) return false;
-
-        const isHumano = (conversa.modo_atendimento === 'humano' || conversa.etapa === 'em_atendimento_humano');
-        if (!isHumano) return false;
-
-        const TEMPO_LIMITE_24H = 24 * 60 * 60 * 1000;
-        const timestampUltima = this.obterTimestampUltimaMensagemEnviada(conversa);
-
-        if (!timestampUltima) {
-            if (conversa.criadoEm) {
-                const tCriado = new Date(conversa.criadoEm).getTime();
-                if (!isNaN(tCriado) && tCriado > 0) {
-                    return (Date.now() - tCriado) >= TEMPO_LIMITE_24H;
-                }
-            }
-            return false;
-        }
-
-        return (Date.now() - timestampUltima) >= TEMPO_LIMITE_24H;
+        return false;
     }
 
     /**
@@ -803,39 +797,11 @@ class SessionService {
     }
 
     /**
-     * Varre sessões ativas no banco de dados para identificar atendimentos humanos
-     * que estão há mais de 24 horas sem mensagens enviadas ao cliente, reassumindo-os pelo robô.
+     * Mantido para compatibilidade retroativa: desativado para garantir que atendimentos
+     * humanos e vendas fechadas não sofram mutação indesejada para modo robô.
      */
     static async verificarSessoesHumanoExpiradas() {
-        try {
-            const sql = `
-                SELECT id_cliente, dados_sessao 
-                FROM tb_bot_sessoes 
-                WHERE etapa = 'em_atendimento_humano' 
-                   OR dados_sessao->>'etapa' = 'em_atendimento_humano'
-                   OR dados_sessao->>'modo_atendimento' = 'humano'
-            `;
-            const result = await DatabaseService.executar(sql, []);
-            let countAssumidos = 0;
-
-            for (const row of result.rows) {
-                const dados = typeof row.dados_sessao === 'string' ? JSON.parse(row.dados_sessao) : (row.dados_sessao || {});
-                dados.id_cliente = row.id_cliente;
-
-                if (this.deveBotAssumirAtendimento(dados)) {
-                    console.log(`⏱️ [SessaoExpirada24h] Reassumindo atendimento de ${row.id_cliente} após 24h sem envios.`);
-                    await this.assumirAtendimentoPeloBot(row.id_cliente, dados);
-                    countAssumidos++;
-                }
-            }
-
-            if (countAssumidos > 0) {
-                console.log(`✅ [SessionService] ${countAssumidos} atendimentos humanos inativos reassumidos pelo bot.`);
-            }
-            return countAssumidos;
-        } catch (err) {
-            return 0;
-        }
+        return 0;
     }
 
     // Métodos mantidos para retrocompatibilidade de chamadas legadas caso existam

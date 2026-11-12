@@ -151,27 +151,9 @@ class BotController {
                 sessao.historicoIa = sessao.historicoIa.slice(-30);
             }
 
-            // 4. Valida expiração da sessão ANTES dos bloqueios de atendimento
-            if (SessaoService.verificarExpiracao(sessao)) {
-                await info.reply(mensagens.erros.sessaoExpirada);
-                if (typeof EvolutionService.gerenciarEtiqueta === 'function') {
-                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => { });
-                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => { });
-                }
-                return;
-            }
-
-            // 5. Se o cliente estiver em atendimento humano:
-            if (sessao.etapa === 'em_atendimento_humano') {
-                // Se passou 24h sem nenhuma mensagem enviada ao cliente, o robô reassume o atendimento automaticamente
-                if (SessaoService.deveBotAssumirAtendimento(sessao)) {
-                    console.log(`⏱️ [BotController] 24h sem mensagens enviadas para ${numeroReal}. Bot reassumindo o atendimento!`);
-                    await SessaoService.assumirAtendimentoPeloBot(numeroReal, sessao);
-
-                    const InicioStage = require('../stages/InicioStage');
-                    return await InicioStage.executar(info, '', sessao);
-                }
-
+            // 4. Se o cliente estiver em atendimento humano ou pós-venda fechada com vendedor:
+            const isEmAtendimentoHumano = (sessao.etapa === 'em_atendimento_humano' || sessao.modo_atendimento === 'humano');
+            if (isEmAtendimentoHumano) {
                 const comandosRetornoCatalogo = [
                     '1', 'catalogo', 'catálogo', '/catalogo', '/catálogo', 'link', '/link', 'site', '/site', 'loja', '/loja',
                     'ver catalogo', 'ver catálogo', 'conhecer catalogo', 'conhecer catálogo',
@@ -204,7 +186,17 @@ class BotController {
                     const InicioStage = require('../stages/InicioStage');
                     return await InicioStage.executar(info, '', sessao);
                 }
-                // Silêncio total do robô durante atendimento humano
+                // Silêncio total do robô durante atendimento humano e após venda fechada
+                return;
+            }
+
+            // 5. Valida expiração da sessão apenas para clientes ativos no fluxo do robô
+            if (SessaoService.verificarExpiracao(sessao)) {
+                await info.reply(mensagens.erros.sessaoExpirada);
+                if (typeof EvolutionService.gerenciarEtiqueta === 'function') {
+                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '7', 'remove').catch(() => { });
+                    await EvolutionService.gerenciarEtiqueta(info.numeroCliente, '8', 'add').catch(() => { });
+                }
                 return;
             }
 

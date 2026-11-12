@@ -43,7 +43,7 @@ async function testFluxoAtendimentoHumano24h() {
     }
 
     // -----------------------------------------------------------------
-    // TESTE 3: Atendimento humano expirado (> 24h sem mensagem enviada ao cliente)
+    // TESTE 3: Atendimento humano e pós-venda fechada (> 24h sem mensagem)
     // -----------------------------------------------------------------
     {
         const vinteECincoHorasAtras = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
@@ -66,12 +66,12 @@ async function testFluxoAtendimentoHumano24h() {
             ]
         };
         const deve = SessionService.deveBotAssumirAtendimento(conversaHumanoExpirada);
-        assert.strictEqual(deve, true, 'Deve assumir se passou mais de 24h sem mensagens enviadas ao cliente');
-        console.log('✅ Teste 3: Atendimento humano sem mensagens enviadas há > 24h identificado para reassunção OK');
+        assert.strictEqual(deve, false, 'O robô NUNCA deve reassumir automaticamente atendimento humano');
+        console.log('✅ Teste 3: Atendimento humano e vendas fechadas permanecem protegidos sem reassunção automática OK');
     }
 
     // -----------------------------------------------------------------
-    // TESTE 4: assumirAtendimentoPeloBot reativa modo bot e menu principal
+    // TESTE 4: assumirAtendimentoPeloBot normaliza modo bot e menu principal
     // -----------------------------------------------------------------
     {
         const idCliente = '557988887777@s.whatsapp.net';
@@ -96,7 +96,7 @@ async function testFluxoAtendimentoHumano24h() {
     }
 
     // -----------------------------------------------------------------
-    // TESTE 5: HumanoStage executando após 24h sem envio reassume e reenvia boas-vindas
+    // TESTE 5: HumanoStage permanece em silêncio absoluto para mensagens normais no dia seguinte
     // -----------------------------------------------------------------
     {
         const vinteECincoHorasAtras = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
@@ -116,12 +116,20 @@ async function testFluxoAtendimentoHumano24h() {
             replyButtons: async (opts, fallback) => respostas.push(opts.title + ': ' + opts.description)
         };
 
-        await HumanoStage.executar(msgMock, 'Olá!', sessao);
-        assert.strictEqual(sessao.etapa, 'menu_principal', 'Etapa deve ter mudado para menu_principal');
-        assert.strictEqual(sessao.modo_atendimento, 'bot', 'Modo deve ter mudado para bot');
-        assert(respostas.length > 0, 'Deve ter enviado resposta de boas-vindas/menu');
-        assert(respostas[0].includes('Apiário Favo de Mel'), 'Mensagem enviada deve ser a de boas-vindas do Apiário');
-        console.log('✅ Teste 5: HumanoStage após 24h reassume atendimento e envia menu do bot OK');
+        // Cliente envia "Bom dia!" no dia seguinte após fechar venda com vendedor
+        await HumanoStage.executar(msgMock, 'Bom dia!', sessao);
+        assert.strictEqual(sessao.etapa, 'em_atendimento_humano', 'Etapa deve permanecer em_atendimento_humano');
+        assert.strictEqual(sessao.modo_atendimento, 'humano', 'Modo deve permanecer humano');
+        assert.strictEqual(respostas.length, 0, 'O bot NÃO deve enviar nenhuma mensagem de boas-vindas no dia seguinte');
+        console.log('✅ Teste 5: HumanoStage respeita silêncio absoluto no dia seguinte sem enviar mensagens indevidas OK');
+
+        // Se o cliente digitar explicitamente "#" ou "menu", aí sim o bot reassume voluntariamente
+        await HumanoStage.executar(msgMock, '#', sessao);
+        assert.strictEqual(sessao.etapa, 'menu_principal', 'Etapa deve ir para menu_principal ao digitar comando');
+        assert.strictEqual(sessao.modo_atendimento, 'bot', 'Modo deve mudar para bot ao digitar comando');
+        assert(respostas.length > 0, 'Deve responder ao comando voluntário com o menu');
+        assert(respostas[0].includes('Apiário Favo de Mel'), 'Mensagem enviada deve ser o menu');
+        console.log('✅ Teste 5.1: Cliente reativa voluntariamente o bot digitando "#" com sucesso OK');
     }
 
     // -----------------------------------------------------------------
